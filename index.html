@@ -1650,6 +1650,45 @@
   .bg-steps{display:flex;gap:8px;padding:10px 14px 0;flex-wrap:wrap}
   .bg-steps .ivb{min-height:48px;padding:0 18px;font-size:15px}
   .bg-steps .ivb.on{background:#eeedfe;color:#4285f4;font-weight:600;border-color:#4285f4}
+
+  /* ===== iPhone: la barra de estado no tapa el menú ni el título (PWA en pantalla completa) ===== */
+  .sidebar{padding-top:calc(10px + env(safe-area-inset-top, 0px))}
+  .topbar{padding-top:calc(18px + env(safe-area-inset-top, 0px))}
+  #pr-top{padding-top:env(safe-area-inset-top, 0px)}
+  @media (max-width:600px){
+    .topbar{padding-top:calc(10px + env(safe-area-inset-top, 0px))}
+    #es-pop{max-height:calc(100dvh - 24px - env(safe-area-inset-top, 0px));overflow-y:auto}
+  }
+  /* ===== Lista interna en teléfono: compacta, como AnyList ===== */
+  @media (max-width:600px){
+    #es-root{margin:8px 8px 0;font-size:15px}
+    .es2{border-width:1px;border-radius:12px}
+    .es-left{padding:8px}
+    .es-ests{gap:6px;margin:0 0 8px}
+    .es-est{min-height:44px;flex-direction:row;gap:8px;border-radius:10px;padding:4px 8px}
+    .es-est span{font-size:20px} .es-est b{font-size:14px}
+    .es-est i{top:2px;right:4px;font-size:11px;min-width:18px;padding:0 5px}
+    .es-in{min-height:40px;font-size:15px;padding:6px 12px;margin-bottom:8px;border-radius:10px}
+    .es-areas{border-radius:10px}
+    .es-area{min-height:48px;padding:6px 10px;gap:8px;border-left-width:6px}
+    .es-ai{font-size:22px;width:30px} .es-at b{font-size:15px} .es-at small{font-size:12px}
+    .es-cfg{margin-top:8px;min-height:40px;font-size:14px}
+    .es-bt{min-height:44px;font-size:15px;padding:0 14px;border-radius:10px;border-width:1px}
+    .es2[data-area] .es-rh{padding:6px 8px} .es2[data-area] .es-rh .es-rt{font-size:15px} .es-rh{padding:6px 8px} .es-rt{font-size:15px} .es-rs{font-size:12px}
+    .es-sec{font-size:14px;padding:5px 10px}
+    .es-row{min-height:54px}
+    .es-no{min-width:28px;font-size:13px}
+    .es-th{width:54px;min-height:54px;font-size:16px}
+    .es-main{padding:4px 10px;gap:0 6px}
+    .es-n{font-size:16px;font-weight:600;line-height:1.2} .es-d{font-size:14px} .es-d b{font-size:15px}
+    .es-nt{font-size:12px}
+    .es-ed{width:48px;min-height:54px;font-size:20px}
+    .es-vacio{font-size:14px;padding:20px 10px}
+    .es-send{padding:6px 0 calc(8px + env(safe-area-inset-bottom, 0px));gap:8px}
+    .es-send .cnt{font-size:16px} .es-send .es-bt{min-height:44px}
+    .es-pi{min-height:52px;font-size:16px} .es-pi span{font-size:24px} .es-pi small{font-size:12px}
+    .es-big .es-bt{width:68px;min-height:68px;font-size:30px} .es-num{font-size:52px;min-width:90px}
+  }
 </style>
 </head>
 <body>
@@ -6497,8 +6536,9 @@ window.esMenu = function(ev){
   p.innerHTML = '<button class="es-pi ' + (enReg ? 'act' : '') + '" data-es="goto-reg"><span>📝</span><div>Registro<small>Registrar lo producido y sacar etiquetas</small></div></button>' +
     '<button class="es-pi ' + (enLista ? 'act' : '') + '" data-es="goto-lista"><span>📋</span><div>Lista interna<small>' + (nLista ? nLista + ' por pedir · ' : '') + 'Cocina Producción y Cuarto frío</small></div></button>';
   const r = b.getBoundingClientRect();
-  p.style.top = Math.round(r.bottom + 4) + 'px'; p.style.left = Math.max(8, Math.min(Math.round(r.left), window.innerWidth - 276)) + 'px';
   p.className = 'show'; b.classList.add('es-open');
+  const ph = p.offsetHeight, vh = window.innerHeight;
+  p.style.top = Math.max(12, Math.min(Math.round(r.bottom + 4), vh - ph - 12)) + 'px'; p.style.left = Math.max(8, Math.min(Math.round(r.left), window.innerWidth - 276)) + 'px';
 };
 document.addEventListener('click', e => { const p = $('#es-pop'); if(p && p.className === 'show' && !e.target.closest('#es-pop') && !e.target.closest('#nav-produccion')) cerrarMenu(); });
 
