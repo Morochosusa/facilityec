@@ -1769,6 +1769,37 @@
   .rx-dq{margin:10px 0} .rx-dq>span{display:block;font-size:13px;font-weight:700;margin-bottom:4px}
   #rx-toast{position:fixed;left:50%;transform:translateX(-50%);bottom:90px;max-width:90%;background:#26261f;color:#fff;border-radius:12px;padding:12px 16px;font-size:14px;z-index:400;opacity:0;pointer-events:none;transition:opacity .2s;text-align:center}
   #rx-toast.show{opacity:1}
+
+  /* ===== Lista de compras: selección para unificar, áreas de Facility, X visible, tablet ===== */
+  .lc-selbar{display:flex;align-items:center;gap:10px;margin:0 0 10px;position:sticky;top:0;z-index:20;background:#f7f6f2;padding:6px 0}
+  .lc-selbar .lc-sb-on{width:100%;min-height:54px;font-size:16px;margin:0;background:#fff;color:#1a56c4;border:2px solid #4285f4}
+  .lc-selbar .lc-sb-x{min-height:50px;padding:0 16px;font-size:15px}
+  .lc-selbar .lc-sb-n{flex:1;text-align:center;font-size:15px}
+  .lc-selbar .lc-sb-go{width:auto;min-height:54px;margin:0;padding:0 18px;font-size:16px;background:#4285f4}
+  .lc-selbar .lc-sb-go[disabled]{opacity:.45}
+  .lc-area-h{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:16px 0 6px;padding:2px 2px 6px;border-bottom:2px solid #d3d1c7;font-size:17px;font-weight:800;color:#2c2c2a}
+  .lc-area-h i{font-style:normal;font-size:13px;background:#e8e6df;border-radius:10px;padding:2px 9px;margin-left:6px;font-weight:700}
+  .lc-all{min-height:40px;padding:0 14px;font-size:14px}
+  .guia-card-top{gap:10px}
+  .lc-gl{flex:1;min-width:0}
+  .guia-card.lc-elig{border:2px dashed #b9c8ec;cursor:pointer}
+  .guia-card.lc-picked{border:2px solid #4285f4;background:#eef3fe}
+  .lc-pick{flex:0 0 auto;width:34px;height:34px;border-radius:9px;border:2px solid #9aa7c7;background:#fff;color:#fff;font-size:22px;line-height:30px;text-align:center;font-weight:800;align-self:center}
+  .lc-picked .lc-pick{background:#4285f4;border-color:#4285f4}
+  body #lista-compra-detalle .btn-cerrar{flex:0 0 auto;width:50px;height:50px;min-height:50px;border-radius:50%;background:#2c2c2a;color:#fff;font-size:32px;line-height:1;padding:0 0 4px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+  @media print{ body #lista-compra-detalle .btn-cerrar{display:none !important} .lc-selbar{display:none !important} }
+  @media (min-width:700px){
+    #lc-listas{max-width:1000px;margin:0 auto;padding:0 18px}
+    #listas-compra-pendientes{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
+    #listas-compra-pendientes > :not(.guia-card){grid-column:1/-1}
+    #listas-compra-pendientes .guia-card{margin:0}
+    body #lista-compra-detalle .detalle-panel{max-width:780px;padding:16px 18px}
+    body #lista-compra-detalle .detalle-header h2{font-size:24px}
+    body #lista-compra-detalle .lcr{min-height:72px}
+    body #lista-compra-detalle .lcr .check-doble-tap{width:42px;height:42px;min-width:42px;font-size:24px}
+    .lc-area-h{font-size:19px}
+    .uni{max-width:900px;margin:0 auto}
+  }
 </style>
 </head>
 <body>
@@ -2515,7 +2546,7 @@ async function crearGuiaDespacho() {
    ============================================================ */
 const TITULOS_VISTA = {
   pedidos: ["Pedidos de locales", "Acepta el pedido: el mercado va a Guardadas y la bodega a Guías para despachar"],
-  compra: ["Lista de compras", "Las listas de los pedidos aceptados: marca lo comprado, pon costos y la carreta"],
+  compra: ["Lista de compras", ""],
   provs: ["Proveedores", "Los proveedores que nos entregan: nombre, teléfono y qué nos venden"],
   recepcion: ["Recepción de productos", "Proveedor, factura, productos y diferencias en pocos toques"],
   proveedores: ["Recepcion proveedores", "Registra lo que llega de cada proveedor: cantidad, costo y observaciones"],
@@ -3023,6 +3054,7 @@ async function separarUnificada(id) {
 function areaLista(l) {
   if (!l || l.requerimiento) return "";
   if (l.area) return l.area;
+  if (l.origen_estacion) return NOMBRES_LOCAL[l.origen_estacion] || "";
   try {
     const P = window.PDS, ped = P && P.lista ? P.lista.filter(p => p.id === l.pedido_id)[0] : null;
     return ped && window.pdAreaDe ? (window.pdAreaDe(ped) || "") : "";
@@ -3035,20 +3067,23 @@ function renderListasCompraPendientes() {
   const lcLocal = window.LCS ? window.LCS.local : '';
   const listas = listasCompraCache.filter(esHistorial ? esListaCompraHistorial : esListaCompraPendiente).filter(l => !l.requerimiento).filter(l => !lcLocal || l.local === lcLocal || l.unificada);
 
-  const btnUni = (!esHistorial && window.lcUniN && lcUniN() > 0)
-    ? `<button class="btn-despachar btn-imprimir lc-unif" onclick="lcUnificar()">🧺 Unificar listas pendientes (${lcUniN()})</button><p class="btn-imprimir" style="font-size:13px; color:#888780; margin:6px 0 0;">Junta lo que se compra en el mercado: las listas de este local y, si quieres, las de otros locales.</p>`
-    : "";
+  const nUni = (!esHistorial && window.lcUniN) ? lcUniN() : 0, selN = lcSel.size;
+  if (esHistorial) lcSelModo = false;
+  const btnUni = nUni >= 2 ? (lcSelModo
+    ? `<div class="lc-selbar"><button class="btn-chico lc-sb-x" onclick="lcSelModoSet(false)">Cancelar</button><span class="lc-sb-n"><b>${selN}</b> seleccionada${selN === 1 ? "" : "s"}</span><button class="btn-despachar lc-sb-go" ${selN >= 2 ? "" : "disabled"} onclick="lcSelUnir()">🧺 Unificar${selN >= 2 ? " (" + selN + ")" : ""}</button></div>`
+    : `<div class="lc-selbar"><button class="btn-despachar lc-sb-on" onclick="lcSelModoSet(true)">☑ Seleccionar listas para unificar</button></div>`) : "";
+  const btnConta0 = btnUni;
   const btnConta = esHistorial ? `<button class="btn-despachar btn-imprimir" style="margin:0 0 10px" onclick="bgConta()">🧾 Contabilidad: compras recibidas y comprobantes</button>` : "";
   if (listas.length === 0) {
-    cont.innerHTML = btnConta + `<p style="font-size:13px; color:#888780; margin-top:10px;">${esHistorial ? "Todavia no hay listas en el historial." : "No hay listas de compras pendientes."}</p>` + btnUni;
+    cont.innerHTML = btnConta + `<p style="font-size:13px; color:#888780; margin-top:10px;">${esHistorial ? "Todavia no hay listas en el historial." : "No hay listas de compras pendientes."}</p>`;
     return;
   }
-
-  cont.innerHTML = btnConta + listas.map(l => {
+  const lcElig = l => lcSelModo && !esHistorial && window.lcUniOk && lcUniOk(l);
+  const tarjeta = l => {
     const fechaBase = esHistorial && l.fecha_envio_contabilidad ? l.fecha_envio_contabilidad : l.fecha_creacion;
     const fecha = lcFechaDia(fechaBase) || "Guardando fecha...";
     const comprados = l.items.filter(it => it.comprado).length;
-    const origTxt = l.unificada ? (l.origenes || []).map(o => (o.area || "Lista") + (o.pedido_numero ? " #" + o.pedido_numero : "")).join(" + ") : "";
+    const origTxt = l.unificada ? (() => { const m = {}; (l.origenes || []).forEach(o => { const k = (o.area || "Lista") + (o.pedido_numero ? " #" + o.pedido_numero : ""); m[k] = (m[k] || 0) + 1; }); return Object.keys(m).map(k => k + (m[k] > 1 ? " ×" + m[k] : "")).join(" + "); })() : "";
     const totalCosto = l.items.reduce((sum, it) => sum + (it.costo ? parseFloat(it.costo) : 0), 0) + (parseFloat(l.carreta) || 0) + (parseFloat(l.flete) || 0);
 
     let badge = l.estado === "despachada"
@@ -3067,9 +3102,10 @@ function renderListasCompraPendientes() {
     }
 
     return `
-      <div class="guia-card" onclick="verListaCompra('${l.id}')">
+      <div class="guia-card ${lcElig(l) ? 'lc-elig' : ''} ${lcSelModo && lcSel.has(l.id) ? 'lc-picked' : ''}" onclick="${lcElig(l) ? `lcSelTog('${l.id}')` : `verListaCompra('${l.id}')`}">
         <div class="guia-card-top">
-          <div>
+          ${lcElig(l) ? `<span class="lc-pick">${lcSel.has(l.id) ? '✓' : ''}</span>` : ''}
+          <div class="lc-gl">
             <div class="guia-local">${l.unificada ? '<span class="lc-pnum">Unificada</span> ' : (l.requerimiento ? '<span class="lc-pnum">Requerimiento</span> ' : (l.pedido_numero ? '<span class="lc-pnum">Pedido #' + l.pedido_numero + '</span> ' : ''))}${NOMBRES_LOCAL[l.local] || l.local}${l.unificada ? ' · <b>' + origTxt + '</b>' : (areaLista(l) ? ' · <b>' + areaLista(l) + '</b>' : '')}</div>
             <div class="guia-fecha">${fecha} - ${detalleTexto}${l.fecha_necesaria ? " - para el " + lcNecesaria(l.fecha_necesaria) : ""}${totalCosto > 0 ? " - $" + totalCosto.toFixed(2) : ""}</div>
           </div>
@@ -3078,7 +3114,28 @@ function renderListasCompraPendientes() {
         ${filaEliminar}
       </div>
     `;
-  }).join("") + btnUni;
+  };
+  let cuerpo;
+  if (lcLocal === 'facility' && !esHistorial) {
+    const GR = [['cocina_produccion', '🍳 Cocina Producción'], ['cuarto_frio', '🧊 Cuarto frío'], ['unificada', '🧺 Unificadas'], ['otras', 'Otras listas']];
+    const gk = l => l.origen_estacion === 'cocina_produccion' || l.origen_estacion === 'cuarto_frio' ? l.origen_estacion : (l.unificada ? 'unificada' : 'otras');
+    cuerpo = GR.map(g => { const ls = listas.filter(l => gk(l) === g[0]); if (!ls.length) return '';
+      const el = ls.filter(lcElig).length;
+      return `<div class="lc-area-h"><span>${g[1]} <i>${ls.length}</i></span>${el > 1 ? `<button class="btn-chico lc-all" onclick="lcSelArea('${g[0]}')">${ls.filter(lcElig).every(l => lcSel.has(l.id)) ? 'Quitar todas' : 'Todas'}</button>` : ''}</div>` + ls.map(tarjeta).join(''); }).join('');
+  } else cuerpo = listas.map(tarjeta).join("");
+  cont.innerHTML = btnConta + btnConta0 + cuerpo;
+}
+var lcSel = new Set(), lcSelModo = false;
+function lcSelModoSet(on) { lcSelModo = !!on; lcSel.clear(); renderListasCompraPendientes(); }
+function lcSelTog(id) { if (lcSel.has(id)) lcSel.delete(id); else lcSel.add(id); renderListasCompraPendientes(); }
+function lcSelArea(k) {
+  const lc = window.LCS ? window.LCS.local : '';
+  const ids = listasCompraCache.filter(l => !l.requerimiento && l.local === lc && esListaCompraPendiente(l) && window.lcUniOk && lcUniOk(l) && (k === 'otras' ? !l.origen_estacion && !l.unificada : k === 'unificada' ? l.unificada : l.origen_estacion === k)).map(l => l.id);
+  const todas = ids.every(id => lcSel.has(id)); ids.forEach(id => todas ? lcSel.delete(id) : lcSel.add(id)); renderListasCompraPendientes();
+}
+function lcSelUnir() {
+  if (lcSel.size < 2) { mostrarAviso("Elige 2 o más listas.", "error"); return; }
+  const ids = Array.from(lcSel); lcSelModo = false; lcSel.clear(); if (window.lcUnificar) lcUnificar(ids);
 }
 
 let listaCompraDetalleAbiertaId = null;
@@ -3151,7 +3208,6 @@ function verListaCompra(id) {
     ? `<button class="btn-despachar btn-imprimir" onclick="window.print()">Imprimir</button>`
     : !realizada
       ? `<button class="btn-despachar btn-imprimir lc-hecha" onclick="marcarCompraRealizada('${id}')">✓ Compra realizada</button>
-         <p class="btn-imprimir" style="font-size:13px; color:#888780; margin:8px 0 0;">Al terminar de comprar, toca Compra realizada: ahí aparece enviar a contabilidad o imprimir.</p>
          ${botonElim}`
       : `<div class="lc-impreso btn-imprimir">✓ Compra realizada. Envíala a contabilidad o imprímela.</div>
          <button class="btn-despachar btn-imprimir" style="background:#1d8a4e;" onclick="marcarEnviadaContabilidad('${id}')">Enviar a contabilidad</button>
@@ -3179,10 +3235,10 @@ function verListaCompra(id) {
         <span>Carreta</span>
         ${enviada ? `<span>$${carreta.toFixed(2)}</span>` : `<button class="lcr-p ${carreta ? 'set' : 'vacio'}" onclick="lcCarreta('${id}')">${carreta ? '$' + carreta.toFixed(2) : '$ ‒'}</button>`}
       </div>
-      <div class="detalle-fila lc-tot lc-carreta lc-flete">
+      ${lista.local === 'facility' ? '' : `<div class="detalle-fila lc-tot lc-carreta lc-flete">
         <span>Flete (transporte)</span>
         ${enviada ? `<span>$${flete.toFixed(2)}</span>` : `<button class="lcr-p ${flete ? 'set' : 'vacio'}" onclick="lcFlete('${id}')">${flete ? '$' + flete.toFixed(2) : '$ ‒'}</button>`}
-      </div>
+      </div>`}
       <div class="detalle-fila lc-tot lc-gastado">
         <span>Total gastado (costo pagado)</span>
         <span>$${totalCosto.toFixed(2)}</span>
@@ -3444,7 +3500,7 @@ async function marcarCompraRealizada(id) {
     let carga = { ids: [], nombres: [] };
     try { carga = await cargarCompraAGuias(lista); if (carga.ids.length) await db.collection("listas_compra").doc(id).update({ guias_cargadas: carga.ids }); }
     catch (e2) { console.error(e2); mostrarAviso("Compra realizada, pero no se pudo pasar a Guías. Reabre y vuelve a marcarla.", "error"); return; }
-    setTimeout(() => lcFlete(id), 350);   // pregunta el flete del transporte (se puede dejar en blanco)
+    if (lista.local !== 'facility') setTimeout(() => lcFlete(id), 350);   // (Facility no lleva flete) pregunta el flete del transporte (se puede dejar en blanco)
     const aGuias = carga.nombres.length ? " Pasó a Guías: " + carga.nombres.join(", ") + "." : "";
     mostrarAviso((sinCosto ? `Compra realizada. Ojo: ${sinCosto} producto(s) sin costo.` : "Compra realizada. Ya puedes enviarla a contabilidad o imprimirla.") + aGuias, sinCosto ? "error" : "ok");
   } catch (err) {
@@ -5743,7 +5799,7 @@ function render(){
   } else if(UNI.open){
     h += uniHtml();
   } else {
-    h += '<div class="lc-listas-hint">Cuando aceptas un pedido en Pedidos de locales, su lista aparece aquí. Lo de Lista interna llega directo, en el cajón Facility. Toca una para marcar lo comprado, poner costos y la carreta, y cerrarla con Compra realizada.</div>';
+    /* sin textos de ayuda */
   }
   r.innerHTML = h;
   const lv = $('#lc-listas'); if(lv) lv.style.display = (L.tab === 'listas' && !UNI.open) ? '' : 'none';
@@ -5753,16 +5809,17 @@ function render(){
 /* ---------- Unificar listas pendientes: una sola lista de compra, en orden por área (Cocina, Cafetería…), sin mezclar productos ---------- */
 const UNI = {open:false, sel:new Set(), busy:false};
 const uniListas = () => (typeof listasCompraCache !== 'undefined' ? listasCompraCache : []).filter(l => !l.enviada_contabilidad && !l.unificada && !l.requerimiento && l.estado !== 'despachada' && !l.compra_realizada && Array.isArray(l.items));
-const UNI_AREAS = ['cocina', 'cafeteria', 'bebidas', 'panaderia', 'limpieza', 'empacado', 'procesado'];
+const UNI_AREAS = ['cocina', 'cafeteria', 'bebidas', 'panaderia', 'limpieza', 'empacado', 'procesado', 'cocina produccion', 'cuarto frio'];
 const uniLocN = loc => (typeof NOMBRES_LOCAL !== 'undefined' && NOMBRES_LOCAL[loc]) || loc;
 const uniArea = l => (typeof areaLista === 'function' ? areaLista(l) : '') || '';
 const uniSinAc = t => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 function uniRango(l){ if(l.requerimiento) return 90; const k = UNI_AREAS.indexOf(uniSinAc(uniArea(l))); return k < 0 ? 50 : k; }
 const uniOrden = arr => arr.slice().sort((a, b) => uniRango(a) - uniRango(b) || String(a.local).localeCompare(String(b.local)) || ((a.pedido_numero || 0) - (b.pedido_numero || 0)));
 window.lcUniN = () => uniListas().length;
-window.lcUnificar = function(){
+window.lcUniOk = l => uniListas().some(x => x.id === l.id);
+window.lcUnificar = function(ids){
   const cur = uniListas().filter(l => l.local === L.local);
-  UNI.sel = new Set((cur.length ? cur : uniListas()).map(l => l.id));
+  UNI.sel = new Set(Array.isArray(ids) && ids.length ? ids : (cur.length ? cur : uniListas()).map(l => l.id));
   UNI.open = true; L.sel = null; beep('tap'); render(); window.scrollTo(0, 0);
 };
 function uniEtiqueta(l, multi){
@@ -5773,7 +5830,7 @@ function uniEtiqueta(l, multi){
 function uniHtml(){
   const ls = uniListas();
   let h = '<div class="uni"><div class="uni-top"><button class="lcb" data-lc="uni-cerrar">← Listas pendientes</button><div class="uni-t">Unificar listas</div></div>' +
-    '<div class="uni-ay">Junta varias listas en <b>una sola lista de compra</b> para ir al mercado. No mezcla los productos: van en orden por lista, primero Cocina, luego Cafetería, etc. En la lista unificada pones el dinero disponible y vas anotando los precios.</div>';
+    '';
   if(!ls.length) return h + '<div class="lc-empty"><b>No hay listas pendientes</b></div></div>';
   const porLocal = {}; ls.forEach(l => { (porLocal[l.local] = porLocal[l.local] || []).push(l); });
   const locs = Object.keys(porLocal).sort((a, b) => (b === L.local) - (a === L.local));
