@@ -6989,15 +6989,15 @@ const saldoItems = l => (l.items || []).filter(it => it.comprado !== false && es
 const slugProv = n => 'prov_' + String(n).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
 const PL_U = ['kg', 'libras', 'litros', 'galones', 'unidades', 'fundas', 'sacos', 'cajas'];
 const bodegaItems = () => (window.ivItems ? window.ivItems() : []).filter(it => !it.local || (typeof PRODUCTOS !== 'undefined' && PRODUCTOS.some(p => p.id === it.id)));
-function plSync(){ const E = B.pm && B.pm.ed; if(!E) return; const g = id => { const e = $(id); return e ? e.value : null; }; const n = g('#bg-pn'), t = g('#bg-pt'); if(n != null) E.nombre = n; if(t != null) E.telefono = t; const pn = g('#bg-pln'); if(pn != null && E.add) E.add.nombre = pn; }
+function plSync(){ const E = B.pm && B.pm.ed; if(!E) return; const g = id => { const e = $(id); return e ? e.value : null; }; const n = g('#bg-pn'), t = g('#bg-pt'); if(n != null) E.nombre = n; if(t != null) E.telefono = t; const pn = g('#bg-pln'); if(pn != null && E.add) E.add.nombre = pn; const pp = g('#bg-plp'); if(pp != null && E.add) E.add.pres = pp; }
 function vProvLista(E){
   const l = E.lista || [], A = E.add;
   let h = '<div class="iv-card"><h3>Productos que nos vende</h3><div class="mu">Al recibir de este proveedor, estos son los que aparecen primero.</div>' +
-    (l.length ? l.map((x, i) => '<div class="bg-line"><div><b>' + esc(x.nombre) + '</b><div class="mu">' + esc(x.unidad || '') + ' · ' + (x.tipo === 'mp' ? '⚙ A procesar' + (x.cons && x.cons !== 'ambiente' ? ' · ' + esc(x.cons) : '') : '📦 A bodega') + '</div></div><div>' + (x.tipo === 'mp' ? '<button class="ivb" data-bg="pl-edit" data-i="' + i + '">✏</button> ' : '') + '<button class="ivb" data-bg="pl-del" data-i="' + i + '">🗑</button></div></div>').join('') : '<div class="iv-vacio">Todavía no tiene productos.</div>');
+    (l.length ? l.map((x, i) => '<div class="bg-line"><div><b>' + esc(x.nombre) + '</b><div class="mu">' + esc(x.unidad || '') + (x.pres ? ' · ' + esc(x.pres) : '') + ' · ' + (x.tipo === 'mp' ? '⚙ A procesar' + (x.cons && x.cons !== 'ambiente' ? ' · ' + esc(x.cons) : '') : '📦 A bodega') + '</div></div><div>' + (x.tipo === 'mp' ? '<button class="ivb" data-bg="pl-edit" data-i="' + i + '">✏</button> ' : '') + '<button class="ivb" data-bg="pl-del" data-i="' + i + '">🗑</button></div></div>').join('') : '<div class="iv-vacio">Todavía no tiene productos.</div>');
   if(!A) return h + '<div class="bg-acts"><button class="ivb on big" data-bg="pl-add">＋ Agregar producto</button></div></div>';
   h += '<div class="iv-card" style="margin-top:8px">' + (A.idx != null ? '<b>Editar producto</b>' : '<div class="bg-dmot"><button class="ivb ' + (A.tipo === 'mp' ? 'on' : '') + '" data-bg="pl-tipo" data-v="mp">⚙ A procesar</button><button class="ivb ' + (A.tipo === 'bodega' ? 'on' : '') + '" data-bg="pl-tipo" data-v="bodega">📦 A bodega</button></div>');
   if(A.tipo === 'mp'){
-    h += '<div class="iv-f"><label>Nombre (como viene del proveedor)</label><input class="bg-obs" id="bg-pln" placeholder="Ej: Pollo entero" autocomplete="off" value="' + esc(A.nombre) + '"></div><div class="mu">Unidad en que lo recibes</div><div class="bg-dmot">' +
+    h += '<div class="iv-f"><label>Nombre (como viene del proveedor)</label><input class="bg-obs" id="bg-pln" placeholder="Ej: Pollo entero" autocomplete="off" value="' + esc(A.nombre) + '"></div><div class="iv-f"><label>Presentación (cómo viene)</label><input class="bg-obs" id="bg-plp" placeholder="Ej: Funda de 5 kg, caja x 12, saco 25 kg" autocomplete="off" value="' + esc(A.pres || '') + '"></div><div class="mu">Unidad en que lo recibes</div><div class="bg-dmot">' +
       PL_U.map(u => '<button class="ivb ' + (A.unidad === u ? 'on' : '') + '" data-bg="pl-u" data-v="' + u + '">' + u + '</button>').join('') + '</div><div class="mu">¿Cómo se conserva?</div><div class="bg-dmot">' +
       [['ambiente', 'Ambiente'], ['refrigerado', 'Refrigerado'], ['congelado', 'Congelado']].map(c => '<button class="ivb ' + (A.cons === c[0] ? 'on' : '') + '" data-bg="pl-c" data-v="' + c[0] + '">' + c[1] + '</button>').join('') + '</div>' +
       '<div class="bg-acts"><button class="ivb" data-bg="pl-x">Cancelar</button><button class="ivb okb" data-bg="pl-ok">' + (A.idx != null ? 'Guardar cambios' : 'Agregar') + '</button></div>';
@@ -7643,7 +7643,7 @@ document.addEventListener('click', e => {
     case 'prov-lista': B.pm = null; render(); break;
     case 'prov-nuevo': B.pm = {ed:{id:null, nombre:'', telefono:'', productos:'', lista:[]}}; render(); window.scrollTo(0, 0); break;
     case 'pl-add': plSync(); B.pm.ed.add = {tipo:'mp', nombre:'', unidad:'kg', cons:'ambiente', q:''}; render(); break;
-    case 'pl-edit': { plSync(); const i = parseInt(t.getAttribute('data-i'), 10), x = B.pm.ed.lista[i]; if(!x) break; B.pm.ed.add = {tipo:'mp', nombre:x.nombre, unidad:x.unidad || 'kg', cons:x.cons || 'ambiente', q:'', idx:i}; render(); break; }
+    case 'pl-edit': { plSync(); const i = parseInt(t.getAttribute('data-i'), 10), x = B.pm.ed.lista[i]; if(!x) break; B.pm.ed.add = {tipo:'mp', nombre:x.nombre, unidad:x.unidad || 'kg', cons:x.cons || 'ambiente', pres:x.pres || '', q:'', idx:i}; render(); break; }
     case 'pl-x': plSync(); B.pm.ed.add = null; render(); break;
     case 'pl-tipo': plSync(); B.pm.ed.add.tipo = v; render(); break;
     case 'pl-u': plSync(); B.pm.ed.add.unidad = v; render(); break;
@@ -7652,11 +7652,11 @@ document.addEventListener('click', e => {
     case 'pl-b': { plSync(); const E = B.pm.ed, it = itemInv(id); if(!it) break; const k = E.lista.findIndex(x => x.id === id); if(k >= 0) E.lista.splice(k, 1); else E.lista.push({id:id, nombre:it.nombre, unidad:it.uCompra || it.uAlmacen || it.unidad || '', tipo:'bodega'}); render(); break; }
     case 'pl-ok': { plSync(); const E = B.pm.ed, A = E.add, nombre = String(A.nombre || '').trim(); if(!nombre){ toast('Escribe el nombre del producto'); break; }
       if(E.lista.some((x, k) => k !== A.idx && x.nombre.toLowerCase() === nombre.toLowerCase())){ toast('Ese producto ya está en la lista'); break; }
-      if(A.idx != null){ const o = E.lista[A.idx]; o.nombre = nombre; o.unidad = A.unidad; o.cons = A.cons;
+      if(A.idx != null){ const o = E.lista[A.idx]; o.nombre = nombre; o.unidad = A.unidad; o.cons = A.cons; o.pres = String(A.pres || '').trim();
         db.collection('catalogo_materia_prima').doc(o.id).set({nombre:nombre, unidad:A.unidad, conservacion:A.cons, empresa:EMPRESA}, {merge:true}).catch(er => console.error(er)); E.add = null; render(); break; }
       const mid = 'mp_' + (nombre.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 40) || 'x');
       db.collection('catalogo_materia_prima').doc(mid).set({nombre:nombre, unidad:A.unidad, conservacion:A.cons, empresa:EMPRESA, creado:SV()}, {merge:true}).catch(er => console.error(er));
-      E.lista.push({id:mid, nombre:nombre, unidad:A.unidad, tipo:'mp', cons:A.cons}); E.add = null; render(); break; }
+      E.lista.push({id:mid, nombre:nombre, unidad:A.unidad, tipo:'mp', cons:A.cons, pres:String(A.pres || '').trim()}); E.add = null; render(); break; }
     case 'prov-ed': { const p = B.provs.filter(x => x.id === id)[0]; if(p){ B.pm = {ed:{id:p.id, nombre:p.nombre || '', telefono:p.telefono || '', productos:p.productos || '', lista:(p.lista || []).map(x => Object.assign({}, x))}}; render(); window.scrollTo(0, 0); } break; }
     case 'prov-del': { const p = B.provs.filter(x => x.id === id)[0]; if(!p) break; db.collection('proveedores').doc(id).delete().then(() => snack('<b>Proveedor borrado</b><br>' + esc(p.nombre), () => db.collection('proveedores').doc(id).set({nombre:p.nombre, telefono:p.telefono || '', productos:p.productos || '', lista:p.lista || []}))).catch(er => { console.error(er); toast(errTxt(er)); }); break; }
     case 'prov-guardar': { const n = ($('#bg-pn') || {}).value, t0 = ($('#bg-pt') || {}).value, pp = ($('#bg-pp') || {}).value; const nombre = String(n || '').trim(); if(!nombre){ toast('Escribe el nombre del proveedor'); break; }
@@ -8038,7 +8038,7 @@ function itemCard(it, i){
   const tag = c.estado === 'pend' ? '' : '<span class="rx-tag ' + c.estado + '">' + ETQ_EST[c.estado] + '</span>';
   const difs = c.estado === 'pend' ? '' : '<div class="rx-dif">' + (c.falt > 0 ? '− Faltan ' + fmt(c.falt) + ' ' + esc(u) + ' ' : '') + (c.sob > 0 ? '+ Sobran ' + fmt(c.sob) + ' ' + esc(u) + ' ' : '') + (c.rech > 0 ? '✖ Rechazado ' + fmt(c.rech) + ' ' + esc(u) : '') + '</div>';
   const extra = [it.peso_valor > 0 ? '⚖ ' + fmt(it.peso_valor) + ' ' + (it.peso_unidad || 'kg') : '', it.temperatura_c != null ? '🌡 ' + fmt(it.temperatura_c) + ' °C' : '', it.lote_proveedor ? '🏷 ' + esc(it.lote_proveedor) : '', it.vence ? 'Vence ' + esc(it.vence) : ''].filter(Boolean).join(' · ');
-  return '<div class="rx-it st-' + c.estado + '" id="rxit-' + i + '"><div class="rx-ih"><div class="rx-in1"><span class="rx-no">' + (i + 1) + '</span><b>' + esc(it.nombre) + '</b>' + (it.provisional ? '<span class="rx-tag prov">nuevo</span>' : '') + '</div><button class="rx-del" data-rx="it-del" data-i="' + i + '" aria-label="Quitar">🗑</button></div>' +
+  return '<div class="rx-it st-' + c.estado + '" id="rxit-' + i + '"><div class="rx-ih"><div class="rx-in1"><span class="rx-no">' + (i + 1) + '</span><b>' + esc(it.nombre) + '</b>' + (it.presentacion ? '<span class="rx-mu"> · ' + esc(it.presentacion) + '</span>' : '') + (it.provisional ? '<span class="rx-tag prov">nuevo</span>' : '') + '</div><button class="rx-del" data-rx="it-del" data-i="' + i + '" aria-label="Quitar">🗑</button></div>' +
     '<div class="rx-qs"><button class="rx-q" data-rx="it-fac" data-i="' + i + '"><small>Facturado</small><b>' + (it.facturado != null ? fmt(it.facturado) : '—') + '</b><em>' + esc(u) + '</em></button>' +
     '<button class="rx-q big" data-rx="it-rec" data-i="' + i + '"><small>Recibido</small><b>' + (it.revisado ? fmt(c.rec) : '—') + '</b><em>' + esc(u) + '</em></button></div>' +
     '<div class="rx-ac">' + (ent ? '<button class="rx-b" data-rx="it-menos" data-i="' + i + '">−</button><button class="rx-b" data-rx="it-mas" data-i="' + i + '">＋</button>' : '') +
@@ -8114,7 +8114,7 @@ function agregarItem(o){
   const ya = d.items.findIndex(i => i.producto_id === o.id || norm(i.nombre) === norm(o.nombre));
   if(ya >= 0) return ya;
   const vinc = !o.provisional, mp = !!o.mp;
-  d.items.push({producto_id:o.id, nombre:o.nombre, unidad:o.unidad || 'unidades', facturado:null, recibido:null, rechazado:0, motivos:[], motivo_texto:'', destino:mp ? 'procesamiento' : 'directo', provisional:!!o.provisional, vinculado:vinc, revisado:false,
+  d.items.push({producto_id:o.id, nombre:o.nombre, presentacion:o.pres || '', unidad:o.unidad || 'unidades', facturado:null, recibido:null, rechazado:0, motivos:[], motivo_texto:'', destino:mp ? 'procesamiento' : 'directo', provisional:!!o.provisional, vinculado:vinc, revisado:false,
     conservacion:mp ? (o.cons || 'ambiente') : (vinc ? consDe(o.id) : 'ambiente'), temperatura_c:null, peso_valor:0, peso_unidad:'kg', lote_proveedor:'', vence:'', nota_item:''});
   guardar(); return d.items.length - 1;
 }
@@ -8132,7 +8132,7 @@ function renderPick(){
       '<div class="rx-two"><button class="rx-b" data-rx="pick-atras">← Atrás</button><button class="rx-b ok" data-rx="pick-nuevo-ok">Agregar</button></div>';
   } else {
     const q = norm(P.q), lista = pl.filter(x => !q || norm(x.nombre).indexOf(q) >= 0);
-    const btn = x => '<button class="rx-pi ' + (ya.indexOf(x.id) >= 0 ? 'hecho' : '') + '" data-rx="pick-add" data-id="' + esc(x.id) + '"><span>' + esc(x.nombre) + ' <small>' + esc(x.unidad || '') + (x.tipo === 'mp' ? ' · a procesar' : ' · a bodega') + '</small></span>' + (ya.indexOf(x.id) >= 0 ? '<b>✓ Agregado</b>' : '') + '</button>';
+    const btn = x => '<button class="rx-pi ' + (ya.indexOf(x.id) >= 0 ? 'hecho' : '') + '" data-rx="pick-add" data-id="' + esc(x.id) + '"><span>' + esc(x.nombre) + ' <small>' + esc(x.pres || x.unidad || '') + (x.tipo === 'mp' ? ' · a procesar' : ' · a bodega') + '</small></span>' + (ya.indexOf(x.id) >= 0 ? '<b>✓ Agregado</b>' : '') + '</button>';
     body = '<h3>Productos de ' + esc(R.d.proveedor) + '</h3>' + (pl.length > 6 ? '<input class="rx-in" id="rx-pq" data-focus placeholder="Buscar…" autocomplete="off" value="' + esc(P.q || '') + '">' : '') +
       '<div class="rx-pl">' + (lista.length ? lista.map(btn).join('') : (pl.length ? '<div class="rx-mu">Sin resultados.</div>' : '<div class="rx-vacio">Este proveedor todavía no tiene productos.<br><span class="rx-mu">Agrégalos en el módulo Proveedores.</span></div>')) + '</div>' +
       '<div class="rx-two"><button class="rx-b" data-rx="ir-prov">Ir a Proveedores</button><button class="rx-b" data-rx="pick-nuevo">＋ Producto nuevo</button></div><button class="rx-b ok big" data-rx="m-x">' + (ya.length ? '✓ Listo · ' + ya.length : 'Listo') + '</button>';
@@ -8144,7 +8144,7 @@ function pickAdd(id){
   const e = provLista().filter(x => x.id === id)[0]; if(!e) return;
   const ya = R.d.items.findIndex(i => i.producto_id === id);
   if(ya >= 0){ R.d.items.splice(ya, 1); guardar(); renderPick(); return; }   // tocar otra vez = quitar
-  agregarItem({id:e.id, nombre:e.nombre, unidad:e.unidad, mp:e.tipo === 'mp', cons:e.cons}); renderPick();
+  agregarItem({id:e.id, nombre:e.nombre, unidad:e.unidad, pres:e.pres, mp:e.tipo === 'mp', cons:e.cons}); renderPick();
 }
 function pickNuevoOk(){
   const n = R.m && R.m.nuevo; if(!n) return;
