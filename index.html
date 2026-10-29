@@ -6993,14 +6993,14 @@ function plSync(){ const E = B.pm && B.pm.ed; if(!E) return; const g = id => { c
 function vProvLista(E){
   const l = E.lista || [], A = E.add;
   let h = '<div class="iv-card"><h3>Productos que nos vende</h3><div class="mu">Al recibir de este proveedor, estos son los que aparecen primero.</div>' +
-    (l.length ? l.map((x, i) => '<div class="bg-line"><div><b>' + esc(x.nombre) + '</b><div class="mu">' + esc(x.unidad || '') + ' · ' + (x.tipo === 'mp' ? '⚙ A procesar' + (x.cons && x.cons !== 'ambiente' ? ' · ' + esc(x.cons) : '') : '📦 A bodega') + '</div></div><div><button class="ivb" data-bg="pl-del" data-i="' + i + '">🗑</button></div></div>').join('') : '<div class="iv-vacio">Todavía no tiene productos.</div>');
+    (l.length ? l.map((x, i) => '<div class="bg-line"><div><b>' + esc(x.nombre) + '</b><div class="mu">' + esc(x.unidad || '') + ' · ' + (x.tipo === 'mp' ? '⚙ A procesar' + (x.cons && x.cons !== 'ambiente' ? ' · ' + esc(x.cons) : '') : '📦 A bodega') + '</div></div><div>' + (x.tipo === 'mp' ? '<button class="ivb" data-bg="pl-edit" data-i="' + i + '">✏</button> ' : '') + '<button class="ivb" data-bg="pl-del" data-i="' + i + '">🗑</button></div></div>').join('') : '<div class="iv-vacio">Todavía no tiene productos.</div>');
   if(!A) return h + '<div class="bg-acts"><button class="ivb on big" data-bg="pl-add">＋ Agregar producto</button></div></div>';
-  h += '<div class="iv-card" style="margin-top:8px"><div class="bg-dmot"><button class="ivb ' + (A.tipo === 'mp' ? 'on' : '') + '" data-bg="pl-tipo" data-v="mp">⚙ A procesar</button><button class="ivb ' + (A.tipo === 'bodega' ? 'on' : '') + '" data-bg="pl-tipo" data-v="bodega">📦 A bodega</button></div>';
+  h += '<div class="iv-card" style="margin-top:8px">' + (A.idx != null ? '<b>Editar producto</b>' : '<div class="bg-dmot"><button class="ivb ' + (A.tipo === 'mp' ? 'on' : '') + '" data-bg="pl-tipo" data-v="mp">⚙ A procesar</button><button class="ivb ' + (A.tipo === 'bodega' ? 'on' : '') + '" data-bg="pl-tipo" data-v="bodega">📦 A bodega</button></div>');
   if(A.tipo === 'mp'){
     h += '<div class="iv-f"><label>Nombre (como viene del proveedor)</label><input class="bg-obs" id="bg-pln" placeholder="Ej: Pollo entero" autocomplete="off" value="' + esc(A.nombre) + '"></div><div class="mu">Unidad en que lo recibes</div><div class="bg-dmot">' +
       PL_U.map(u => '<button class="ivb ' + (A.unidad === u ? 'on' : '') + '" data-bg="pl-u" data-v="' + u + '">' + u + '</button>').join('') + '</div><div class="mu">¿Cómo se conserva?</div><div class="bg-dmot">' +
       [['ambiente', 'Ambiente'], ['refrigerado', 'Refrigerado'], ['congelado', 'Congelado']].map(c => '<button class="ivb ' + (A.cons === c[0] ? 'on' : '') + '" data-bg="pl-c" data-v="' + c[0] + '">' + c[1] + '</button>').join('') + '</div>' +
-      '<div class="bg-acts"><button class="ivb" data-bg="pl-x">Cancelar</button><button class="ivb okb" data-bg="pl-ok">Agregar</button></div>';
+      '<div class="bg-acts"><button class="ivb" data-bg="pl-x">Cancelar</button><button class="ivb okb" data-bg="pl-ok">' + (A.idx != null ? 'Guardar cambios' : 'Agregar') + '</button></div>';
   } else {
     const q = String(A.q || '').toLowerCase(), ids = l.map(x => x.id), lista = bodegaItems().filter(it => !q || String(it.nombre).toLowerCase().indexOf(q) >= 0).slice(0, 30);
     h += '<div class="iv-f"><label>Buscar en los productos de bodega</label><input class="bg-obs" id="bg-plq" placeholder="Buscar…" autocomplete="off" value="' + esc(A.q || '') + '"></div>' +
@@ -7643,6 +7643,7 @@ document.addEventListener('click', e => {
     case 'prov-lista': B.pm = null; render(); break;
     case 'prov-nuevo': B.pm = {ed:{id:null, nombre:'', telefono:'', productos:'', lista:[]}}; render(); window.scrollTo(0, 0); break;
     case 'pl-add': plSync(); B.pm.ed.add = {tipo:'mp', nombre:'', unidad:'kg', cons:'ambiente', q:''}; render(); break;
+    case 'pl-edit': { plSync(); const i = parseInt(t.getAttribute('data-i'), 10), x = B.pm.ed.lista[i]; if(!x) break; B.pm.ed.add = {tipo:'mp', nombre:x.nombre, unidad:x.unidad || 'kg', cons:x.cons || 'ambiente', q:'', idx:i}; render(); break; }
     case 'pl-x': plSync(); B.pm.ed.add = null; render(); break;
     case 'pl-tipo': plSync(); B.pm.ed.add.tipo = v; render(); break;
     case 'pl-u': plSync(); B.pm.ed.add.unidad = v; render(); break;
@@ -7650,7 +7651,9 @@ document.addEventListener('click', e => {
     case 'pl-del': plSync(); B.pm.ed.lista.splice(parseInt(t.getAttribute('data-i'), 10), 1); render(); break;
     case 'pl-b': { plSync(); const E = B.pm.ed, it = itemInv(id); if(!it) break; const k = E.lista.findIndex(x => x.id === id); if(k >= 0) E.lista.splice(k, 1); else E.lista.push({id:id, nombre:it.nombre, unidad:it.uCompra || it.uAlmacen || it.unidad || '', tipo:'bodega'}); render(); break; }
     case 'pl-ok': { plSync(); const E = B.pm.ed, A = E.add, nombre = String(A.nombre || '').trim(); if(!nombre){ toast('Escribe el nombre del producto'); break; }
-      if(E.lista.some(x => x.nombre.toLowerCase() === nombre.toLowerCase())){ toast('Ese producto ya está en la lista'); break; }
+      if(E.lista.some((x, k) => k !== A.idx && x.nombre.toLowerCase() === nombre.toLowerCase())){ toast('Ese producto ya está en la lista'); break; }
+      if(A.idx != null){ const o = E.lista[A.idx]; o.nombre = nombre; o.unidad = A.unidad; o.cons = A.cons;
+        db.collection('catalogo_materia_prima').doc(o.id).set({nombre:nombre, unidad:A.unidad, conservacion:A.cons, empresa:EMPRESA}, {merge:true}).catch(er => console.error(er)); E.add = null; render(); break; }
       const mid = 'mp_' + (nombre.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 40) || 'x');
       db.collection('catalogo_materia_prima').doc(mid).set({nombre:nombre, unidad:A.unidad, conservacion:A.cons, empresa:EMPRESA, creado:SV()}, {merge:true}).catch(er => console.error(er));
       E.lista.push({id:mid, nombre:nombre, unidad:A.unidad, tipo:'mp', cons:A.cons}); E.add = null; render(); break; }
