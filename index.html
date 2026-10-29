@@ -1691,10 +1691,10 @@
   }
 
   /* ===== Recepción de materia prima (rx) · mobile first ===== */
-  #rx-root{max-width:640px;margin:0 auto;padding:10px 12px 110px;font-size:15px;color:#1f1f1d}
-  #rx-root .rx-mu,#rx-modal .rx-mu{font-size:12.5px;color:#6b6a64;margin:3px 0}
-  #rx-root .rx-mu.c{text-align:center;padding:14px 0}
-  #rx-root h3,#rx-modal h3{font-size:16px;margin:0 0 8px;font-weight:700}
+  #rx-root,#fx-root{max-width:640px;margin:0 auto;padding:10px 12px 110px;font-size:15px;color:#1f1f1d}
+  #rx-root .rx-mu,#fx-root .rx-mu,#rx-modal .rx-mu,#fx-modal .rx-mu{font-size:12.5px;color:#6b6a64;margin:3px 0}
+  #rx-root .rx-mu.c,#fx-root .rx-mu.c{text-align:center;padding:14px 0}
+  #rx-root h3,#fx-root h3,#rx-modal h3,#fx-modal h3{font-size:16px;margin:0 0 8px;font-weight:700}
   .rx-tabs{display:flex;gap:6px;margin-bottom:12px}
   .rx-tab{flex:1;min-height:46px;border-radius:12px;border:1px solid #e0ded6;background:#fff;font-size:14px;font-weight:600;color:#4a4a46;cursor:pointer}
   .rx-tab.on{background:#4285f4;color:#fff;border-color:#4285f4}
@@ -1758,11 +1758,11 @@
   .rx-hr{width:100%} .rx-hr.anul{opacity:.65}
   .rx-hh{display:flex;justify-content:space-between;gap:6px} .rx-bd{margin-top:4px}
   .rx-vacio{text-align:center;color:#6b6a64;padding:40px 10px}
-  #rx-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:150;align-items:center;justify-content:center;padding:12px}
-  #rx-modal.show{display:flex}
-  #rx-modal .rx-box{position:relative;background:#fff;border-radius:16px;width:100%;max-width:520px;max-height:calc(100dvh - 24px - env(safe-area-inset-top,0px));overflow-y:auto;padding:16px 14px 14px;box-sizing:border-box}
-  #rx-modal .rx-x{position:absolute;right:6px;top:6px;width:44px;height:44px;border:none;background:none;font-size:20px;cursor:pointer}
-  #rx-modal h3{padding-right:40px}
+  #rx-modal,#fx-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:150;align-items:center;justify-content:center;padding:12px}
+  #rx-modal.show,#fx-modal.show{display:flex}
+  #rx-modal .rx-box,#fx-modal .rx-box{position:relative;background:#fff;border-radius:16px;width:100%;max-width:520px;max-height:calc(100dvh - 24px - env(safe-area-inset-top,0px));overflow-y:auto;padding:16px 14px 14px;box-sizing:border-box}
+  #rx-modal .rx-x,#fx-modal .rx-x{position:absolute;right:6px;top:6px;width:44px;height:44px;border:none;background:none;font-size:20px;cursor:pointer}
+  #rx-modal h3,#fx-modal h3{padding-right:40px}
   .rx-pl{display:flex;flex-direction:column;gap:6px;margin:8px 0;max-height:40vh;overflow-y:auto} .rx-pl.s{max-height:none}
   .rx-pi{display:flex;justify-content:space-between;align-items:center;min-height:50px;border:1px solid #e0ded6;border-radius:12px;background:#fff;padding:0 12px;font-size:15px;text-align:left;cursor:pointer;color:#1f1f1d}
   .rx-pi small{color:#6b6a64} .rx-pi.hecho{background:#e3f6ee;border-color:#1d9e75} .rx-pi b{color:#0f6b4d;font-size:13px;white-space:nowrap}
@@ -1800,6 +1800,22 @@
     .lc-area-h{font-size:19px}
     .uni{max-width:900px;margin:0 auto}
   }
+
+  /* ===== Inventario del Facility por estaciones (fx) ===== */
+  #fx-root{max-width:720px;margin:0 auto;padding:10px 12px 90px;font-size:15px;color:#1f1f1d}
+  #fx-root .rx-mu{font-size:12.5px;color:#6b6a64;margin:3px 0}
+  .fx-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px} .fx-t{font-size:20px;font-weight:800}
+  .fx-kp{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:8px 0}
+  .fx-kp .rx-card{margin:0;padding:10px} .fx-kp small{display:block;font-size:12px;color:#6b6a64} .fx-kp b{font-size:26px;line-height:1.15}
+  .fx-kp .rx-card.wn{border-color:#e08a00;background:#fff8ec}
+  .fx-er{display:flex;width:100%;justify-content:space-between;align-items:center;min-height:50px;border:none;border-bottom:1px solid #f0eee8;background:none;font-size:15px;cursor:pointer;color:#1f1f1d;text-align:left}
+  .fx-er b{font-size:13px;color:#6b6a64;font-weight:600}
+  .fx-warn{width:100%;margin:8px 0;color:#8a5200;border-color:#e08a00;background:#fff8ec}
+  .fx-row{display:flex;justify-content:space-between;align-items:center;gap:10px;background:#fff;border:1px solid #e8e6df;border-radius:12px;padding:10px 12px}
+  .fx-n{flex:1;min-width:0} .fx-q{text-align:right;font-size:20px;font-weight:800;white-space:nowrap} .fx-q small{font-size:12px;font-weight:500;color:#6b6a64}
+  .fx-q.neg{color:#c0392b} .fx-q.pos{color:#0f6b4d}
+  @media (min-width:700px){#fx-root{max-width:900px}.fx-kp{grid-template-columns:repeat(5,1fr)}}
+  #fx-root .fx-scroll{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px} #fx-root .fx-scroll .rx-chip{flex:0 0 auto;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -1852,7 +1868,7 @@
     <button class="nav-item nav-sub" id="nav-estaciones" onclick="cambiarVista('estaciones')"><span class="nav-ic">📝</span><span class="nav-tx">Lista interna</span></button>
     <button class="nav-item nav-sub" id="nav-produccion" onclick="cambiarVista('produccion')"><span class="nav-ic">🏷️</span><span class="nav-tx">Registro de producción</span></button>
     <div class="nav-grupo" style="margin-top:0"></div>
-    <button class="nav-item" id="nav-inventario" onclick="cambiarVista('inventario')"><span class="nav-ic">📦</span><span class="nav-tx">Inventario</span></button>
+    <button class="nav-item" id="nav-inventario" onclick="cambiarVista('fx')"><span class="nav-ic">📦</span><span class="nav-tx">Inventario</span></button>
     <button class="nav-item" id="nav-despacho" onclick="cambiarVista('despacho')"><span class="nav-ic">🚚</span><span class="nav-tx">Despacho</span></button>
     <button class="nav-item" id="nav-guias" onclick="cambiarVista('guias')"><span class="nav-ic">📋</span><span class="nav-tx">Guías</span></button>
     <button class="nav-item" id="nav-prueba" onclick="mpAlternar()"><span class="nav-ic">🧪</span><span class="nav-tx">Modo prueba</span></button>
@@ -1919,6 +1935,9 @@
   <div id="guias-lista"></div>
   <div id="guias-detalle"></div>
 </div>
+
+<!-- VISTA: INVENTARIO DEL FACILITY (por estaciones) -->
+<div class="vista" id="vista-fx"><div id="fx-root"></div></div>
 
 <!-- VISTA: RECEPCIÓN (materia prima, v1) -->
 <div class="vista" id="vista-recepcion"><div id="rx-root"></div></div>
@@ -2548,6 +2567,7 @@ const TITULOS_VISTA = {
   pedidos: ["Pedidos de locales", "Acepta el pedido: el mercado va a Guardadas y la bodega a Guías para despachar"],
   compra: ["Lista de compras", ""],
   provs: ["Proveedores", "Los proveedores que nos entregan: nombre, teléfono y qué nos venden"],
+  fx: ["Inventario", "Qué hay, dónde está y cuánto"],
   recepcion: ["Recepción de productos", "Proveedor, factura, productos y diferencias en pocos toques"],
   proveedores: ["Recepcion proveedores", "Registra lo que llega de cada proveedor: cantidad, costo y observaciones"],
   estaciones: ["Lista interna", "Toca lo que necesita la estación: va directo a Lista de compras"],
@@ -2631,7 +2651,7 @@ function navAlternar(){
 (function(){ let a = true; try { a = localStorage.getItem('nav_abierto') !== '0'; } catch(e){}
   if(navDock() && a){ document.body.classList.add('nav-open', 'nav-dock'); } })();
 /* Resalta el modulo del menu segun la pestaña de Bodega en que estas */
-const NAV_DE_TAB = {provs:'provs', recepcion:'recepcion', prov:'recepcion', produccion:'recepcion', inventario:'inventario', conteo:'inventario', req:'inventario', conta:'compra'};
+const NAV_DE_TAB = {fx:'inventario', provs:'provs', recepcion:'recepcion', prov:'recepcion', produccion:'recepcion', inventario:'inventario', conteo:'inventario', req:'inventario', conta:'compra'};
 function navBadge(id, n){
   const ic = document.querySelector('#nav-' + id + ' .nav-ic'); if(!ic) return;
   let b = ic.querySelector('.nav-bd');
@@ -2653,7 +2673,7 @@ function cambiarVista(nombre) {
   document.querySelectorAll(".vista").forEach(v => v.classList.remove("activa"));
   document.querySelectorAll(".nav-item").forEach(b => b.classList.remove("activo"));
   document.getElementById(`vista-${nombre}`).classList.add("activa");
-  const navB = document.getElementById(`nav-${orig}`) || document.getElementById(`nav-${nombre}`); if (navB) navB.classList.add("activo");
+  const navB = document.getElementById(`nav-${orig}`) || document.getElementById(`nav-${nombre}`) || (nombre === 'fx' ? document.getElementById('nav-inventario') : null); if (navB) navB.classList.add("activo");
 
   const TT = TITULOS_VISTA[orig] || TITULOS_VISTA[nombre];
   document.getElementById("topbar-title").textContent = TT[0];
@@ -2664,6 +2684,7 @@ function cambiarVista(nombre) {
   if (typeof esView === 'function') esView(nombre);
   if (typeof bgView === 'function') bgView(nombre);
   if (typeof rxView === 'function') rxView(nombre);
+  if (typeof fxView === 'function') fxView(nombre);
   if (hubTab && typeof bgIr === 'function') bgIr(hubTab);
   try { localStorage.setItem('ultima_vista', nombre); } catch (e) {}
 }
@@ -2687,6 +2708,7 @@ async function descontarInventarioBodega(productoId, productoNombre, cantidad) {
     cantidad_actual: actual - cantidad,
     ultima_actualizacion: firebase.firestore.FieldValue.serverTimestamp()
   }, { merge: true });
+  try { await window.fxSalidaSimple('bodega', productoId, productoNombre, cantidad, 'despacho'); } catch (e) { console.error(e); }
 
   await db.collection("movimientos_inventario_bodega").add({
     producto_id: productoId,
@@ -3069,8 +3091,8 @@ function renderListasCompraPendientes() {
 
   const nUni = (!esHistorial && window.lcUniN) ? lcUniN() : 0, selN = lcSel.size;
   if (esHistorial) lcSelModo = false;
-  const btnUni = nUni >= 2 ? (lcSelModo
-    ? `<div class="lc-selbar"><button class="btn-chico lc-sb-x" onclick="lcSelModoSet(false)">Cancelar</button><span class="lc-sb-n"><b>${selN}</b> seleccionada${selN === 1 ? "" : "s"}</span><button class="btn-despachar lc-sb-go" ${selN >= 2 ? "" : "disabled"} onclick="lcSelUnir()">🧺 Unificar${selN >= 2 ? " (" + selN + ")" : ""}</button></div>`
+  const btnUni = nUni >= 1 ? (lcSelModo
+    ? `<div class="lc-selbar"><button class="btn-chico lc-sb-x" onclick="lcSelModoSet(false)">Cancelar</button><span class="lc-sb-n"><b>${selN}</b> seleccionada${selN === 1 ? "" : "s"}</span><button class="btn-despachar lc-sb-go" ${selN >= 1 ? "" : "disabled"} onclick="lcSelUnir()">🧺 Unificar${selN >= 1 ? " (" + selN + ")" : ""}</button></div>`
     : `<div class="lc-selbar"><button class="btn-despachar lc-sb-on" onclick="lcSelModoSet(true)">☑ Seleccionar listas para unificar</button></div>`) : "";
   const btnConta0 = btnUni;
   const btnConta = esHistorial ? `<button class="btn-despachar btn-imprimir" style="margin:0 0 10px" onclick="bgConta()">🧾 Contabilidad: compras recibidas y comprobantes</button>` : "";
@@ -3134,7 +3156,7 @@ function lcSelArea(k) {
   const todas = ids.every(id => lcSel.has(id)); ids.forEach(id => todas ? lcSel.delete(id) : lcSel.add(id)); renderListasCompraPendientes();
 }
 function lcSelUnir() {
-  if (lcSel.size < 2) { mostrarAviso("Elige 2 o más listas.", "error"); return; }
+  if (lcSel.size < 1) { mostrarAviso("Elige al menos una lista.", "error"); return; }
   const ids = Array.from(lcSel); lcSelModo = false; lcSel.clear(); if (window.lcUnificar) lcUnificar(ids);
 }
 
@@ -4507,15 +4529,18 @@ function registrar(){
     const ts = SV();
     if(f.inv){
       batch.set(db.collection('inventario_bodega').doc(f.id), {producto_nombre:f.nombre, cantidad_actual:INC(S.qty), ultima_actualizacion:ts}, {merge:true});
+      fxEco(batch, {inv:'bodega', pid:f.id, nombre:f.nombre, delta:S.qty, tipo:'produccion', lote:lote, ref:regRef.id, resp:opNombre, nota:'Producción ' + f.nombre});
       batch.set(db.collection('movimientos_inventario_bodega').doc(), {producto_id:f.id, producto_nombre:f.nombre, tipo:'produccion', cantidad:S.qty, lote:lote, registro_id:regRef.id, fecha:ts, nota:'Produccion - ' + opNombre});
     }
     insumos.forEach(l => {
       if(!l.materia_prima_id) return;
       batch.set(db.collection('inventario_materia_prima').doc(l.materia_prima_id), {cantidad_actual:INC(-l.cantidad), ultima_actualizacion:ts}, {merge:true});
+      fxEco(batch, {inv:'mp', pid:l.materia_prima_id, nombre:l.nombre, delta:-l.cantidad, tipo:'consumo_produccion', lote:lote, ref:regRef.id, resp:opNombre, nota:'Para producir ' + f.nombre});
       batch.set(db.collection('movimientos_inventario_bodega').doc(), {producto_id:l.materia_prima_id, producto_nombre:l.nombre, inventario:'materia_prima', tipo:'consumo_produccion', cantidad:-l.cantidad, lote:lote, registro_id:regRef.id, fecha:ts, nota:'Usado para producir ' + f.nombre});
     });
     S.bajas.forEach((b, i) => {
       batch.set(db.collection('inventario_materia_prima').doc(b.materia_prima_id), {cantidad_actual:INC(-b.cantidad), ultima_actualizacion:ts}, {merge:true});
+      fxEco(batch, {inv:'mp', pid:b.materia_prima_id, nombre:b.nombre, delta:-b.cantidad, tipo:'baja', ref:regRef.id, resp:opNombre, nota:b.motivo});
       batch.set(db.collection('bajas_bodega').doc('baja_' + regRef.id + '_' + i), {empresa:'morochos_ec', bodega:'bodega_central', origen:'procesamiento', registro_id:regRef.id, producto_origen:f.nombre, inventario:'materia_prima',
         producto_id:b.materia_prima_id, producto_nombre:b.nombre, unidad:b.unidad, cantidad:b.cantidad, motivo:b.motivo, responsable:opNombre, anulada:false, fecha:ts});
       batch.set(db.collection('movimientos_inventario_bodega').doc(), {producto_id:b.materia_prima_id, producto_nombre:b.nombre, inventario:'materia_prima', tipo:'baja_produccion', cantidad:-b.cantidad, motivo:b.motivo, lote:lote, registro_id:regRef.id, empresa:'morochos_ec', bodega:'bodega_central', fecha:ts, nota:'Baja al producir ' + f.nombre + ' · ' + b.motivo});
@@ -4680,15 +4705,18 @@ function deshacer(id){
   if(!r.prueba){
     if(r.inv !== false){
       batch.set(db.collection('inventario_bodega').doc(r.pid), {cantidad_actual:INC(-r.cant), ultima_actualizacion:ts}, {merge:true});
+      fxEco(batch, {inv:'bodega', pid:r.pid, nombre:r.nombre, delta:-r.cant, tipo:'anulacion_produccion', lote:r.lote, ref:r.id});
       batch.set(db.collection('movimientos_inventario_bodega').doc(), {producto_id:r.pid, producto_nombre:r.nombre, tipo:'anulacion_produccion', cantidad:-r.cant, lote:r.lote, registro_id:r.id, fecha:ts, nota:'Deshacer produccion'});
     }
     (r.insumos || r.receta || []).forEach(l => {
       if(!l.materia_prima_id) return;
       batch.set(db.collection('inventario_materia_prima').doc(l.materia_prima_id), {cantidad_actual:INC(l.cantidad), ultima_actualizacion:ts}, {merge:true});
+      fxEco(batch, {inv:'mp', pid:l.materia_prima_id, nombre:l.nombre, delta:l.cantidad, tipo:'anulacion_consumo', lote:r.lote, ref:r.id});
       batch.set(db.collection('movimientos_inventario_bodega').doc(), {producto_id:l.materia_prima_id, producto_nombre:l.nombre, inventario:'materia_prima', tipo:'anulacion_consumo', cantidad:l.cantidad, lote:r.lote, registro_id:r.id, fecha:ts, nota:'Deshacer produccion'});
     });
     (r.bajas || []).forEach((b, i) => {
       batch.set(db.collection('inventario_materia_prima').doc(b.materia_prima_id), {cantidad_actual:INC(b.cantidad), ultima_actualizacion:ts}, {merge:true});
+      fxEco(batch, {inv:'mp', pid:b.materia_prima_id, nombre:b.nombre, delta:b.cantidad, tipo:'anulacion_baja', lote:r.lote, ref:r.id});
       batch.set(db.collection('bajas_bodega').doc('baja_' + r.id + '_' + i), {anulada:true, anulada_ts:ts}, {merge:true});
       batch.set(db.collection('movimientos_inventario_bodega').doc(), {producto_id:b.materia_prima_id, producto_nombre:b.nombre, inventario:'materia_prima', tipo:'anulacion_baja', cantidad:b.cantidad, lote:r.lote, registro_id:r.id, fecha:ts, nota:'Deshacer produccion (baja)'});
     });
@@ -5515,6 +5543,7 @@ function aplicarConteo(){
     lineas:L.map(l => ({producto_id:l.id, producto_nombre:l.nombre, unidad:l.unidad, sistema:l.sistema, contado:l.contado, diferencia:l.dif, costo:l.costo || 0, valor:l.valor}))}));
   difs.forEach(l => {
     ops.push(b => b.set(db.collection('inventario_bodega').doc(l.id), {producto_nombre:l.nombre, cantidad_actual:l.contado, ultima_actualizacion:SV()}, {merge:true}));
+    ops.push(b => fxEco(b, {inv:'bodega', pid:l.id, nombre:l.nombre, delta:l.dif, tipo:'ajuste_conteo', ref:ref.id, nota:'Conteo ' + tipo}));
     ops.push(b => b.set(db.collection('movimientos_inventario_bodega').doc(), {producto_id:l.id, producto_nombre:l.nombre, tipo:'ajuste_conteo', cantidad:l.dif, fecha:SV(), conteo_id:ref.id, nota:'Conteo ' + tipo + ': sistema ' + l.sistema + ', contado ' + l.contado}));
   });
   const grupos = []; for(let i = 0; i < ops.length; i += 400) grupos.push(ops.slice(i, i + 400));
@@ -5839,12 +5868,12 @@ function uniHtml(){
   const nProd = sel.reduce((t, l) => t + l.items.length, 0);
   h += '<div class="uni-bar"><div>Así quedará: <b>' + sel.length + '</b> lista' + (sel.length === 1 ? '' : 's') + ' · <b>' + nProd + '</b> productos</div></div>';
   h += sel.map((l, k) => '<div class="uni-bl"><div class="uni-bh"><span class="uni-n">' + (k + 1) + '</span> ' + esc(uniEtiqueta(l, multi)) + ' <span class="mu">· ' + l.items.length + ' productos</span></div><div class="uni-bi">' + l.items.map(it => esc(it.producto_nombre) + ' <b>' + esc(etq(it.cantidad_solicitada, it.unidad_medida)) + '</b>').join(' · ') + '</div></div>').join('');
-  h += '<button class="lcb okb big uni-go" data-lc="uni-crear"' + (sel.length >= 2 && !UNI.busy ? '' : ' disabled') + '>Crear lista unificada' + (sel.length >= 2 ? ' (' + nProd + ' productos)' : ' · elige 2 o más listas') + '</button></div>';
+  h += '<button class="lcb okb big uni-go" data-lc="uni-crear"' + (sel.length >= 1 && !UNI.busy ? '' : ' disabled') + '>Crear lista unificada' + (sel.length >= 1 ? ' (' + nProd + ' productos)' : ' · elige una lista') + '</button></div>';
   return h;
 }
 async function uniCrear(){
   const ls = uniListas(), sel = uniOrden(ls.filter(l => UNI.sel.has(l.id)));
-  if(sel.length < 2 || UNI.busy){ toast('Elige 2 o más listas'); return; }
+  if(sel.length < 1 || UNI.busy){ toast('Elige al menos una lista'); return; }
   UNI.busy = true; render();
   const locs = new Set(sel.map(l => l.local)), multi = locs.size > 1;
   const items = [];
@@ -6958,17 +6987,39 @@ const recsDe = l => B.recs.filter(r => r.compra_id === l.id).sort((a, b) => (a.s
 const saldoItems = l => (l.items || []).filter(it => it.comprado !== false && espDe(l, it) > 0);
 
 const slugProv = n => 'prov_' + String(n).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+const PL_U = ['kg', 'libras', 'litros', 'galones', 'unidades', 'fundas', 'sacos', 'cajas'];
+const bodegaItems = () => (window.ivItems ? window.ivItems() : []).filter(it => !it.local || (typeof PRODUCTOS !== 'undefined' && PRODUCTOS.some(p => p.id === it.id)));
+function plSync(){ const E = B.pm && B.pm.ed; if(!E) return; const g = id => { const e = $(id); return e ? e.value : null; }; const n = g('#bg-pn'), t = g('#bg-pt'); if(n != null) E.nombre = n; if(t != null) E.telefono = t; const pn = g('#bg-pln'); if(pn != null && E.add) E.add.nombre = pn; }
+function vProvLista(E){
+  const l = E.lista || [], A = E.add;
+  let h = '<div class="iv-card"><h3>Productos que nos vende</h3><div class="mu">Al recibir de este proveedor, estos son los que aparecen primero.</div>' +
+    (l.length ? l.map((x, i) => '<div class="bg-line"><div><b>' + esc(x.nombre) + '</b><div class="mu">' + esc(x.unidad || '') + ' · ' + (x.tipo === 'mp' ? '⚙ A procesar' + (x.cons && x.cons !== 'ambiente' ? ' · ' + esc(x.cons) : '') : '📦 A bodega') + '</div></div><div><button class="ivb" data-bg="pl-del" data-i="' + i + '">🗑</button></div></div>').join('') : '<div class="iv-vacio">Todavía no tiene productos.</div>');
+  if(!A) return h + '<div class="bg-acts"><button class="ivb on big" data-bg="pl-add">＋ Agregar producto</button></div></div>';
+  h += '<div class="iv-card" style="margin-top:8px"><div class="bg-dmot"><button class="ivb ' + (A.tipo === 'mp' ? 'on' : '') + '" data-bg="pl-tipo" data-v="mp">⚙ A procesar</button><button class="ivb ' + (A.tipo === 'bodega' ? 'on' : '') + '" data-bg="pl-tipo" data-v="bodega">📦 A bodega</button></div>';
+  if(A.tipo === 'mp'){
+    h += '<div class="iv-f"><label>Nombre (como viene del proveedor)</label><input class="bg-obs" id="bg-pln" placeholder="Ej: Pollo entero" autocomplete="off" value="' + esc(A.nombre) + '"></div><div class="mu">Unidad en que lo recibes</div><div class="bg-dmot">' +
+      PL_U.map(u => '<button class="ivb ' + (A.unidad === u ? 'on' : '') + '" data-bg="pl-u" data-v="' + u + '">' + u + '</button>').join('') + '</div><div class="mu">¿Cómo se conserva?</div><div class="bg-dmot">' +
+      [['ambiente', 'Ambiente'], ['refrigerado', 'Refrigerado'], ['congelado', 'Congelado']].map(c => '<button class="ivb ' + (A.cons === c[0] ? 'on' : '') + '" data-bg="pl-c" data-v="' + c[0] + '">' + c[1] + '</button>').join('') + '</div>' +
+      '<div class="bg-acts"><button class="ivb" data-bg="pl-x">Cancelar</button><button class="ivb okb" data-bg="pl-ok">Agregar</button></div>';
+  } else {
+    const q = String(A.q || '').toLowerCase(), ids = l.map(x => x.id), lista = bodegaItems().filter(it => !q || String(it.nombre).toLowerCase().indexOf(q) >= 0).slice(0, 30);
+    h += '<div class="iv-f"><label>Buscar en los productos de bodega</label><input class="bg-obs" id="bg-plq" placeholder="Buscar…" autocomplete="off" value="' + esc(A.q || '') + '"></div>' +
+      lista.map(it => '<button class="ivb' + (ids.indexOf(it.id) >= 0 ? ' on' : '') + '" style="display:block;width:100%;text-align:left;margin:4px 0" data-bg="pl-b" data-id="' + esc(it.id) + '">' + (ids.indexOf(it.id) >= 0 ? '✓ ' : '') + esc(it.nombre) + ' <span class="mu">' + esc(it.uCompra || it.uAlmacen || it.unidad || '') + '</span></button>').join('') +
+      '<div class="bg-acts"><button class="ivb" data-bg="pl-x">Listo</button></div>';
+  }
+  return h + '</div></div>';
+}
 function vProvs(){
   const E = B.pm && B.pm.ed;
   if(E){
     return '<div class="iv-subbar"><button class="ivb" data-bg="prov-lista">← Volver</button><div class="iv-st">' + (E.id ? 'Editar proveedor' : 'Nuevo proveedor') + '</div><span></span></div>' +
       '<div class="iv-card"><div class="iv-f"><label>Nombre del proveedor</label><input class="bg-obs" id="bg-pn" placeholder="Ej: Avícola Don Pepe" autocomplete="off" value="' + esc(E.nombre) + '"></div>' +
       '<div class="iv-f"><label>Teléfono / WhatsApp (opcional)</label><input class="bg-obs" id="bg-pt" inputmode="tel" autocomplete="off" value="' + esc(E.telefono) + '"></div>' +
-      '<div class="iv-f"><label>Qué nos vende (opcional)</label><input class="bg-obs" id="bg-pp" placeholder="pollo, huevos…" autocomplete="off" value="' + esc(E.productos) + '"></div></div>' +
+      '</div>' + vProvLista(E) +
       '<div class="iv-pie"><button class="ivb okb big" data-bg="prov-guardar">Guardar proveedor</button></div>';
   }
-  return '<div class="iv-card"><h3>Proveedores</h3><div class="mu">Aquí se guardan los proveedores. Al recibir se eligen con un toque. Si escribes uno nuevo en Recepción, se agrega solo.</div><div class="bg-acts"><button class="ivb on big" data-bg="prov-nuevo">＋ Agregar proveedor</button></div></div>' +
-    (B.provs.length ? '<div class="iv-card">' + B.provs.map(p => '<div class="bg-line"><div><b>' + esc(p.nombre) + '</b><div class="mu">' + esc([p.telefono, p.productos].filter(Boolean).join(' · ') || 'Sin teléfono ni productos') + '</div></div><div><button class="ivb" data-bg="prov-ed" data-id="' + esc(p.id) + '">✎ Editar</button> <button class="ivb" data-bg="prov-del" data-id="' + esc(p.id) + '">🗑</button></div></div>').join('') + '</div>' : '<div class="iv-vacio">Todavía no hay proveedores.</div>');
+  return '<div class="iv-card"><h3>Proveedores</h3><div class="mu">Cada proveedor con los productos que nos vende. Al recibir se eligen con un toque.</div><div class="bg-acts"><button class="ivb on big" data-bg="prov-nuevo">＋ Agregar proveedor</button></div></div>' +
+    (B.provs.length ? '<div class="iv-card">' + B.provs.map(p => '<div class="bg-line"><div><b>' + esc(p.nombre) + '</b><div class="mu">' + esc([p.telefono, (p.lista || []).length ? (p.lista.length + ' producto' + (p.lista.length === 1 ? '' : 's')) : p.productos].filter(Boolean).join(' · ') || 'Sin teléfono ni productos') + '</div></div><div><button class="ivb" data-bg="prov-ed" data-id="' + esc(p.id) + '">✎ Editar</button> <button class="ivb" data-bg="prov-del" data-id="' + esc(p.id) + '">🗑</button></div></div>').join('') + '</div>' : '<div class="iv-vacio">Todavía no hay proveedores.</div>');
 }
 function vRecepcion(){
   if(B.abierta) return vRecDetalle();
@@ -7288,10 +7339,12 @@ function prConfirmar(){
   const quien = B.resp; B.busy = true; setTimeout(() => { B.busy = false; }, 2000);
   const ts = SV(), batch = db.batch(), pid = db.collection('procesos_bodega').doc(), movs = [], undoRefs = [];
   batch.set(db.collection('inventario_materia_prima').doc(p.id), {cantidad_actual:INC(-p.usado), ultima_actualizacion:ts}, {merge:true});
+  fxEco(batch, {inv:'mp', pid:p.id, nombre:p.nombre, delta:-p.usado, tipo:'procesamiento', ref:pid.id, resp:quien, nota:'Procesado'});
   const m0 = db.collection('movimientos_inventario_bodega').doc(); movs.push(m0);
   batch.set(m0, {producto_id:p.id, producto_nombre:p.nombre, inventario:'materia_prima', tipo:'procesamiento', cantidad:-p.usado, proceso_id:pid.id, responsable:quien, empresa:EMPRESA, bodega:BODEGA, fecha:ts, nota:'Procesado: ' + fmt(p.usado) + ' ' + p.unidad});
   outs.forEach(o => {
     batch.set(db.collection('inventario_bodega').doc(o.producto_id), {producto_nombre:o.nombre, cantidad_actual:INC(o.cant), ultima_actualizacion:ts, empresa:EMPRESA, bodega:BODEGA}, {merge:true});
+    fxEco(batch, {inv:'bodega', pid:o.producto_id, nombre:o.nombre, delta:o.cant, tipo:'procesamiento', ref:pid.id, resp:quien, nota:'Sale de procesar ' + p.nombre});
     const mo = db.collection('movimientos_inventario_bodega').doc(); movs.push(mo);
     batch.set(mo, {producto_id:o.producto_id, producto_nombre:o.nombre, inventario:'terminado', tipo:'procesamiento', cantidad:o.cant, proceso_id:pid.id, responsable:quien, empresa:EMPRESA, bodega:BODEGA, fecha:ts, nota:'Sale de procesar ' + p.nombre});
   });
@@ -7305,7 +7358,9 @@ function prConfirmar(){
   snack('<b>Procesado</b><br>' + fmt(copia.usado) + ' ' + esc(p.unidad) + ' de ' + esc(copia.nombre) + ' → ' + (outs.length ? outs.map(o => fmt(o.cant) + ' ' + esc(o.unidad || '') + ' ' + esc(o.nombre)).join(', ') : 'solo merma') + (p.merma > 0 ? ' · merma ' + fmt(p.merma) : ''), () => {
     const u = db.batch();
     u.set(db.collection('inventario_materia_prima').doc(copia.id), {cantidad_actual:INC(copia.usado), ultima_actualizacion:SV()}, {merge:true});
+    fxEco(u, {inv:'mp', pid:copia.id, nombre:copia.nombre, delta:copia.usado, tipo:'anulacion_consumo', ref:pid.id});
     copia.outs.forEach(o => u.set(db.collection('inventario_bodega').doc(o.producto_id), {cantidad_actual:INC(-o.cant), ultima_actualizacion:SV()}, {merge:true}));
+    copia.outs.forEach(o => fxEco(u, {inv:'bodega', pid:o.producto_id, nombre:o.nombre, delta:-o.cant, tipo:'anulacion_produccion', ref:pid.id}));
     movs.forEach(r => u.delete(r)); if(bid) u.delete(bid); u.delete(pid);
     u.commit().then(() => toast('Proceso deshecho')).catch(e => { console.error(e); toast(errTxt(e)); });
   });
@@ -7337,6 +7392,7 @@ function bajaBodega(id){
   pedirBaja({subtitulo:'Pendiente: ' + fmt(m.cantidad_actual || 0) + ' ' + (m.unidad_medida || ''), insumos:[{id:m.id, nombre:m.producto_nombre || m.id, unidad:m.unidad_medida || ''}], onListo:b => {
     const bid = db.collection('bajas_bodega').doc(), mid = db.collection('movimientos_inventario_bodega').doc(), ts = SV(), batch = db.batch();
     batch.set(db.collection('inventario_materia_prima').doc(b.materia_prima_id), {cantidad_actual:INC(-b.cantidad), ultima_actualizacion:ts}, {merge:true});
+    fxEco(batch, {inv:'mp', pid:b.materia_prima_id, nombre:b.nombre, delta:-b.cantidad, tipo:'baja', resp:quien, nota:b.motivo});
     batch.set(bid, {empresa:EMPRESA, bodega:BODEGA, origen:'bodega', inventario:'materia_prima', producto_id:b.materia_prima_id, producto_nombre:b.nombre, unidad:b.unidad, cantidad:b.cantidad, motivo:b.motivo, responsable:quien, anulada:false, fecha:ts});
     batch.set(mid, {producto_id:b.materia_prima_id, producto_nombre:b.nombre, inventario:'materia_prima', tipo:'baja', cantidad:-b.cantidad, motivo:b.motivo, responsable:quien, empresa:EMPRESA, bodega:BODEGA, baja_id:bid.id, fecha:ts, nota:'Baja: ' + b.motivo});
     batch.commit().catch(e => { console.error(e); toast(errTxt(e)); });
@@ -7413,6 +7469,7 @@ function salida(id){
       if(n > it.stock){ toast('Solo hay ' + fmt(it.stock) + ' disponibles'); return; }
       const mid = db.collection('movimientos_inventario_bodega').doc(), ts = SV(), b = db.batch();
       b.set(db.collection('inventario_bodega').doc(id), {producto_nombre:it.nombre, cantidad_actual:INC(-n), ultima_actualizacion:ts, empresa:EMPRESA, bodega:BODEGA}, {merge:true});
+      fxEco(b, {inv:'bodega', pid:id, nombre:it.nombre, delta:-n, tipo:'salida', resp:B.resp, nota:'Salida a ' + dst[1]});
       b.set(mid, {producto_id:id, producto_nombre:it.nombre, tipo:'salida', destino_id:dst[0], destino:dst[1], cantidad:-n, responsable:B.resp, empresa:EMPRESA, bodega:BODEGA, fecha:ts, nota:'Salida a ' + dst[1]});
       b.commit().catch(e => { console.error(e); toast(errTxt(e)); });
       snack('<b>Salida registrada</b><br>' + fmt(n) + ' ' + esc(it.uAlmacen || it.unidad || '') + ' · ' + presHtml(it.id, it.nombre) + ' → ' + esc(dst[1]), () => {
@@ -7432,10 +7489,12 @@ function ajuste(id){
       cerrarSheet(); const mot = MOTIVOS_AJUSTE[i];
       const mid = db.collection('movimientos_inventario_bodega').doc(), ts = SV(), b = db.batch();
       b.set(db.collection('inventario_bodega').doc(id), {producto_nombre:it.nombre, cantidad_actual:INC(dif), ultima_actualizacion:ts, empresa:EMPRESA, bodega:BODEGA}, {merge:true});
+      fxEco(b, {inv:'bodega', pid:id, nombre:it.nombre, delta:dif, tipo:'ajuste_conteo', resp:B.resp, nota:'Ajuste: ' + mot});
       b.set(mid, {producto_id:id, producto_nombre:it.nombre, tipo:'ajuste_conteo', cantidad:dif, sistema:it.stock, contado:n, motivo:mot, responsable:B.resp, empresa:EMPRESA, bodega:BODEGA, fecha:ts, nota:'Ajuste: sistema ' + it.stock + ', contado ' + n + ' · ' + mot});
       b.commit().catch(e => { console.error(e); toast(errTxt(e)); });
       snack('<b>Ajuste guardado</b><br>' + presHtml(it.id, it.nombre) + ': ' + fmt(it.stock) + ' → ' + fmt(n) + ' · ' + esc(mot), () => {
         const u = db.batch(); u.set(db.collection('inventario_bodega').doc(id), {cantidad_actual:INC(-dif), ultima_actualizacion:SV()}, {merge:true}); u.delete(mid);
+        fxEco(u, {inv:'bodega', pid:id, nombre:it.nombre, delta:-dif, tipo:'ajuste_conteo', nota:'Ajuste deshecho'});
         u.commit().then(() => toast('Ajuste deshecho')).catch(e => { console.error(e); toast(errTxt(e)); });
       });
     }), 60);
@@ -7582,11 +7641,23 @@ document.addEventListener('click', e => {
     case 'foto-x': { const o = $('#bg-fotov'); if(o) o.className = ''; break; }
     case 'prov-abrir': cambiarVista('provs'); break;
     case 'prov-lista': B.pm = null; render(); break;
-    case 'prov-nuevo': B.pm = {ed:{id:null, nombre:'', telefono:'', productos:''}}; render(); window.scrollTo(0, 0); break;
-    case 'prov-ed': { const p = B.provs.filter(x => x.id === id)[0]; if(p){ B.pm = {ed:{id:p.id, nombre:p.nombre || '', telefono:p.telefono || '', productos:p.productos || ''}}; render(); window.scrollTo(0, 0); } break; }
-    case 'prov-del': { const p = B.provs.filter(x => x.id === id)[0]; if(!p) break; db.collection('proveedores').doc(id).delete().then(() => snack('<b>Proveedor borrado</b><br>' + esc(p.nombre), () => db.collection('proveedores').doc(id).set({nombre:p.nombre, telefono:p.telefono || '', productos:p.productos || ''}))).catch(er => { console.error(er); toast(errTxt(er)); }); break; }
+    case 'prov-nuevo': B.pm = {ed:{id:null, nombre:'', telefono:'', productos:'', lista:[]}}; render(); window.scrollTo(0, 0); break;
+    case 'pl-add': plSync(); B.pm.ed.add = {tipo:'mp', nombre:'', unidad:'kg', cons:'ambiente', q:''}; render(); break;
+    case 'pl-x': plSync(); B.pm.ed.add = null; render(); break;
+    case 'pl-tipo': plSync(); B.pm.ed.add.tipo = v; render(); break;
+    case 'pl-u': plSync(); B.pm.ed.add.unidad = v; render(); break;
+    case 'pl-c': plSync(); B.pm.ed.add.cons = v; render(); break;
+    case 'pl-del': plSync(); B.pm.ed.lista.splice(parseInt(t.getAttribute('data-i'), 10), 1); render(); break;
+    case 'pl-b': { plSync(); const E = B.pm.ed, it = itemInv(id); if(!it) break; const k = E.lista.findIndex(x => x.id === id); if(k >= 0) E.lista.splice(k, 1); else E.lista.push({id:id, nombre:it.nombre, unidad:it.uCompra || it.uAlmacen || it.unidad || '', tipo:'bodega'}); render(); break; }
+    case 'pl-ok': { plSync(); const E = B.pm.ed, A = E.add, nombre = String(A.nombre || '').trim(); if(!nombre){ toast('Escribe el nombre del producto'); break; }
+      if(E.lista.some(x => x.nombre.toLowerCase() === nombre.toLowerCase())){ toast('Ese producto ya está en la lista'); break; }
+      const mid = 'mp_' + (nombre.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 40) || 'x');
+      db.collection('catalogo_materia_prima').doc(mid).set({nombre:nombre, unidad:A.unidad, conservacion:A.cons, empresa:EMPRESA, creado:SV()}, {merge:true}).catch(er => console.error(er));
+      E.lista.push({id:mid, nombre:nombre, unidad:A.unidad, tipo:'mp', cons:A.cons}); E.add = null; render(); break; }
+    case 'prov-ed': { const p = B.provs.filter(x => x.id === id)[0]; if(p){ B.pm = {ed:{id:p.id, nombre:p.nombre || '', telefono:p.telefono || '', productos:p.productos || '', lista:(p.lista || []).map(x => Object.assign({}, x))}}; render(); window.scrollTo(0, 0); } break; }
+    case 'prov-del': { const p = B.provs.filter(x => x.id === id)[0]; if(!p) break; db.collection('proveedores').doc(id).delete().then(() => snack('<b>Proveedor borrado</b><br>' + esc(p.nombre), () => db.collection('proveedores').doc(id).set({nombre:p.nombre, telefono:p.telefono || '', productos:p.productos || '', lista:p.lista || []}))).catch(er => { console.error(er); toast(errTxt(er)); }); break; }
     case 'prov-guardar': { const n = ($('#bg-pn') || {}).value, t0 = ($('#bg-pt') || {}).value, pp = ($('#bg-pp') || {}).value; const nombre = String(n || '').trim(); if(!nombre){ toast('Escribe el nombre del proveedor'); break; }
-      const ed = B.pm && B.pm.ed, did = (ed && ed.id) || slugProv(nombre); db.collection('proveedores').doc(did).set({nombre:nombre, telefono:String(t0 || '').trim(), productos:String(pp || '').trim(), actualizado:SV()}, {merge:true}).then(() => { B.pm = null; render(); toast('Proveedor guardado'); }).catch(er => { console.error(er); toast(errTxt(er)); }); break; }
+      const ed = B.pm && B.pm.ed, did = (ed && ed.id) || slugProv(nombre); plSync(); const lst = (ed && ed.lista) || []; db.collection('proveedores').doc(did).set({nombre:nombre, telefono:String(t0 || '').trim(), productos:lst.map(x => x.nombre).join(', '), lista:lst, actualizado:SV()}, {merge:true}).then(() => { B.pm = null; render(); toast('Proveedor guardado'); }).catch(er => { console.error(er); toast(errTxt(er)); }); break; }
     case 'prov-pick': { const l = lAct(); if(l){ draftDe(l).prov = v; LSs('draft', B.draft); render(); } break; }
     case 'mp-del-lista': { if(!window.MODO_PRUEBA) break; if(t.getAttribute('data-ok') !== '1'){ t.setAttribute('data-ok', '1'); t.textContent = 'Toca otra vez para borrar'; setTimeout(() => { if(t.isConnected){ t.removeAttribute('data-ok'); t.textContent = '🗑 Borrar este pedido (prueba)'; } }, 4000); break; }
       db.collection('listas_compra').doc(id).delete().then(() => { delete B.draft[id]; LSs('draft', B.draft); toast('Pedido de prueba borrado'); }).catch(er => { console.error(er); toast(errTxt(er)); }); break; }
@@ -7641,6 +7712,7 @@ document.addEventListener('input', e => {
   const i0 = e.target; if(i0 && i0.id === 'bg-pick-q' && B.pick){ B.pick.q = i0.value; const pos = i0.selectionStart; renderPick(); const q = $('#bg-pick-q'); if(q){ q.focus(); try { q.setSelectionRange(pos, pos); } catch(x){} } return; }
   const i = e.target; if(!i || !i.closest || !i.closest('#bg-root')) return;
   if(i.id === 'bg-resp-in'){ B.resp = i.value.trim(); LSs('resp', B.resp); }
+  else if(i.id === 'bg-plq' && B.pm && B.pm.ed && B.pm.ed.add){ plSync(); B.pm.ed.add.q = i.value; render(); const q = $('#bg-plq'); if(q){ q.focus(); try { q.setSelectionRange(q.value.length, q.value.length); } catch(e){} } }
   else if(i.id === 'bg-q'){ B.q = i.value; const c = $('#bg-inv-lista'); if(c) c.innerHTML = invFilas(); }
   else if(i.id === 'bg-fecha'){ if(B.reqEd) B.reqEd.fecha = i.value || hoyMas(2); }
   else if(i.getAttribute('data-bglote')){ setDraft(i.getAttribute('data-bglote'), 'lote', i.value); }
@@ -7791,7 +7863,7 @@ const MOT_ANUL = ['Error de captura', 'Duplicada', 'Mercadería devuelta', 'Otro
 const PASOS = ['Proveedor', 'Comprobante', 'Productos', 'Confirmar'];
 const COLD = {refrigerado:{max:5, txt:'Refrigerado: hasta 5 °C'}, congelado:{max:-12, txt:'Congelado: −12 °C o menos'}};
 
-const R = {tab:'nueva', nw:{}, old:{}, provs:[], d:null, id:null, step:1, q:'', fq:'', filtro:'todas', det:null, m:null, busy:false, ready:false, foto:{}, resp:LSg('resp', ''), respOtro:false, pend:null, delOk:null, t:null};
+const R = {mpCat:{}, tab:'nueva', nw:{}, old:{}, provs:[], d:null, id:null, step:1, q:'', fq:'', filtro:'todas', det:null, m:null, busy:false, ready:false, foto:{}, resp:LSg('resp', ''), respOtro:false, pend:null, delOk:null, t:null};
 const cat = () => (window.ivItems ? window.ivItems() : []);
 const catPor = id => cat().filter(x => x.id === id)[0] || null;
 const mail = () => (typeof auth !== 'undefined' && auth.currentUser) ? auth.currentUser.email : null;
@@ -7811,6 +7883,7 @@ function escuchar(){
   db.collection('recepciones_bodega').orderBy('fecha', 'desc').limit(60).onSnapshot(snap => {
     R.old = {}; snap.forEach(d => { const x = d.data({serverTimestamps:'estimate'}); if(!x.modulo) R.old[d.id] = Object.assign({}, x, {id:d.id, anterior:true}); }); refrescar();
   }, e => console.error(e));
+  db.collection('catalogo_materia_prima').onSnapshot(snap => { R.mpCat = {}; snap.forEach(d => { R.mpCat[d.id] = d.data(); }); refrescar(); }, e => console.error(e));
   db.collection('proveedores').onSnapshot(snap => { R.provs = []; snap.forEach(d => R.provs.push(Object.assign({id:d.id}, d.data()))); R.provs.sort((a, b) => String(a.nombre || '').localeCompare(String(b.nombre || ''))); refrescar(); }, e => console.error(e));
 }
 function badge(){ try { if(window.navBadge) navBadge('recepcion', borradores().length); } catch(e){} }
@@ -7835,6 +7908,7 @@ function calc(it){
 }
 const ETQ_EST = {pend:'Sin revisar', ok:'Completo', diferencia:'Diferencia', no_llego:'No llegó', rechazado:'Rechazado'};
 const kg = (v, u) => r3((v || 0) * (u === 'lb' ? 0.45359237 : 1));
+const estDeItem = it => it.estacion || (it.conservacion === 'congelado' ? 'congelacion' : it.conservacion === 'refrigerado' ? 'refrigeracion' : (window.fxEstDefault ? fxEstDefault(it.producto_id, it.destino === 'procesamiento' ? 'materia_prima' : 'terminado') : 'bodega'));
 const invDe = it => it.destino === 'procesamiento' ? 'inventario_materia_prima' : 'inventario_bodega';
 const destDefault = pid => { try { return window.bgDestDe ? window.bgDestDe(pid) : 'directo'; } catch(e){ return 'directo'; } };
 const consDe = pid => { const c = catPor(pid); return c && COLD[c.cons] ? c.cons : 'ambiente'; };
@@ -7981,7 +8055,7 @@ function vConfirmar(){
   const nDif = its.filter(x => x.c.estado === 'diferencia' || x.c.estado === 'no_llego' || x.c.estado === 'rechazado').length, sinVinc = its.filter(x => !x.it.vinculado && x.c.acept > 0).length;
   const nom = empleados(), otro = R.respOtro || (R.resp && nom.indexOf(R.resp) < 0);
   return '<div class="rx-card"><div class="rx-ph"><b>' + esc(d.proveedor) + '</b><span class="rx-mu">' + (d.comprobante.foto ? '📷 con comprobante' : (d.comprobante.excepcion ? '⚠ sin comprobante' : '')) + '</span></div>' + (d.documento ? '<div class="rx-mu">Factura ' + esc(d.documento) + '</div>' : '') + '</div>' +
-    '<div class="rx-card"><h3>Productos</h3>' + its.map((x, i) => '<div class="rx-sr"><span class="rx-no">' + (i + 1) + '</span><div class="rx-sn"><b>' + esc(x.it.nombre) + '</b><div class="rx-mu">' + (x.c.falt > 0 ? 'Faltan ' + fmt(x.c.falt) + ' · ' : '') + (x.c.sob > 0 ? 'Sobran ' + fmt(x.c.sob) + ' · ' : '') + (x.c.rech > 0 ? 'Rechazado ' + fmt(x.c.rech) + ' · ' : '') + (x.it.destino === 'procesamiento' ? '⚙ a procesar' : '📦 a bodega') + (!x.it.vinculado ? ' · ⏳ por vincular' : '') + '</div></div><div class="rx-sa"><b>' + fmt(x.c.acept) + '</b><small>' + esc(x.it.unidad) + '</small></div></div>').join('') +
+    '<div class="rx-card"><h3>Productos</h3>' + its.map((x, i) => '<div class="rx-sr"><span class="rx-no">' + (i + 1) + '</span><div class="rx-sn"><b>' + esc(x.it.nombre) + '</b><div class="rx-mu">' + (x.c.falt > 0 ? 'Faltan ' + fmt(x.c.falt) + ' · ' : '') + (x.c.sob > 0 ? 'Sobran ' + fmt(x.c.sob) + ' · ' : '') + (x.c.rech > 0 ? 'Rechazado ' + fmt(x.c.rech) + ' · ' : '') + (x.it.destino === 'procesamiento' ? '⚙ a procesar' : '📦 a bodega') + (window.fxEstaciones ? ' · ' + esc(((fxEstaciones().filter(e => e.id === estDeItem(x.it))[0]) || {nombre:''}).nombre) : '') + (!x.it.vinculado ? ' · ⏳ por vincular' : '') + '</div></div><div class="rx-sa"><b>' + fmt(x.c.acept) + '</b><small>' + esc(x.it.unidad) + '</small></div></div>').join('') +
     '<div class="rx-mu">' + (nDif ? '⚠ ' + nDif + ' con diferencias. ' : '✔ Todo coincide con la factura. ') + (sinVinc ? sinVinc + ' sin inventario configurado: se guardan pero no suman existencias hasta vincularlos.' : '') + '</div></div>' +
     '<div class="rx-card"><h3>Destino</h3><div class="rx-chips">' + DESTINOS.map(x => '<button class="rx-chip ' + (d.destino === x[0] ? 'on' : '') + '" data-rx="dest" data-v="' + x[0] + '">' + x[1] + '</button>').join('') + '</div></div>' +
     '<div class="rx-card"><h3>Responsable</h3><div class="rx-chips">' + nom.map(n => '<button class="rx-chip ' + (R.resp === n ? 'on' : '') + '" data-rx="resp" data-v="' + esc(n) + '">' + esc(n) + '</button>').join('') + '<button class="rx-chip ' + (otro ? 'on' : '') + '" data-rx="resp-otro">Otro</button></div>' +
@@ -8036,48 +8110,49 @@ function agregarItem(o){
   const d = R.d; if(!d) return false;
   const ya = d.items.findIndex(i => i.producto_id === o.id || norm(i.nombre) === norm(o.nombre));
   if(ya >= 0) return ya;
-  const vinc = !o.provisional;
-  d.items.push({producto_id:o.id, nombre:o.nombre, unidad:o.unidad || 'unidades', facturado:null, recibido:null, rechazado:0, motivos:[], motivo_texto:'', destino:vinc ? destDefault(o.id) : 'directo', provisional:!!o.provisional, vinculado:vinc, revisado:false,
-    conservacion:vinc ? consDe(o.id) : 'ambiente', temperatura_c:null, peso_valor:0, peso_unidad:'kg', lote_proveedor:'', vence:'', nota_item:''});
+  const vinc = !o.provisional, mp = !!o.mp;
+  d.items.push({producto_id:o.id, nombre:o.nombre, unidad:o.unidad || 'unidades', facturado:null, recibido:null, rechazado:0, motivos:[], motivo_texto:'', destino:mp ? 'procesamiento' : 'directo', provisional:!!o.provisional, vinculado:vinc, revisado:false,
+    conservacion:mp ? (o.cons || 'ambiente') : (vinc ? consDe(o.id) : 'ambiente'), temperatura_c:null, peso_valor:0, peso_unidad:'kg', lote_proveedor:'', vence:'', nota_item:''});
   guardar(); return d.items.length - 1;
 }
+const CONS_NOM = {ambiente:'Ambiente', refrigerado:'Refrigerado', congelado:'Congelado'};
+const provActual = () => { const d = R.d; if(!d) return null; return R.provs.filter(p => p.id === d.proveedor_id || norm(p.nombre) === norm(d.proveedor))[0] || null; };
+const provLista = () => { const p = provActual(); return (p && p.lista) || []; };
 function renderPick(){
   const P = R.m; if(!P || P.k !== 'pick') return;
-  const ya = R.d.items.map(i => i.producto_id);
+  const ya = R.d.items.map(i => i.producto_id), prov = provActual(), pl = provLista();
   let body;
   if(P.nuevo){
-    body = '<h3>Producto nuevo</h3><div class="rx-mu">No está en el catálogo. Se guarda en la recepción y no suma a inventario hasta vincularlo.</div><input class="rx-in" id="rx-pn" data-focus placeholder="Nombre del producto" autocomplete="off" value="' + esc(P.nuevo.nombre) + '"><div class="rx-chips">' +
-      ['kg', 'libras', 'litros', 'galones', 'unidades', 'fundas', 'cajas'].map(u => '<button class="rx-chip ' + (P.nuevo.unidad === u ? 'on' : '') + '" data-rx="pick-u" data-v="' + u + '">' + u + '</button>').join('') + '</div>' +
+    body = '<h3>Producto nuevo de ' + esc(R.d.proveedor) + '</h3><div class="rx-mu">Se guarda en la lista de este proveedor (módulo Proveedores) y queda para la próxima recepción.</div><input class="rx-in" id="rx-pn" data-focus placeholder="Nombre" autocomplete="off" value="' + esc(P.nuevo.nombre) + '"><div class="rx-mu">Unidad en que lo recibes</div><div class="rx-chips">' +
+      ['kg', 'libras', 'litros', 'galones', 'unidades', 'fundas', 'sacos', 'cajas'].map(u => '<button class="rx-chip ' + (P.nuevo.unidad === u ? 'on' : '') + '" data-rx="pick-u" data-v="' + u + '">' + u + '</button>').join('') + '</div>' +
+      '<div class="rx-mu">¿Cómo se conserva?</div><div class="rx-chips">' + ['ambiente', 'refrigerado', 'congelado'].map(c => '<button class="rx-chip ' + ((P.nuevo.cons || 'ambiente') === c ? 'on' : '') + '" data-rx="pick-cons" data-v="' + c + '">' + CONS_NOM[c] + '</button>').join('') + '</div>' +
       '<div class="rx-two"><button class="rx-b" data-rx="pick-atras">← Atrás</button><button class="rx-b ok" data-rx="pick-nuevo-ok">Agregar</button></div>';
   } else {
-    const q = norm(P.q), todos = cat();
-    const fre = !q ? frecuentesDe(R.d.proveedor) : [];
-    const lista = todos.filter(it => !q || norm(it.nombre).indexOf(q) >= 0).slice(0, 50);
-    const btn = (id, nom, u, on) => '<button class="rx-pi ' + (on ? 'hecho' : '') + '" data-rx="pick-add" data-id="' + esc(id) + '"><span>' + (window.presHtml ? presHtml(id, nom) : esc(nom)) + ' <small>' + esc(u || '') + '</small></span>' + (on ? '<b>✓ Agregado</b>' : '') + '</button>';
-    body = '<h3>Agregar producto</h3><input class="rx-in" id="rx-pq" data-focus placeholder="Buscar producto…" autocomplete="off" value="' + esc(P.q || '') + '">' +
-      (fre.length ? '<div class="rx-mu">Frecuentes de este proveedor</div><div class="rx-pl s">' + fre.map(x => btn(x.id, x.nombre, x.unidad, ya.indexOf(x.id) >= 0)).join('') + '</div>' : '') +
-      '<div class="rx-pl">' + (lista.length ? lista.map(it => btn(it.id, it.nombre, it.uCompra || it.uAlmacen || it.unidad, ya.indexOf(it.id) >= 0)).join('') : '<div class="rx-mu">Sin resultados.</div>') + '</div>' +
-      '<div class="rx-two"><button class="rx-b" data-rx="pick-nuevo">＋ Producto nuevo</button><button class="rx-b ok" data-rx="m-x">' + (ya.length ? '✓ Listo · ' + ya.length : 'Listo') + '</button></div>';
+    const q = norm(P.q), lista = pl.filter(x => !q || norm(x.nombre).indexOf(q) >= 0);
+    const btn = x => '<button class="rx-pi ' + (ya.indexOf(x.id) >= 0 ? 'hecho' : '') + '" data-rx="pick-add" data-id="' + esc(x.id) + '"><span>' + esc(x.nombre) + ' <small>' + esc(x.unidad || '') + (x.tipo === 'mp' ? ' · a procesar' : ' · a bodega') + '</small></span>' + (ya.indexOf(x.id) >= 0 ? '<b>✓ Agregado</b>' : '') + '</button>';
+    body = '<h3>Productos de ' + esc(R.d.proveedor) + '</h3>' + (pl.length > 6 ? '<input class="rx-in" id="rx-pq" data-focus placeholder="Buscar…" autocomplete="off" value="' + esc(P.q || '') + '">' : '') +
+      '<div class="rx-pl">' + (lista.length ? lista.map(btn).join('') : (pl.length ? '<div class="rx-mu">Sin resultados.</div>' : '<div class="rx-vacio">Este proveedor todavía no tiene productos.<br><span class="rx-mu">Agrégalos en el módulo Proveedores.</span></div>')) + '</div>' +
+      '<div class="rx-two"><button class="rx-b" data-rx="ir-prov">Ir a Proveedores</button><button class="rx-b" data-rx="pick-nuevo">＋ Producto nuevo</button></div><button class="rx-b ok big" data-rx="m-x">' + (ya.length ? '✓ Listo · ' + ya.length : 'Listo') + '</button>';
   }
-  const m = $('#rx-modal'); const had = m && m.classList.contains('show') && m.querySelector('#rx-pq, #rx-pn');
   modal(body); R.m = P;
   const f = $('#rx-modal [data-focus]'); if(f && !(P.keep)){ try { f.focus(); const v = f.value; f.setSelectionRange(v.length, v.length); } catch(e){} }
 }
 function pickAdd(id){
-  const it = catPor(id); const fr = frecuentesDe(R.d.proveedor).filter(x => x.id === id)[0];
-  const nombre = it ? it.nombre : (fr ? fr.nombre : id), unidad = it ? (it.uCompra || it.uAlmacen || it.unidad) : (fr ? fr.unidad : 'unidades');
+  const e = provLista().filter(x => x.id === id)[0]; if(!e) return;
   const ya = R.d.items.findIndex(i => i.producto_id === id);
   if(ya >= 0){ R.d.items.splice(ya, 1); guardar(); renderPick(); return; }   // tocar otra vez = quitar
-  agregarItem({id:id, nombre:nombre, unidad:unidad}); renderPick();
+  agregarItem({id:e.id, nombre:e.nombre, unidad:e.unidad, mp:e.tipo === 'mp', cons:e.cons}); renderPick();
 }
 function pickNuevoOk(){
   const n = R.m && R.m.nuevo; if(!n) return;
   const nombre = String(n.nombre || '').trim(); if(!nombre){ toast('Escribe el nombre'); return; }
-  const ex = cat().filter(x => norm(x.nombre) === norm(nombre))[0];
-  if(ex){ toast('Ya existe: ' + ex.nombre + '. Se usó ese.'); R.m = {k:'pick', q:'', keep:true}; agregarItem({id:ex.id, nombre:ex.nombre, unidad:ex.uCompra || ex.uAlmacen || ex.unidad}); renderPick(); return; }
-  const dup = R.d.items.some(i => norm(i.nombre) === norm(nombre)); if(dup){ toast('Ese producto ya está en la recepción'); return; }
-  agregarItem({id:'prov_' + slug(nombre), nombre:nombre, unidad:n.unidad, provisional:true});
-  R.m = {k:'pick', q:'', keep:true}; renderPick(); toast('Producto nuevo agregado (por vincular)');
+  const keep = () => { R.m = {k:'pick', q:'', keep:true}; }, pv = provActual(), pl = provLista();
+  const ex = pl.filter(x => norm(x.nombre) === norm(nombre))[0];
+  if(ex){ toast('Ya está en la lista de este proveedor. Se usó ese.'); keep(); agregarItem({id:ex.id, nombre:ex.nombre, unidad:ex.unidad, mp:ex.tipo === 'mp', cons:ex.cons}); renderPick(); return; }
+  const id = 'mp_' + slug(nombre), cons = n.cons || 'ambiente';
+  db.collection('catalogo_materia_prima').doc(id).set({nombre:nombre, unidad:n.unidad, conservacion:cons, empresa:EMPRESA, creado_por:quien(), creado:SV()}, {merge:true}).catch(e => { console.error(e); toast(errTxt(e)); });
+  if(pv){ const l = pl.concat([{id:id, nombre:nombre, unidad:n.unidad, tipo:'mp', cons:cons}]); pv.lista = l; db.collection('proveedores').doc(pv.id).set({lista:l, productos:l.map(x => x.nombre).join(', ')}, {merge:true}).catch(e => console.error(e)); }
+  keep(); agregarItem({id:id, nombre:nombre, unidad:n.unidad, mp:true, cons:cons}); renderPick(); toast('Guardado en la lista de ' + (pv ? pv.nombre : 'este proveedor'));
 }
 
 /* ---------- detalle del producto ---------- */
@@ -8088,6 +8163,7 @@ function renderDet(){
   const ctl = (k, lbl, val, unit) => '<div class="rx-dq"><span>' + lbl + '</span><button class="rx-q" data-rx="' + k + '"><b>' + val + '</b><em>' + unit + '</em></button></div>';
   modal('<h3>' + esc(it.nombre) + '</h3><div class="rx-mu">Aceptado: <b>' + fmt(c.acept) + ' ' + esc(u) + '</b>' + (c.rech > 0 ? ' · Rechazado ' + fmt(c.rech) : '') + '</div>' +
     '<div class="rx-dq"><span>Se guarda como</span><div class="rx-chips"><button class="rx-chip ' + (it.destino === 'directo' ? 'on' : '') + '" data-rx="det-dest" data-v="directo">📦 A bodega</button><button class="rx-chip ' + (it.destino === 'procesamiento' ? 'on' : '') + '" data-rx="det-dest" data-v="procesamiento">⚙ A procesar</button></div></div>' +
+    (window.fxEstaciones ? '<div class="rx-dq"><span>Estación donde se guarda</span><div class="rx-chips sm">' + fxEstaciones().map(e => '<button class="rx-chip ' + ((estDeItem(it) === e.id) ? 'on' : '') + '" data-rx="det-est" data-v="' + e.id + '">' + e.ic + ' ' + esc(e.nombre) + '</button>').join('') + '</div></div>' : '') +
     ctl('det-rech', 'Cantidad rechazada', it.rechazado > 0 ? fmt(it.rechazado) : '0', esc(u)) +
     '<div class="rx-dq"><span>Motivo (si hay diferencia)</span><div class="rx-chips sm">' + MOT.map(m => { const auto = (m[0] === 'faltante' && c.falt > 0) || (m[0] === 'sobrante' && c.sob > 0), man = MANUAL.indexOf(m[0]) >= 0; return '<button class="rx-chip ' + ((it.motivos || []).indexOf(m[0]) >= 0 || auto ? 'on' : '') + (man ? '' : ' auto') + '" ' + (man ? 'data-rx="det-mot" data-v="' + m[0] + '"' : 'disabled') + '>' + m[1] + '</button>'; }).join('') + '</div>' +
     ((it.motivos || []).indexOf('otro') >= 0 ? '<input class="rx-in" id="rx-mt" placeholder="¿Cuál?" autocomplete="off" value="' + esc(it.motivo_texto) + '">' : '') + '</div>' +
@@ -8121,13 +8197,14 @@ function validar(){
 function itemsFinales(d){
   return d.items.map(it => { const c = calc(it), vinc = it.vinculado && c.acept > 0;
     return {producto_id:it.producto_id, nombre:it.nombre, unidad:it.unidad, facturado:it.facturado != null ? it.facturado : null, recibido:c.rec, rechazado:c.rech, aceptado:c.acept, entra:c.acept, faltante:c.falt, sobrante:c.sob, diferencia:c.dif,
-      motivos:c.mots, motivo_texto:it.motivo_texto || '', estado_item:c.estado === 'no_llego' ? 'no_llego' : c.estado, destino:it.destino, inventario:invDe(it), vinculado:!!it.vinculado, provisional:!!it.provisional, entrada_generada:!!vinc,
+      motivos:c.mots, motivo_texto:it.motivo_texto || '', estado_item:c.estado === 'no_llego' ? 'no_llego' : c.estado, destino:it.destino, estacion:estDeItem(it), inventario:invDe(it), vinculado:!!it.vinculado, provisional:!!it.provisional, entrada_generada:!!vinc,
       conservacion:it.conservacion || 'ambiente', temperatura_c:it.temperatura_c != null ? it.temperatura_c : null, peso_valor:it.peso_valor > 0 ? it.peso_valor : null, peso_unidad:it.peso_valor > 0 ? it.peso_unidad : null, peso_kg:it.peso_valor > 0 ? kg(it.peso_valor, it.peso_unidad) : null,
       lote_proveedor:it.lote_proveedor || null, vence:it.vence || null, nota_item:it.nota_item || ''}; });
 }
 function aInv(t, recId, it, d, ts, dest){
   t.set(db.collection(it.inventario).doc(it.producto_id), Object.assign({producto_nombre:it.nombre, unidad_medida:it.unidad, cantidad_actual:INC(it.aceptado), ultima_actualizacion:ts, empresa:EMPRESA, bodega:BODEGA},
     {ultima_recepcion:recId, ultimo_proveedor:d.proveedor, ultimo_lote:it.lote_proveedor, ultimo_vence:it.vence, ultimo_peso_kg:it.peso_kg, ultima_temperatura_c:it.temperatura_c}), {merge:true});
+  if(window.fxEco) fxEco(t, {inv:it.inventario === 'inventario_materia_prima' ? 'mp' : 'bodega', pid:it.producto_id, nombre:it.nombre, unidad:it.unidad, delta:it.aceptado, tipo:'recepcion', lote:it.lote_proveedor, vence:it.vence, estacion:it.estacion, ref:recId, resp:quien(), nota:'Recepción de ' + d.proveedor});
   t.set(db.collection('movimientos_inventario_bodega').doc(recId + '_' + it.producto_id), {producto_id:it.producto_id, producto_nombre:it.nombre, tipo:'recepcion_compra', destino:it.destino, destino_ubicacion:dest || d.destino || 'bodega',
     inventario:it.inventario === 'inventario_materia_prima' ? 'materia_prima' : 'terminado', cantidad:it.aceptado, recepcion_id:recId, proveedor:d.proveedor, documento:d.documento || '', lote_proveedor:it.lote_proveedor, vence:it.vence, peso_kg:it.peso_kg, temperatura_c:it.temperatura_c, nota_item:it.nota_item || '',
     empresa:EMPRESA, bodega:BODEGA, fecha:ts, nota:'Recepción de ' + d.proveedor + (it.lote_proveedor ? ' · Lote ' + it.lote_proveedor : '') + (it.vence ? ' · Vence ' + it.vence : '')});
@@ -8195,6 +8272,7 @@ async function anular(id, motivo){
       const ts = SV();
       (r.items || []).forEach(it => { if(!it.entrada_generada || !(it.aceptado > 0)) return;
         t.set(db.collection(it.inventario).doc(it.producto_id), {cantidad_actual:INC(-it.aceptado), ultima_actualizacion:ts}, {merge:true});
+        if(window.fxEco) fxEco(t, {inv:it.inventario === 'inventario_materia_prima' ? 'mp' : 'bodega', pid:it.producto_id, nombre:it.nombre, delta:-it.aceptado, tipo:'anulacion_recepcion', estacion:it.estacion, ref:id, resp:quien()});
         t.set(db.collection('movimientos_inventario_bodega').doc(id + '_' + it.producto_id + '_anul'), {producto_id:it.producto_id, producto_nombre:it.nombre, tipo:'anulacion_recepcion', inventario:it.inventario === 'inventario_materia_prima' ? 'materia_prima' : 'terminado', cantidad:-it.aceptado, recepcion_id:id, empresa:EMPRESA, bodega:BODEGA, fecha:ts, nota:'Anulación de recepción: ' + motivo}); });
       t.update(rr, {estado:'anulada', anulacion:{por:quien(), motivo:motivo, fecha_iso:hoyIso(), autorizado:true}, pendiente_vinculacion:false, fecha_actividad:ts, historial:(r.historial || []).concat([hist('anulada', motivo)])});
     });
@@ -8243,8 +8321,10 @@ function onClick(e){
     case 'sc-ok': d.comprobante.excepcion = {motivo:v, por:quien(), fecha_iso:hoyIso()}; d.historial.push(hist('sin comprobante', v)); modal(null); guardar(); render(); break;
     case 'exc-quitar': d.comprobante.excepcion = null; guardar(); render(); break;
     case 'add-abrir': R.m = {k:'pick', q:''}; renderPick(); break;
+    case 'ir-prov': modal(null); if(R.d){ guardar(); } cambiarVista('provs'); break;
+    case 'pick-cons': { const pn = $('#rx-pn'); if(pn) R.m.nuevo.nombre = pn.value; R.m.nuevo.cons = v; R.m.keep = true; renderPick(); break; }
     case 'pick-add': pickAdd(id); break;
-    case 'pick-nuevo': R.m = {k:'pick', q:'', nuevo:{nombre:R.m.q || '', unidad:'unidades'}}; renderPick(); break;
+    case 'pick-nuevo': R.m = {k:'pick', q:'', nuevo:{nombre:R.m.q || '', unidad:'kg', cons:'ambiente'}}; renderPick(); break;
     case 'pick-atras': R.m = {k:'pick', q:''}; renderPick(); break;
     case 'pick-u': R.m.nuevo.unidad = v; { const pn = $('#rx-pn'); if(pn) R.m.nuevo.nombre = pn.value; } R.m.keep = true; renderPick(); break;
     case 'pick-nuevo-ok': { const pn = $('#rx-pn'); if(pn && R.m.nuevo) R.m.nuevo.nombre = pn.value; pickNuevoOk(); break; }
@@ -8257,6 +8337,7 @@ function onClick(e){
     case 'it-mas': { const it = d.items[i]; setRec(i, (it.revisado ? it.recibido : (it.facturado || 0)) + 1); render(); break; }
     case 'it-det': abrirDet(i); break;
     case 'det-dest': leerDet(); d.items[R.m.i].destino = v; renderDet(); break;
+    case 'det-est': leerDet(); d.items[R.m.i].estacion = v; guardar(); renderDet(); break;
     case 'det-rech': { leerDet(); const it = d.items[R.m.i]; num('Rechazado: ' + it.nombre, it.unidad, it.rechazado, x => { it.rechazado = r3(Math.min(x || 0, it.recibido || 0)); if(!it.revisado && it.recibido == null){ it.recibido = 0; } guardar(); renderDet(); }); break; }
     case 'det-mot': { leerDet(); const it = d.items[R.m.i], k = it.motivos.indexOf(v); if(k >= 0) it.motivos.splice(k, 1); else { it.motivos.push(v); if(it.rechazado <= 0 && (v === 'mal_estado' || v === 'rechazado') && it.recibido > 0) it.rechazado = it.recibido; } guardar(); renderDet(); break; }
     case 'det-temp': { leerDet(); const it = d.items[R.m.i]; num('Temperatura (°C)', '°C', it.temperatura_c != null ? Math.abs(it.temperatura_c) : '', x => { if(x != null) it.temperatura_c = (it.temperatura_c != null && it.temperatura_c < 0 ? -1 : 1) * x; guardar(); renderDet(); }); break; }
@@ -8304,6 +8385,319 @@ window.rxView = function(n){ if(n === 'recepcion'){ escuchar(); R.det = null; re
 window.rxRefresh = refrescar;
 window.RXS = R;
 setInterval(badge, 3000); setTimeout(() => { if(window.firebase && typeof db !== 'undefined'){ escuchar(); badge(); } }, 900);
+})();
+
+
+/* ============================================================
+   INVENTARIO DEL FACILITY POR ESTACIONES (fx) · v1
+   Capa NUEVA sobre las existencias actuales (no las reemplaza):
+     inventario_bodega / inventario_materia_prima   total del Facility (lo siguen usando Producción, Despacho, Pedidos)
+     stock_facility/{pid}__{estacion}__{estado}     existencia por estación y estado  (estado: materia_prima|en_proceso|terminado|retenido)
+     movimientos_estacion/{auto}                    historial por estación (responsable, lote, fecha/hora, ref del módulo)
+     respaldos_inventario/{auto}                    copia antes de "Empezar de cero"
+     config_facility/estaciones                     estaciones extra agregadas por el usuario
+   Todos los módulos mueven stock con fxEco(writer, {...}); los traslados/bajas/conteos de esta pantalla usan transacciones.
+   NO toca los inventarios de los locales.
+   ============================================================ */
+(function(){
+'use strict';
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const nf = new Intl.NumberFormat('es-EC', {maximumFractionDigits:3});
+const fmt = n => nf.format(n);
+const r3 = n => Math.round((Number(n) || 0) * 1000) / 1000;
+const SV = () => firebase.firestore.FieldValue.serverTimestamp();
+const INC = n => firebase.firestore.FieldValue.increment(n);
+const EMPRESA = 'morochos_ec', BODEGA = 'bodega_central';
+const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+const ms = ts => ts && ts.toMillis ? ts.toMillis() : (ts && ts.seconds ? ts.seconds * 1000 : (typeof ts === 'number' ? ts : 0));
+const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'], MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+const fechaDia = t => { const m = ms(t); if(!m) return 'Guardando…'; const d = new Date(m), w = DIAS[d.getDay()]; return w.charAt(0).toUpperCase() + w.slice(1) + ' ' + d.getDate() + ' ' + MESES[d.getMonth()] + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
+
+const ESTS0 = [{id:'bodega', nombre:'Bodega', ic:'📦'}, {id:'refrigeracion', nombre:'Refrigeración', ic:'🧊'}, {id:'congelacion', nombre:'Congelación', ic:'❄️'}, {id:'cocina', nombre:'Cocina / preparación', ic:'🍳'},
+  {id:'panaderia', nombre:'Panadería', ic:'🥖'}, {id:'empaque', nombre:'Área de empaque', ic:'📮'}, {id:'terminados', nombre:'Producto terminado', ic:'✅'}];
+const ESTADOS = {materia_prima:'Materia prima', en_proceso:'En proceso', terminado:'Terminado', retenido:'Retenido'};
+const TAGC = {materia_prima:'t1', en_proceso:'t2', terminado:'t3', retenido:'t4'};
+const TIPOS = {recepcion:'Recepción', anulacion_recepcion:'Anulación de recepción', produccion:'Producción', consumo_produccion:'Consumo de producción', anulacion_produccion:'Anulación de producción', anulacion_consumo:'Anulación de consumo',
+  anulacion_baja:'Anulación de baja', procesamiento:'Procesado', baja:'Baja', salida:'Salida', despacho:'Despacho', ajuste_conteo:'Ajuste por conteo', traslado_sale:'Traslado (sale)', traslado_entra:'Traslado (entra)', reinicio:'Inicio desde cero'};
+const MOT_BAJA = ['Caducado', 'Mal estado', 'Derrame / daño', 'Merma', 'Otro'];
+
+const F = {stock:{}, movs:[], extra:[], tab:'res', est:'todas', estado:'todos', q:'', mq:'', mf:'todos', m:null, busy:false, ready:false};
+const estaciones = () => ESTS0.concat(F.extra.filter(e => !ESTS0.some(x => x.id === e.id)));
+const estNom = id => (estaciones().filter(e => e.id === id)[0] || {nombre:id}).nombre;
+const estIc = id => (estaciones().filter(e => e.id === id)[0] || {ic:'📍'}).ic;
+const cat = () => (window.ivItems ? window.ivItems() : []);
+const catPor = id => cat().filter(x => x.id === id)[0] || null;
+const unidadDe = d => { const c = catPor(d.producto_id); return (c && (c.uAlmacen || c.unidad)) || d.unidad || ''; };
+const mail = () => (typeof auth !== 'undefined' && auth.currentUser) ? auth.currentUser.email : null;
+const respDe = () => { try { const v = localStorage.getItem('rx_resp'); return v ? JSON.parse(v) : (F.resp || ''); } catch(e){ return F.resp || ''; } };
+const respSet = v => { F.resp = v; try { localStorage.setItem('rx_resp', JSON.stringify(v)); } catch(e){} };
+const empleados = () => { try { return Object.keys(EMPLEADOS_CLOCK).map(k => EMPLEADOS_CLOCK[k].nombre); } catch(e){ return []; } };
+
+/* ---------- reglas de ubicación por defecto ---------- */
+function estDefault(pid, estado){
+  const c = catPor(pid), cons = c ? c.cons : 'ambiente';
+  if(cons === 'congelado') return 'congelacion';
+  if(cons === 'refrigerado') return 'refrigeracion';
+  return estado === 'terminado' ? 'terminados' : 'bodega';
+}
+const docId = (pid, est, estado) => pid + '__' + est + '__' + estado;
+const filas = () => Object.keys(F.stock).map(k => F.stock[k]).filter(d => Math.abs(d.cantidad || 0) > 0.0001);
+
+/* ---------- MOTOR: lo usan Recepción, Producción, Bajas, Conteos y Despacho ----------
+   w = batch o transacción (cualquiera con .set).  o = {inv:'mp'|'bodega', pid, nombre, delta, tipo, lote, vence, estacion, estado, ref, resp, nota}
+   delta>0 entra a la estación indicada (o la que corresponde por la ficha); delta<0 sale de las estaciones que tienen ese producto (primero la indicada/por defecto). */
+function eco(w, o){
+  try {
+    const estado = o.estado || (o.inv === 'mp' ? 'materia_prima' : 'terminado'), d = r3(o.delta); if(!d || !o.pid) return;
+    const ts = SV(), resp = o.resp || respDe() || mail() || '';
+    const apply = (est, delta) => {
+      const extra = {}; if(o.lote && delta > 0) extra.ultimo_lote = o.lote; if(o.vence && delta > 0) extra.ultimo_vence = o.vence;
+      w.set(db.collection('stock_facility').doc(docId(o.pid, est, estado)), Object.assign({producto_id:o.pid, producto_nombre:o.nombre || o.pid, estacion:est, estado:estado, cantidad:INC(delta), unidad:o.unidad || null, actualizado:ts, empresa:EMPRESA}, extra), {merge:true});
+      w.set(db.collection('movimientos_estacion').doc(), {producto_id:o.pid, producto_nombre:o.nombre || o.pid, estacion:est, estado:estado, cantidad:delta, tipo:o.tipo || 'ajuste', lote:o.lote || null, vence:o.vence || null, responsable:resp, ref:o.ref || null, nota:o.nota || '', operacion_id:o.op || null, empresa:EMPRESA, fecha:ts});
+    };
+    const pref = o.estacion || estDefault(o.pid, estado);
+    if(d > 0){ apply(pref, d); return; }
+    let rest = -d;
+    const orden = [pref].concat(estaciones().map(e => e.id).filter(x => x !== pref));
+    orden.forEach(est => {
+      if(rest <= 0.0001) return;
+      const doc = F.stock[docId(o.pid, est, estado)], hay = doc ? (doc.cantidad || 0) : 0; if(hay <= 0.0001) return;
+      const t = Math.min(hay, rest); apply(est, -t); rest = r3(rest - t);
+    });
+    if(rest > 0.0001) apply(pref, -rest);   // faltaba stock registrado en estaciones: queda visible como diferencia en la estación por defecto
+  } catch(e){ console.error('fxEco', e); }
+}
+window.fxEco = eco;
+window.fxEstDefault = estDefault;
+window.fxEstaciones = estaciones;
+window.fxSalidaSimple = async function(inv, pid, nombre, qty, tipo, ref){   // para Despacho (no usa batch propio)
+  const b = db.batch(); eco(b, {inv:inv, pid:pid, nombre:nombre, delta:-qty, tipo:tipo, ref:ref}); await b.commit();
+};
+
+/* ---------- datos ---------- */
+function escuchar(){
+  if(F.ready || typeof db === 'undefined') return; F.ready = true;
+  db.collection('stock_facility').onSnapshot(snap => { F.stock = {}; snap.forEach(d => { F.stock[d.id] = Object.assign({}, d.data(), {id:d.id}); }); refrescar(); }, e => console.error(e));
+  db.collection('movimientos_estacion').orderBy('fecha', 'desc').limit(250).onSnapshot(snap => { F.movs = []; snap.forEach(d => F.movs.push(Object.assign({}, d.data({serverTimestamps:'estimate'}), {id:d.id}))); refrescar(); }, e => console.error(e));
+  db.collection('config_facility').doc('estaciones').onSnapshot(s => { F.extra = s.exists ? (s.data().lista || []) : []; refrescar(); }, e => console.error(e));
+}
+let rt = null;
+function refrescar(){
+  const r = $('#fx-root'); if(!r || !r.offsetParent) return;
+  const a = document.activeElement; if(a && a.tagName === 'INPUT' && r.contains(a)) return;
+  clearTimeout(rt); rt = setTimeout(render, 80);
+}
+function toast(m){
+  let t = $('#rx-toast'); if(!t){ t = document.createElement('div'); t.id = 'rx-toast'; document.body.appendChild(t); }
+  t.textContent = m; t.className = 'show'; clearTimeout(toast.t); toast.t = setTimeout(() => { t.className = ''; }, 3200);
+}
+const errTxt = e => (e && /offline|network|unavailable/i.test(String(e.message || e))) ? 'Sin conexión. No se guardó.' : 'No se pudo guardar. Revisa la conexión.';
+function num(titulo, unidad, valor, cb){ abrirTeclado({titulo:titulo, subtitulo:'', unidad:unidad || '', inicial:valor != null && valor !== '' ? String(valor) : '', decimales:true, permitirCero:true, permitirVacio:true, onListo:v => cb(v)}); }
+function modal(html){
+  let m = $('#fx-modal'); if(!m){ m = document.createElement('div'); m.id = 'fx-modal'; document.body.appendChild(m); }
+  if(html == null){ m.className = ''; m.innerHTML = ''; F.m = null; return; }
+  m.innerHTML = '<div class="rx-box"><button class="rx-x" data-fx="m-x" aria-label="Cerrar">✕</button>' + html + '</div>'; m.className = 'show';
+}
+
+/* ---------- vistas ---------- */
+const sel = () => filas().filter(d => (F.est === 'todas' || d.estacion === F.est));
+function totalPorProducto(){ const m = {}; filas().forEach(d => { m[d.producto_id] = (m[d.producto_id] || 0) + (d.cantidad || 0); }); return m; }
+function bajoMinimo(){ const t = totalPorProducto(); return cat().filter(it => it.min > 0 && (t[it.id] || 0) < it.min); }
+function noCuadran(){
+  const out = [], tot = {};
+  filas().forEach(d => { const k = d.producto_id + '|' + (d.estado === 'materia_prima' ? 'mp' : 'bodega'); tot[k] = (tot[k] || 0) + (d.cantidad || 0); });
+  const leg = {};
+  try { const B = window.BGS; (B.mp || []).forEach(m => { leg[m.id + '|mp'] = m.cantidad_actual || 0; }); } catch(e){}
+  try { Object.keys(inventarioActual || {}).forEach(id => { leg[id + '|bodega'] = inventarioActual[id].cantidad_actual || 0; }); } catch(e){}
+  Object.keys(leg).concat(Object.keys(tot)).filter((k, i, a) => a.indexOf(k) === i).forEach(k => { const a = r3(leg[k] || 0), b = r3(tot[k] || 0); if(Math.abs(a - b) > 0.001) out.push({k:k, total:a, est:b}); });
+  return out;
+}
+function tabs(){
+  return '<div class="rx-tabs">' + [['res', 'Resumen'], ['est', 'Estaciones'], ['mov', 'Movimientos']].map(t => '<button class="rx-tab ' + (F.tab === t[0] ? 'on' : '') + '" data-fx="tab" data-v="' + t[0] + '">' + t[1] + '</button>').join('') + '</div>';
+}
+function estChips(todas){
+  return '<div class="rx-chips sm fx-scroll">' + (todas ? '<button class="rx-chip ' + (F.est === 'todas' ? 'on' : '') + '" data-fx="est" data-v="todas">Todo el Facility</button>' : '') +
+    estaciones().map(e => '<button class="rx-chip ' + (F.est === e.id ? 'on' : '') + '" data-fx="est" data-v="' + e.id + '">' + e.ic + ' ' + esc(e.nombre) + '</button>').join('') + '</div>';
+}
+function render(){
+  const r = $('#fx-root'); if(!r) return;
+  let h = '<div class="fx-top"><div class="fx-t">Inventario del Facility</div><button class="rx-b sm" data-fx="menu" aria-label="Más">⚙</button></div>' + tabs();
+  h += F.tab === 'est' ? vEst() : F.tab === 'mov' ? vMov() : vRes();
+  r.innerHTML = h;
+  const a = r.querySelector('[data-focus]'); if(a && F.focus){ try { a.focus(); a.setSelectionRange(a.value.length, a.value.length); } catch(e){} } F.focus = false;
+}
+function vRes(){
+  const f = sel(), pids = (estado) => new Set(f.filter(d => !estado || d.estado === estado).map(d => d.producto_id)).size;
+  const bajo = bajoMinimo().length, nc = noCuadran();
+  let h = estChips(true) +
+    '<div class="fx-kp"><div class="rx-card"><small>Productos</small><b>' + pids() + '</b></div><div class="rx-card"><small>Materia prima</small><b>' + pids('materia_prima') + '</b></div>' +
+    '<div class="rx-card"><small>En proceso</small><b>' + pids('en_proceso') + '</b></div><div class="rx-card"><small>Terminados</small><b>' + pids('terminado') + '</b></div>' +
+    '<div class="rx-card ' + (bajo ? 'wn' : '') + '"><small>Stock bajo</small><b>' + bajo + '</b></div></div>' +
+    '<button class="rx-b ac big" data-fx="tr">⇄ Trasladar entre estaciones</button><div class="rx-two"><button class="rx-b" data-fx="baja">🗑 Dar de baja</button><button class="rx-b" data-fx="cont">📋 Contar</button></div>';
+  if(F.est === 'todas'){
+    h += '<div class="rx-card"><h3>Por estación</h3>' + estaciones().map(e => { const n = new Set(filas().filter(d => d.estacion === e.id).map(d => d.producto_id)).size;
+      return '<button class="fx-er" data-fx="est-ir" data-v="' + e.id + '"><span>' + e.ic + ' ' + esc(e.nombre) + '</span><b>' + n + ' producto' + (n === 1 ? '' : 's') + ' ›</b></button>'; }).join('') +
+      '<button class="rx-lnk" data-fx="est-nueva">＋ Agregar estación</button></div>';
+  }
+  if(nc.length) h += '<button class="rx-b fx-warn" data-fx="nc">⚠ ' + nc.length + ' producto' + (nc.length === 1 ? '' : 's') + ' no cuadra' + (nc.length === 1 ? '' : 'n') + ' con el total · ver</button>';
+  h += '<button class="rx-b" data-fx="viejo">📝 Pedidos y fichas de productos</button>';
+  return h;
+}
+function vEst(){
+  const q = norm(F.q);
+  let l = sel();
+  if(F.estado !== 'todos') l = l.filter(d => d.estado === F.estado);
+  if(q) l = l.filter(d => norm(d.producto_nombre).indexOf(q) >= 0);
+  l.sort((a, b) => String(a.producto_nombre).localeCompare(String(b.producto_nombre)));
+  return estChips(true) + '<input class="rx-in" id="fx-q" placeholder="Buscar producto…" autocomplete="off" value="' + esc(F.q) + '">' +
+    '<div class="rx-chips sm">' + [['todos', 'Todo'], ['materia_prima', 'Materia prima'], ['en_proceso', 'En proceso'], ['terminado', 'Terminados'], ['retenido', 'Retenido']].map(x => '<button class="rx-chip ' + (F.estado === x[0] ? 'on' : '') + '" data-fx="estado" data-v="' + x[0] + '">' + x[1] + '</button>').join('') + '</div>' +
+    (l.length ? '<div class="rx-list">' + l.map(d => '<div class="fx-row"><div class="fx-n"><b>' + esc(d.producto_nombre) + '</b><div class="rx-mu">' + (F.est === 'todas' ? esc(estIc(d.estacion) + ' ' + estNom(d.estacion)) + ' · ' : '') + (d.ultimo_lote ? 'Lote ' + esc(d.ultimo_lote) + ' · ' : '') + (d.ultimo_vence ? 'Vence ' + esc(d.ultimo_vence) : '') + '</div><span class="rx-tag ' + (TAGC[d.estado] === 't3' ? 'ok' : TAGC[d.estado] === 't2' ? 'diferencia' : TAGC[d.estado] === 't4' ? 'no_llego' : '') + '">' + ESTADOS[d.estado] + '</span></div>' +
+      '<div class="fx-q ' + (d.cantidad < 0 ? 'neg' : '') + '">' + fmt(d.cantidad) + '<small> ' + esc(unidadDe(d)) + '</small></div></div>').join('') + '</div>'
+      : '<div class="rx-vacio">No hay productos aquí todavía.<br><span class="rx-mu">Aparecen al confirmar una recepción o producir.</span></div>');
+}
+function vMov(){
+  const q = norm(F.mq); let l = F.movs.slice();
+  if(F.mf === 'ent') l = l.filter(m => m.cantidad > 0 && /recepcion|produccion|procesamiento|traslado_entra/.test(m.tipo));
+  else if(F.mf === 'prod') l = l.filter(m => /produccion|procesamiento|consumo/.test(m.tipo));
+  else if(F.mf === 'sal') l = l.filter(m => m.cantidad < 0 && !/consumo|traslado/.test(m.tipo));
+  else if(F.mf === 'tr') l = l.filter(m => /traslado/.test(m.tipo));
+  if(q) l = l.filter(m => norm(m.producto_nombre + ' ' + (m.responsable || '') + ' ' + (m.lote || '')).indexOf(q) >= 0);
+  return '<input class="rx-in" id="fx-mq" placeholder="Buscar producto, responsable o lote…" autocomplete="off" value="' + esc(F.mq) + '">' +
+    '<div class="rx-chips sm">' + [['todos', 'Todos'], ['ent', 'Entradas'], ['prod', 'Producción'], ['tr', 'Traslados'], ['sal', 'Salidas']].map(x => '<button class="rx-chip ' + (F.mf === x[0] ? 'on' : '') + '" data-fx="mf" data-v="' + x[0] + '">' + x[1] + '</button>').join('') + '</div>' +
+    (l.length ? '<div class="rx-list">' + l.slice(0, 120).map(m => '<div class="fx-row"><div class="fx-n"><b>' + esc(TIPOS[m.tipo] || m.tipo) + ' · ' + esc(m.producto_nombre) + '</b><div class="rx-mu">' + esc(estIc(m.estacion) + ' ' + estNom(m.estacion)) + ' · ' + esc(ESTADOS[m.estado] || '') + (m.lote ? ' · Lote ' + esc(m.lote) : '') + '</div><div class="rx-mu">' + esc(fechaDia(m.fecha)) + ' · ' + esc(m.responsable || 'sin responsable') + (m.nota ? ' · ' + esc(m.nota) : '') + '</div></div>' +
+      '<div class="fx-q ' + (m.cantidad < 0 ? 'neg' : 'pos') + '">' + (m.cantidad > 0 ? '+' : '') + fmt(m.cantidad) + '</div></div>').join('') + '</div>' : '<div class="rx-vacio">Sin movimientos todavía.</div>');
+}
+
+/* ---------- acciones con ventana: trasladar, baja, contar ---------- */
+const respRow = () => { const nom = empleados(), r = respDe();
+  return '<div class="rx-dq"><span>Responsable</span><div class="rx-chips sm">' + nom.map(n => '<button class="rx-chip ' + (r === n ? 'on' : '') + '" data-fx="resp" data-v="' + esc(n) + '">' + esc(n) + '</button>').join('') +
+    '<button class="rx-chip ' + (r && nom.indexOf(r) < 0 ? 'on' : '') + '" data-fx="resp-otro">' + (r && nom.indexOf(r) < 0 ? esc(r) : 'Otro') + '</button></div></div>'; };
+function pickDoc(){
+  const titulo = F.m.titulo;
+  const q = norm(F.m.q), l = filas().filter(d => d.cantidad > 0.0001 && (!q || norm(d.producto_nombre).indexOf(q) >= 0)).sort((a, b) => String(a.producto_nombre).localeCompare(String(b.producto_nombre))).slice(0, 60);
+  modal('<h3>' + titulo + '</h3><input class="rx-in" id="fx-pq" data-focus placeholder="Buscar producto…" autocomplete="off" value="' + esc(F.m.q || '') + '"><div class="rx-pl">' +
+    (l.length ? l.map(d => '<button class="rx-pi" data-fx="pick" data-id="' + esc(d.id) + '"><span>' + esc(d.producto_nombre) + '<small> ' + esc(estIc(d.estacion) + ' ' + estNom(d.estacion) + ' · ' + ESTADOS[d.estado]) + '</small></span><b>' + fmt(d.cantidad) + ' ' + esc(unidadDe(d)) + '</b></button>').join('') : '<div class="rx-mu">No hay existencias registradas.</div>') + '</div>');
+  const f = $('#fx-modal [data-focus]'); if(f && F.focusM){ try { f.focus(); f.setSelectionRange(f.value.length, f.value.length); } catch(e){} } F.focusM = false;
+}
+function abrirAccion(k){ F.m = {k:k, titulo:(k === 'tr' ? 'Trasladar: ¿qué producto?' : k === 'baja' ? 'Dar de baja: ¿qué producto?' : 'Contar: ¿qué producto?'), q:'', op:k + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), doc:null, qty:null, dest:null, mot:null}; F.focusM = true; pickDoc(); }
+function formAccion(){
+  const M = F.m, d = F.stock[M.doc]; if(!d){ modal(null); return; }
+  const u = unidadDe(d);
+  let h = '<h3>' + (M.k === 'tr' ? '⇄ Trasladar' : M.k === 'baja' ? '🗑 Dar de baja' : '📋 Contar') + '</h3><div class="rx-card" style="padding:8px"><b>' + esc(d.producto_nombre) + '</b><div class="rx-mu">' + esc(estIc(d.estacion) + ' ' + estNom(d.estacion)) + ' · ' + ESTADOS[d.estado] + (M.k === 'cont' ? '' : ' · hay ' + fmt(d.cantidad) + ' ' + esc(u)) + '</div></div>';
+  if(M.k === 'tr') h += '<div class="rx-dq"><span>Destino</span><div class="rx-chips sm">' + estaciones().filter(e => e.id !== d.estacion).map(e => '<button class="rx-chip ' + (M.dest === e.id ? 'on' : '') + '" data-fx="dest" data-v="' + e.id + '">' + e.ic + ' ' + esc(e.nombre) + '</button>').join('') + '</div></div>';
+  if(M.k === 'baja') h += '<div class="rx-dq"><span>Motivo</span><div class="rx-chips sm">' + MOT_BAJA.map(x => '<button class="rx-chip ' + (M.mot === x ? 'on' : '') + '" data-fx="mot" data-v="' + x + '">' + x + '</button>').join('') + '</div></div>';
+  h += '<div class="rx-dq"><span>' + (M.k === 'cont' ? 'Cantidad contada' : 'Cantidad') + '</span><button class="rx-q big" data-fx="qty"><b>' + (M.qty != null ? fmt(M.qty) : '—') + '</b><em>' + esc(u) + '</em></button></div>';
+  if(M.k === 'tr' && M.qty > 0 && M.dest) h += '<div class="rx-mu">Después: ' + esc(estNom(d.estacion)) + ' ' + fmt(r3(d.cantidad - M.qty)) + ' · ' + esc(estNom(M.dest)) + ' +' + fmt(M.qty) + ' · el total del Facility no cambia</div>';
+  if(M.k === 'cont' && M.qty != null){ const dif = r3(M.qty - d.cantidad); h += '<div class="rx-card ' + (dif ? 'rx-aviso' : '') + '">Sistema: <b>' + fmt(d.cantidad) + '</b> · Contado: <b>' + fmt(M.qty) + '</b> · Diferencia: <b>' + (dif > 0 ? '+' : '') + fmt(dif) + '</b>' + (dif ? '<div class="rx-mu">El ajuste pide el código de autorización.</div>' : '') + '</div>'; }
+  h += respRow() + '<button class="rx-b ok big" data-fx="go">' + (M.k === 'tr' ? 'Confirmar traslado' : M.k === 'baja' ? 'Confirmar baja' : 'Guardar conteo') + '</button>';
+  modal(h);
+}
+const legacyCol = estado => estado === 'materia_prima' ? 'inventario_materia_prima' : 'inventario_bodega';
+async function ejecutar(){
+  const M = F.m; if(!M || F.busy) return; const d = F.stock[M.doc]; if(!d) return;
+  const resp = respDe(); if(!resp){ toast('Elige el responsable'); return; }
+  if(!(M.qty != null && (M.qty > 0 || M.k === 'cont'))){ toast('Falta la cantidad'); return; }
+  if(M.k === 'tr' && !M.dest){ toast('Elige la estación destino'); return; }
+  if(M.k === 'baja' && !M.mot){ toast('Elige el motivo'); return; }
+  if(M.k !== 'cont' && M.qty > d.cantidad + 0.0001){ toast('Solo hay ' + fmt(d.cantidad) + ' ' + unidadDe(d)); return; }
+  const dif = M.k === 'cont' ? r3(M.qty - d.cantidad) : 0;
+  const lanzar = async () => {
+    F.busy = true; setTimeout(() => { F.busy = false; }, 4000);
+    const op = M.op, sref = db.collection('stock_facility').doc(M.doc), ts = SV(), base = {producto_id:d.producto_id, producto_nombre:d.producto_nombre, estado:d.estado, responsable:resp, operacion_id:op, empresa:EMPRESA, fecha:ts};
+    try {
+      await db.runTransaction(async t => {
+        const dup = await t.get(db.collection('movimientos_estacion').doc(op + '_o')); if(dup.exists) throw new Error('DUP');
+        const s = await t.get(sref), cur = s.exists ? (s.data().cantidad || 0) : 0;
+        if(M.k !== 'cont' && M.qty > cur + 0.0001) throw new Error('SIN_STOCK');
+        if(M.k === 'tr'){
+          t.set(sref, {cantidad:INC(-M.qty), actualizado:ts}, {merge:true});
+          t.set(db.collection('stock_facility').doc(docId(d.producto_id, M.dest, d.estado)), {producto_id:d.producto_id, producto_nombre:d.producto_nombre, estacion:M.dest, estado:d.estado, cantidad:INC(M.qty), unidad:d.unidad || null, actualizado:ts, empresa:EMPRESA, ultimo_lote:d.ultimo_lote || null, ultimo_vence:d.ultimo_vence || null}, {merge:true});
+          t.set(db.collection('movimientos_estacion').doc(op + '_o'), Object.assign({}, base, {estacion:d.estacion, cantidad:-M.qty, tipo:'traslado_sale', nota:'→ ' + estNom(M.dest), lote:d.ultimo_lote || null}));
+          t.set(db.collection('movimientos_estacion').doc(op + '_d'), Object.assign({}, base, {estacion:M.dest, cantidad:M.qty, tipo:'traslado_entra', nota:'← ' + estNom(d.estacion), lote:d.ultimo_lote || null}));
+        } else if(M.k === 'baja'){
+          const bid = db.collection('bajas_bodega').doc(op);
+          t.set(sref, {cantidad:INC(-M.qty), actualizado:ts}, {merge:true});
+          t.set(db.collection(legacyCol(d.estado)).doc(d.producto_id), {producto_nombre:d.producto_nombre, cantidad_actual:INC(-M.qty), ultima_actualizacion:ts, empresa:EMPRESA, bodega:BODEGA}, {merge:true});
+          t.set(bid, {empresa:EMPRESA, bodega:BODEGA, origen:'inventario', estacion:d.estacion, inventario:d.estado === 'materia_prima' ? 'materia_prima' : 'terminado', producto_id:d.producto_id, producto_nombre:d.producto_nombre, unidad:unidadDe(d), cantidad:M.qty, motivo:M.mot, responsable:resp, anulada:false, fecha:ts});
+          t.set(db.collection('movimientos_inventario_bodega').doc(op), {producto_id:d.producto_id, producto_nombre:d.producto_nombre, inventario:d.estado === 'materia_prima' ? 'materia_prima' : 'terminado', tipo:'baja', cantidad:-M.qty, motivo:M.mot, responsable:resp, empresa:EMPRESA, bodega:BODEGA, baja_id:op, fecha:ts, nota:'Baja: ' + M.mot});
+          t.set(db.collection('movimientos_estacion').doc(op + '_o'), Object.assign({}, base, {estacion:d.estacion, cantidad:-M.qty, tipo:'baja', nota:M.mot, ref:op}));
+        } else {
+          const df = r3(M.qty - cur);
+          t.set(sref, {cantidad:M.qty, actualizado:ts}, {merge:true});
+          if(df) t.set(db.collection(legacyCol(d.estado)).doc(d.producto_id), {producto_nombre:d.producto_nombre, cantidad_actual:INC(df), ultima_actualizacion:ts, empresa:EMPRESA, bodega:BODEGA}, {merge:true});
+          t.set(db.collection('conteos_fisicos').doc(op), {tipo:'estacion', estacion:d.estacion, fecha:ts, contado_por:resp, contados:1, con_diferencia:df ? 1 : 0, lineas:[{producto_id:d.producto_id, producto_nombre:d.producto_nombre, unidad:unidadDe(d), sistema:cur, contado:M.qty, diferencia:df}]});
+          t.set(db.collection('movimientos_estacion').doc(op + '_o'), Object.assign({}, base, {estacion:d.estacion, cantidad:df, tipo:'ajuste_conteo', nota:'sistema ' + fmt(cur) + ' · contado ' + fmt(M.qty), ref:op}));
+        }
+      });
+      modal(null); toast(M.k === 'tr' ? 'Traslado hecho' : M.k === 'baja' ? 'Baja registrada' : (dif ? 'Ajuste guardado' : 'Conteo correcto'));
+    } catch(e){ F.busy = false; const m = String(e && e.message); if(m !== 'DUP') console.error(e); toast(m === 'DUP' ? 'Esa operación ya se registró.' : m === 'SIN_STOCK' ? 'Ya no hay esa cantidad en la estación.' : errTxt(e)); return; }
+    F.busy = false;
+  };
+  if(M.k === 'cont' && dif){ if(!window.lcPedirCodigo){ toast('No se pudo pedir el código'); return; } window.lcPedirCodigo(lanzar); } else lanzar();
+}
+
+/* ---------- reinicio y revisión ---------- */
+async function empezarDeCero(){
+  if(!confirm('¿Empezar el inventario del Facility desde cero?\n\nSe guarda una copia y todas las existencias quedan en 0. El historial de movimientos NO se borra.')) return;
+  F.busy = true;
+  try {
+    const snap = {bodega:{}, mp:{}, estaciones:{}}, [a, b, c] = await Promise.all([db.collection('inventario_bodega').get(), db.collection('inventario_materia_prima').get(), db.collection('stock_facility').get()]);
+    a.forEach(d => { snap.bodega[d.id] = d.data(); }); b.forEach(d => { snap.mp[d.id] = d.data(); }); c.forEach(d => { snap.estaciones[d.id] = d.data(); });
+    await db.collection('respaldos_inventario').add({tipo:'antes_de_cero', por:respDe() || mail(), fecha:SV(), empresa:EMPRESA, datos:JSON.stringify(snap)});
+    const ops = []; const ts = SV();
+    a.forEach(d => ops.push(w => w.set(db.collection('inventario_bodega').doc(d.id), {cantidad_actual:0, ultima_actualizacion:ts}, {merge:true})));
+    b.forEach(d => ops.push(w => w.set(db.collection('inventario_materia_prima').doc(d.id), {cantidad_actual:0, ultima_actualizacion:ts}, {merge:true})));
+    c.forEach(d => ops.push(w => w.set(db.collection('stock_facility').doc(d.id), {cantidad:0, actualizado:ts}, {merge:true})));
+    ops.push(w => w.set(db.collection('movimientos_estacion').doc(), {producto_id:'-', producto_nombre:'Todo el inventario', estacion:'bodega', estado:'materia_prima', cantidad:0, tipo:'reinicio', responsable:respDe() || mail() || '', nota:'Inventario puesto en 0 (copia guardada)', empresa:EMPRESA, fecha:ts}));
+    for(let i = 0; i < ops.length; i += 400){ const w = db.batch(); ops.slice(i, i + 400).forEach(f => f(w)); await w.commit(); }
+    toast('Inventario en 0. Copia guardada.');
+  } catch(e){ console.error(e); toast(errTxt(e)); }
+  F.busy = false; modal(null);
+}
+function verNoCuadran(){
+  const l = noCuadran(); const nom = id => { const c = catPor(id); return c ? c.nombre : id; };
+  modal('<h3>No cuadran con el total</h3><div class="rx-mu">El total del Facility y la suma por estaciones deberían ser iguales. La diferencia viene de movimientos anteriores al nuevo inventario: se corrige con un conteo en la estación.</div>' +
+    l.slice(0, 40).map(x => { const [id, tp] = x.k.split('|'); return '<div class="rx-sr"><div class="rx-sn"><b>' + esc(nom(id)) + '</b><div class="rx-mu">' + (tp === 'mp' ? 'Materia prima' : 'Terminado / directo') + ' · total ' + fmt(x.total) + ' · estaciones ' + fmt(x.est) + '</div></div></div>'; }).join(''));
+}
+
+/* ---------- eventos ---------- */
+document.addEventListener('click', e => {
+  const t = e.target.closest ? e.target.closest('[data-fx]') : null; if(!t) return;
+  const root = $('#fx-root'), mod = $('#fx-modal'); if(!((root && root.contains(t)) || (mod && mod.contains(t)))) return;
+  const a = t.getAttribute('data-fx'), v = t.getAttribute('data-v'), id = t.getAttribute('data-id');
+  switch(a){
+    case 'tab': F.tab = v; render(); break;
+    case 'est': F.est = v; render(); break;
+    case 'est-ir': F.est = v; F.tab = 'est'; render(); window.scrollTo(0, 0); break;
+    case 'estado': F.estado = v; render(); break;
+    case 'mf': F.mf = v; render(); break;
+    case 'tr': case 'baja': case 'cont': abrirAccion(a); break;
+    case 'pick': F.m.doc = id; F.m.qty = null; formAccion(); break;
+    case 'dest': F.m.dest = v; formAccion(); break;
+    case 'mot': F.m.mot = v; formAccion(); break;
+    case 'qty': { const d = F.stock[F.m.doc]; num(F.m.k === 'cont' ? 'Cantidad contada' : 'Cantidad', unidadDe(d), F.m.qty, x => { if(x == null) return; F.m.qty = r3(x); formAccion(); }); break; }
+    case 'resp': respSet(v); if(F.m) formAccion(); break;
+    case 'resp-otro': { const n = prompt('Nombre de quien lo hace'); if(n && n.trim()){ respSet(n.trim()); if(F.m) formAccion(); } break; }
+    case 'go': ejecutar(); break;
+    case 'm-x': modal(null); break;
+    case 'nc': verNoCuadran(); break;
+    case 'viejo': cambiarVista('bodega'); setTimeout(() => { if(window.bgIr) bgIr('inventario'); }, 120); break;
+    case 'est-nueva': { if(!window.lcPedirCodigo) break; window.lcPedirCodigo(() => { const n = prompt('Nombre de la estación'); if(!n || !n.trim()) return; const idn = norm(n).replace(/ /g, '_'); if(!idn || estaciones().some(x => x.id === idn)){ toast('Esa estación ya existe'); return; }
+      db.collection('config_facility').doc('estaciones').set({lista:F.extra.concat([{id:idn, nombre:n.trim(), ic:'📍'}]), actualizado:SV()}, {merge:true}).catch(er => { console.error(er); toast(errTxt(er)); }); }); break; }
+    case 'menu': { modal('<h3>Más opciones</h3><button class="rx-b big" data-fx="viejo">📝 Pedidos y fichas de productos</button><button class="rx-b big er" data-fx="cero">Empezar el inventario desde cero</button>'); break; }
+    case 'cero': { if(!window.lcPedirCodigo) break; modal(null); window.lcPedirCodigo(empezarDeCero); break; }
+  }
+});
+document.addEventListener('input', e => {
+  const t = e.target; if(!t || !t.id) return;
+  if(t.id === 'fx-q'){ F.q = t.value; F.focus = true; render(); }
+  else if(t.id === 'fx-mq'){ F.mq = t.value; F.focus = true; render(); }
+  else if(t.id === 'fx-pq' && F.m){ F.m.q = t.value; F.focusM = true; pickDoc(); }
+});
+window.fxView = function(n){ if(n === 'fx'){ escuchar(); render(); } };
+window.FXS = F;
+setTimeout(() => { if(window.firebase && typeof db !== 'undefined') escuchar(); }, 900);
 })();
 
 </script>
