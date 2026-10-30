@@ -1853,16 +1853,17 @@
   @media screen and (max-width: 700px) {
     #guias-lista .guia-card { min-height: 72px; padding: 14px; }
     #guias-detalle .detalle-panel { padding: 12px; margin: 8px; }
-    .gd-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 12px 2px; }
-    .gd-row .gd-nm { grid-column: 1 / -1; flex: none; }
-    .gd-row .gd-q { min-width: 0; min-height: 52px; font-size: 20px; font-weight: 700; }
-    .gd-row .gd-x { min-height: 52px; min-width: 96px; }
-    .gd-row .gd-q { grid-column: 1; grid-row: 2; } .gd-row .gd-x { grid-column: 2; grid-row: 2; }
-    .gd-row .gd-or { grid-column: 1 / -1; grid-row: 3; }
-    .gd-row .gd-or .lcb { flex: 1; min-height: 48px; }
-    .gd-row > .lcb:not(.gd-q):not(.gd-x) { grid-column: 1 / -1; grid-row: 4; min-height: 48px; }
+    #guias-detalle .gd-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px 2px; }
+    #guias-detalle .gd-row .gd-nm { flex: 1 1 calc(100% - 118px); min-width: 0; font-size: 15px; }
+    #guias-detalle .gd-row .gd-sub { font-size: 12px; }
+    #guias-detalle .gd-row .lcb { min-height: 36px; height: 36px; padding: 0 8px; font-size: 12px; white-space: nowrap; border-radius: 9px; border-width: 1.5px; font-weight: 700; }
+    #guias-detalle .gd-row .gd-q { flex: 0 0 auto; min-width: 0; font-size: 13px; margin-left: auto; }
+    #guias-detalle .gd-row .gd-or { display: contents; }
+    #guias-detalle .gd-row .gd-or .lcb { flex: 0 0 auto; }
+    #guias-detalle .gd-row .gd-x { margin-left: auto; }
+    #guias-detalle .gd-row .gd-x { min-width: 0; }
     .gd-acts { position: sticky; bottom: 0; background: #fff; padding: 10px 0 12px; margin: 14px 0 0; border-top: 1px solid #e2e0d6; z-index: 4; }
-    .gd-acts .lcb { min-height: 54px; }
+    .gd-acts .lcb { min-height: 46px; }
     .gd-acts .lcb.big { flex: 1 1 100%; font-size: 17px; }
     .gd-acts .lcb.er { flex: 1 1 100%; }
   }
@@ -3039,7 +3040,6 @@ function verGuiaPorDespachar(guia) {
         <button class="btn-cerrar" onclick="cerrarDetalleGuia()">&times;</button>
       </div>
       <div class="gd-top"><button class="lcb okb" onclick="window.print()">🖨 Imprimir guía</button></div>
-      <div class="gd-ayuda">Revisa lo que hay, ajusta cantidades y toca <b>Despachar</b>. Al despachar baja de bodega y el local lo ve en <b>Por recibir</b>.${orden.some(i => esFrio(consItem(guia.items[i]))) ? " <b>Lo frío va al final:</b> revísalo (calidad y cantidad) y sácalo del frío justo antes de salir." : ""}</div>
       ${filas}
       ${gdImpresion(guia, orden)}
       <div class="gd-acts">
