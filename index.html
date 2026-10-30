@@ -1867,6 +1867,15 @@
     .gd-acts .lcb.big { flex: 1 1 100%; font-size: 17px; }
     .gd-acts .lcb.er { flex: 1 1 100%; }
   }
+
+  /* ===== Despacho: pestañas ===== */
+  .dsp-tabs { display: flex; gap: 8px; padding: 10px 14px 0; }
+  .dsp-tab { flex: 1; min-height: 46px; border-radius: 12px; border: 1.5px solid #b4b2a9; background: #fff; font: inherit; font-weight: 700; font-size: 14px; color: #3d3d3a; }
+  .dsp-tab.on { background: #4285f4; border-color: #4285f4; color: #fff; }
+  .dsp-n { background: #c0392b; color: #fff; border-radius: 10px; padding: 0 7px; font-size: 12px; margin-left: 4px; }
+  .dsp-n:empty { display: none; }
+  #dsp-lista, #guias-lista { padding-top: 10px; }
+  @media print { .dsp-tabs, #dsp-pd, #dsp-man { display: none !important; } #guias-detalle .gd-screen { display: none !important; } }
 </style>
 </head>
 <body>
@@ -1956,6 +1965,9 @@
 
 <!-- VISTA: DESPACHO -->
 <div class="vista" id="vista-despacho">
+  <div class="dsp-tabs"><button class="dsp-tab on" id="dsp-tab-pd" onclick="dspTab('pd')">📦 Por despachar <span id="dsp-n" class="dsp-n"></span></button><button class="dsp-tab" id="dsp-tab-man" onclick="dspTab('man')">✍ Despacho manual</button></div>
+  <div id="dsp-pd"><div id="dsp-lista"></div><div id="dsp-detalle"></div></div>
+  <div id="dsp-man" style="display:none">
   <div class="panel">
     <label for="local">Local de destino</label>
     <div id="local-chips" class="dsp-chips"></div>
@@ -1980,6 +1992,7 @@
     <span class="contador" id="contador">0 items seleccionados</span>
     <button class="btn-despachar" id="btn-despachar" onclick="crearGuiaDespacho()">Crear guia de despacho</button>
   </div>
+</div>
 </div>
 
 <!-- VISTA: GUIAS -->
@@ -2631,7 +2644,7 @@ async function crearGuiaDespacho() {
    PESTANAS
    ============================================================ */
 const TITULOS_VISTA = {
-  pedidos: ["Pedidos de locales", "Acepta el pedido: el mercado va a Guardadas y la bodega a Guías para despachar"],
+  pedidos: ["Pedidos de locales", "Acepta el pedido: el mercado va a Guardadas y la bodega a Despacho"],
   compra: ["Lista de compras", ""],
   provs: ["Proveedores", "Los proveedores que nos entregan: nombre, teléfono y qué nos venden"],
   fx: ["Inventario", "Qué hay, dónde está y cuánto"],
@@ -2639,8 +2652,8 @@ const TITULOS_VISTA = {
   proveedores: ["Recepcion proveedores", "Registra lo que llega de cada proveedor: cantidad, costo y observaciones"],
   estaciones: ["Lista interna", "Toca lo que necesita la estación: va directo a Lista de compras"],
   produccion: ["Producción · Registro", "Registra lo producido: suma al inventario, descuenta materia prima y saca la etiqueta"],
-  despacho: ["Despacho manual", "Para enviar algo SIN pedido del local. Lo que piden los locales se despacha desde Guías"],
-  guias: ["Guias", "Despacha lo aceptado (Por despachar), imprime y consulta las guias"],
+  despacho: ["Despacho", "Lo aceptado en Pedidos: revisa, ajusta y despacha"],
+  guias: ["Guías", "Último paso: imprime la guía de lo despachado"],
   bodega: ["Bodega", "Recibe la materia prima, procesa con receta fija y mira el inventario"],
   inventario: ["Inventario", "Qué hay en bodega ahora, dónde está y conteos físicos"]
 };
@@ -2825,8 +2838,8 @@ function escucharGuias() {
     guiasCache = [];
     snapshot.forEach(doc => guiasCache.push({ id: doc.id, ...doc.data() }));
     renderListaGuias();
-    const nb = guiasCache.filter(g => g.estado === "por_despachar").length, bt = document.getElementById("nav-guias");
-    navBadge("guias", nb);
+    const nb = guiasCache.filter(g => g.estado === "por_despachar").length;
+    navBadge("despacho", nb);
     if (guiaAbiertaId) { if (guiasCache.some(g => g.id === guiaAbiertaId)) verGuia(guiaAbiertaId); else cerrarDetalleGuia(); }
   }, err => console.error(err));
 }
@@ -2837,17 +2850,11 @@ function gdFecha(ts) {
   const d = ts.toDate(), dia = d.toLocaleDateString("es-EC", {weekday: "long"});
   return dia.charAt(0).toUpperCase() + dia.slice(1) + " " + d.toLocaleString("es-EC");
 }
-function renderListaGuias() {
-  const cont = document.getElementById("guias-lista");
-  if (guiasCache.length === 0) {
-    cont.innerHTML = `<div class="panel">Todavia no hay guias creadas.</div>`;
-    return;
-  }
-  const ordenadas = guiasCache.filter(g => g.estado === "por_despachar").concat(guiasCache.filter(g => g.estado !== "por_despachar"));
-  cont.innerHTML = ordenadas.map(g => {
-    const fecha = gdFecha(g.fecha_despacho) || "Guardando fecha...";
-    const estadoClase = g.estado || "despachado";
-    return `
+function guiaCardHtml(g) {
+  const fecha = gdFecha(g.fecha_despacho) || "Guardando fecha...";
+  const estadoClase = g.estado || "despachado";
+  const r = frioResumen(g);
+  return `
       <div class="guia-card" onclick="verGuia('${g.id}')">
         <div class="guia-card-top">
           <div>
@@ -2856,10 +2863,23 @@ function renderListaGuias() {
           </div>
           <span class="badge ${estadoClase}">${NOMBRES_ESTADO[estadoClase] || estadoClase}</span>
         </div>
-        ${(() => { const r = frioResumen(g); return r.alerta ? `<div class="frio-alerta">⚠ ${r.alerta} producto${r.alerta === 1 ? "" : "s"} frío${r.alerta === 1 ? "" : "s"} sin guardar fuera de tiempo</div>` : r.espera ? `<div class="frio-espera">⏱ ${r.espera} producto${r.espera === 1 ? "" : "s"} frío${r.espera === 1 ? "" : "s"} por guardar</div>` : ""; })()}
+        ${r.alerta ? `<div class="frio-alerta">⚠ ${r.alerta} producto${r.alerta === 1 ? "" : "s"} frío${r.alerta === 1 ? "" : "s"} sin guardar fuera de tiempo</div>` : r.espera ? `<div class="frio-espera">⏱ ${r.espera} producto${r.espera === 1 ? "" : "s"} frío${r.espera === 1 ? "" : "s"} por guardar</div>` : ""}
       </div>
     `;
-  }).join("");
+}
+function renderListaGuias() {
+  const por = guiasCache.filter(g => g.estado === "por_despachar"), ya = guiasCache.filter(g => g.estado !== "por_despachar");
+  const c1 = document.getElementById("guias-lista"), c2 = document.getElementById("dsp-lista");
+  if (c1) c1.innerHTML = ya.length ? ya.map(guiaCardHtml).join("") : `<div class="panel">Todavía no hay guías despachadas para imprimir.</div>`;
+  if (c2) c2.innerHTML = por.length ? por.map(guiaCardHtml).join("") : `<div class="panel">No hay guías por despachar. Aparecen aquí cuando aceptas un pedido en Pedidos de locales.</div>`;
+  const n = document.getElementById("dsp-n"); if (n) n.textContent = por.length ? por.length : "";
+}
+function dspTab(t) {
+  const pd = t !== 'man';
+  document.getElementById("dsp-pd").style.display = pd ? "" : "none";
+  document.getElementById("dsp-man").style.display = pd ? "none" : "";
+  document.getElementById("dsp-tab-pd").classList.toggle("on", pd);
+  document.getElementById("dsp-tab-man").classList.toggle("on", !pd);
 }
 
 function frioLinea(g, it){
@@ -2875,8 +2895,8 @@ function verGuia(id) {
   if (!guia) return;
   guiaAbiertaId = id;
 
+  if (guia.estado === "por_despachar") { document.getElementById("dsp-lista").style.display = "none"; verGuiaPorDespachar(guia); return; }
   document.getElementById("guias-lista").style.display = "none";
-  if (guia.estado === "por_despachar") { verGuiaPorDespachar(guia); return; }
 
   const fecha = gdFecha(guia.fecha_despacho);
 
@@ -2903,6 +2923,7 @@ function verGuia(id) {
         <button class="btn-cerrar" onclick="cerrarDetalleGuia()">&times;</button>
       </div>
       <button class="btn-despachar btn-imprimir" style="margin:0 0 10px" onclick="window.print()">🖨 Imprimir guía</button>
+      <div class="gd-screen">
       <div class="guia-fila-check guia-check-encabezado">
         <span class="guia-fila-nombre"></span>
         <span>Envia</span>
@@ -2910,12 +2931,8 @@ function verGuia(id) {
         <span>Observacion</span>
       </div>
       ${filasItems}
-      ${gdGavetas()}
-      <div style="display:flex; gap:20px; margin-top:16px; font-size:12px; color:#888780; flex-wrap:wrap;">
-        <span>Envia: _________________________</span>
-        <span>Recibe: _________________________</span>
-        <span>Hora: _____________</span>
       </div>
+      ${gdImpresion(guia, guia.items.map((it, i) => i).sort((a, b) => (esFrio(consItem(guia.items[a])) ? 1 : 0) - (esFrio(consItem(guia.items[b])) ? 1 : 0) || a - b))}
     </div>
   `;
 }
@@ -2982,7 +2999,9 @@ async function gdDespachar(id) {
     items.forEach(it => { it.conservacion = consItem(it); it.hora_salida_ms = ahora; });
     await db.collection("pedidos").doc(id).update({ estado: "despachado", fecha_despacho: firebase.firestore.FieldValue.serverTimestamp(), salida_ms: ahora, salida_revisada: sinRev.length === 0, despachado_por: "Nestor Santos", items: items });
     for (const it of items) { if (gdSaca(it)) await descontarInventarioBodega(it.producto_id, it.producto_nombre, it.cantidad_despachada); }
-    gdToast("Despachado a " + (NOMBRES_LOCAL[g.local] || g.local) + ". Ya lo ven en Por recibir.");
+    g.estado = "despachado";
+    gdToast("Despachado a " + (NOMBRES_LOCAL[g.local] || g.local) + ". Imprime la guía.");
+    cerrarDetalleGuia(); cambiarVista("guias"); verGuia(id);
   } catch (e) { console.error(e); gdToast("No se pudo despachar. Revisa la conexión."); }
   gdBusy = false;
 }
@@ -3029,7 +3048,7 @@ function verGuiaPorDespachar(guia) {
     </div>`;
   }).join("");
   const n = guia.items.filter(it => it.cantidad_despachada > 0).length;
-  document.getElementById("guias-detalle").innerHTML = `
+  document.getElementById("dsp-detalle").innerHTML = `
     <div class="detalle-panel">
       <div class="detalle-header">
         <div>
@@ -3039,9 +3058,7 @@ function verGuiaPorDespachar(guia) {
         </div>
         <button class="btn-cerrar" onclick="cerrarDetalleGuia()">&times;</button>
       </div>
-      <div class="gd-top"><button class="lcb okb" onclick="window.print()">🖨 Imprimir guía</button></div>
       ${filas}
-      ${gdImpresion(guia, orden)}
       <div class="gd-acts">
         <button class="lcb ${aviso ? "gd-warn" : "okb"} big" onclick="gdDespachar('${id}')">${aviso ? (falt.length ? "Falta stock en " + falt.length : "Sin revisar: " + sinRev.length + " producto" + (sinRev.length === 1 ? "" : "s") + " frío" + (sinRev.length === 1 ? "" : "s")) + " · toca otra vez para despachar igual" : "Despachar (" + n + ")"}</button>
         <button class="lcb er" onclick="gdEliminar('${id}')">Eliminar guía</button>
@@ -3051,8 +3068,8 @@ function verGuiaPorDespachar(guia) {
 
 function cerrarDetalleGuia() {
   guiaAbiertaId = null;
-  document.getElementById("guias-detalle").innerHTML = "";
-  document.getElementById("guias-lista").style.display = "block";
+  document.getElementById("guias-detalle").innerHTML = ""; document.getElementById("dsp-detalle").innerHTML = "";
+  document.getElementById("guias-lista").style.display = "block"; document.getElementById("dsp-lista").style.display = "block";
 }
 
 /* ============================================================
@@ -3587,9 +3604,9 @@ async function marcarCompraRealizada(id) {
     await db.collection("listas_compra").doc(id).update({ compra_realizada: true, fecha_compra_realizada: firebase.firestore.FieldValue.serverTimestamp(), ...totalesLista(lista.items, lista.monto_asignado, lista.carreta, lista.flete) });
     let carga = { ids: [], nombres: [] };
     try { carga = await cargarCompraAGuias(lista); if (carga.ids.length) await db.collection("listas_compra").doc(id).update({ guias_cargadas: carga.ids }); }
-    catch (e2) { console.error(e2); mostrarAviso("Compra realizada, pero no se pudo pasar a Guías. Reabre y vuelve a marcarla.", "error"); return; }
+    catch (e2) { console.error(e2); mostrarAviso("Compra realizada, pero no se pudo pasar a Despacho. Reabre y vuelve a marcarla.", "error"); return; }
     if (lista.local !== 'facility') setTimeout(() => lcFlete(id), 350);   // (Facility no lleva flete) pregunta el flete del transporte (se puede dejar en blanco)
-    const aGuias = carga.nombres.length ? " Pasó a Guías: " + carga.nombres.join(", ") + "." : "";
+    const aGuias = carga.nombres.length ? " Pasó a Despacho: " + carga.nombres.join(", ") + "." : "";
     mostrarAviso((sinCosto ? `Compra realizada. Ojo: ${sinCosto} producto(s) sin costo.` : "Compra realizada. Ya puedes enviarla a contabilidad o imprimirla.") + aGuias, sinCosto ? "error" : "ok");
   } catch (err) {
     console.error(err);
@@ -3602,7 +3619,7 @@ async function reabrirCompra(id) {
   if (!lista || lista.enviada_contabilidad) return;
   if (lista.recepcion_id || lista.recepciones_n) { mostrarAviso("Esta compra ya se recibió (total o parcial) en Bodega. Deshaz la recepción antes de reabrirla.", "error"); return; }
   const yaDesp = (lista.guias_cargadas || []).some(gid => { const g = guiasCache.filter(x => x.id === gid)[0]; return g && g.estado !== "por_despachar"; });
-  if (yaDesp) { mostrarAviso("Lo comprado ya se despachó en Guías: no se puede reabrir.", "error"); return; }
+  if (yaDesp) { mostrarAviso("Lo comprado ya se despachó: no se puede reabrir.", "error"); return; }
   try { await quitarCompraDeGuias(lista); await db.collection("listas_compra").doc(id).update({ compra_realizada: false, fecha_compra_realizada: null, guias_cargadas: [] }); }
   catch (err) { console.error(err); mostrarAviso("No se pudo reabrir. Verifica la conexion.", "error"); }
 }
@@ -6408,7 +6425,7 @@ function detalle(ped){
     '<div class="pd-head"><div><div class="pd-h1"><span class="pd-num">Pedido ' + numTxt(ped) + '</span>' + esc(LOCNOM[ped.local] || ped.local) + '</div><div class="pd-c2">' + esc(fechaTxt(ped.fecha_envio)) + (ped.enviado_por ? ' · enviado por ' + esc(ped.enviado_por) : '') + '</div></div><button class="lcb pri" data-pd="imprimir">🖨 Imprimir hoja</button></div>' +
     (ped.nota ? '<div class="pd-banner">📝 ' + esc(ped.nota) + '</div>' : '');
   if(hayM) h += '<div class="pd-sec">🛒 Mercado · pasa a Guardadas</div>' + filas(ped, 'mercado');
-  if(hayB) h += '<div class="pd-sec">📦 Bodega · pasa a Guías para despachar</div>' + filas(ped, 'bodega');
+  if(hayB) h += '<div class="pd-sec">📦 Bodega · pasa a Despacho</div>' + filas(ped, 'bodega');
   if(hayR) h += '<div class="pd-sec bad">⚠ Por revisar · producto no reconocido</div>' + filas(ped, 'revisar') + '<div class="pd-nota" style="padding:6px 4px">Estos productos no traen mercado/bodega ni están en el catálogo. Agrégalos a mano en Compras o Despacho.</div>';
   h += '<div class="pd-bar">';
   const aceptado = !!(ped.compra_lista_id || ped.despacho_id);
@@ -6575,7 +6592,7 @@ function aceptar(ped){
 }
 function snack(nm, nb){
   let s = $('#pd-snack'); if(!s){ s = document.createElement('div'); s.id = 'pd-snack'; document.body.appendChild(s); }
-  s.innerHTML = '<div class="pd-sn"><div><b>Pedido aceptado</b><br>' + (nm ? '🛒 ' + nm + ' en Guardadas' : '') + (nm && nb ? ' · ' : '') + (nb ? '📦 ' + nb + ' en Guías por despachar' : '') + '</div><button class="lcb" data-pd="deshacer">Deshacer</button></div>';
+  s.innerHTML = '<div class="pd-sn"><div><b>Pedido aceptado</b><br>' + (nm ? '🛒 ' + nm + ' en Guardadas' : '') + (nm && nb ? ' · ' : '') + (nb ? '📦 ' + nb + ' en Despacho' : '') + '</div><button class="lcb" data-pd="deshacer">Deshacer</button></div>';
   s.className = 'show'; clearTimeout(snack.t); snack.t = setTimeout(() => { s.className = ''; P.undo = null; }, 10000);
 }
 function deshacer(){
@@ -6607,7 +6624,7 @@ function deshacerEliminar(){
 window.PD_CARGADO = null;
 function aDespacho(ped){
   const its = efectivos(ped, 'bodega'); if(!its.length) return;
-  cambiarVista('despacho');
+  cambiarVista('despacho'); if(typeof dspTab === 'function') dspTab('man');
   document.querySelectorAll('.item.checked').forEach(el => { const c = document.getElementById('chk_' + el.dataset.id); if(c) c.checked = false; el.classList.remove('checked'); });
   const sel = document.getElementById('local'); if(sel){ sel.value = ped.local; if(typeof actualizarSelectListaCompra === 'function') actualizarSelectListaCompra(); if(typeof syncLocalChips === 'function') syncLocalChips(); }
   let n = 0;
@@ -6639,7 +6656,7 @@ document.addEventListener('click', e => {
     case 'quitar': { if(!ped) break; const it = ped.items.filter(x => x.producto_id === id)[0]; const aj = Object.assign({}, ped.ajustes || {});
       if(qty(ped, it) > 0) aj[id] = 0; else delete aj[id]; guardarAjustes(ped, aj); break; }
     case 'aceptar': if(ped) aceptar(ped); break;
-    case 'ir-guia': if(ped && ped.despacho_id){ const gid = ped.despacho_id; P.open = null; render(); cambiarVista('guias'); setTimeout(() => verGuia(gid), 60); } break;
+    case 'ir-guia': if(ped && ped.despacho_id){ const gid = ped.despacho_id; P.open = null; render(); const gg = guiasCache.filter(x => x.id === gid)[0]; if(!gg || gg.estado === 'por_despachar'){ cambiarVista('despacho'); dspTab('pd'); } else cambiarVista('guias'); setTimeout(() => verGuia(gid), 60); } break;
     case 'ver-compra': cambiarVista('compra'); if(window.LCS){ window.LCS.tab = 'listas'; if(ped) window.LCS.local = ped.local; } if(window.lcRefresh) lcRefresh(); { const b = document.querySelector('#lc-root [data-lc="tab"][data-v="listas"]'); if(b) b.click(); } break;
     case 'archivar': if(ped){ ped.estado = 'procesado'; db.collection('pedidos_locales').doc(ped.id).update({estado:'procesado', fecha_proceso:SV()}).catch(er => console.error(er)); P.open = null; render(); } break;
     case 'deshacer': deshacer(); break;
@@ -7620,7 +7637,7 @@ function vConta(){
   const libres = B.recs.filter(r => r.sin_compra);
   if(!ls.length && !libres.length) return h + '<div class="iv-vacio">Todavía no hay compras realizadas.</div>';
   h += '<div class="iv-list">' + ls.slice(0, 60).map(l => { const tot = l.total_costo || 0, n = l.recepciones_n || 0;
-    const rb = (!l.recepcion_id && !n && !l.requerimiento) ? '<span class="bg-tag ok">→ Va a Guías (no se recibe)</span>' : l.recepcion_parcial ? '<span class="bg-tag am">⏳ Recibida parcial (' + n + ')</span>' : !l.recepcion_id ? '<span class="bg-tag am">⏳ Sin recibir</span>' : (l.recepcion_estado === 'con_diferencias' ? '<span class="bg-tag am">⚠ Con diferencias</span>' : '<span class="bg-tag ok">✓ Recibida completa</span>');
+    const rb = (!l.recepcion_id && !n && !l.requerimiento) ? '<span class="bg-tag ok">→ Va a Despacho (no se recibe)</span>' : l.recepcion_parcial ? '<span class="bg-tag am">⏳ Recibida parcial (' + n + ')</span>' : !l.recepcion_id ? '<span class="bg-tag am">⏳ Sin recibir</span>' : (l.recepcion_estado === 'con_diferencias' ? '<span class="bg-tag am">⚠ Con diferencias</span>' : '<span class="bg-tag ok">✓ Recibida completa</span>');
     return '<button class="iv-row" data-bg="conta-abrir" data-id="' + esc(l.id) + '"><div class="iv-n"><div class="nm">' + (l.requerimiento ? '<span class="lc-pnum">Requerimiento</span> ' : (l.pedido_numero ? '<span class="lc-pnum">Pedido #' + l.pedido_numero + '</span> ' : '')) + esc(NOM_LOCAL(l.local)) + '</div>' +
       '<div class="mu">Compra del ' + esc(fechaTxt(l.fecha_compra_realizada || l.fecha_creacion)) + ' · comprobante: ' + (l.comprobante ? esc(l.comprobante) : '<i>sin anotar</i>') + '</div>' + rb + '</div><div class="iv-s"><b>' + money(tot) + '</b><span>total gastado</span></div></button>'; }).join('') + '</div>';
   if(libres.length) h += '<div class="iv-card" style="margin-top:12px"><h3>Entregas sin compra previa</h3>' + libres.slice(0, 20).map(r => '<div class="bg-line"><div><b>' + esc(r.proveedor || 'Proveedor') + (r.documento ? ' · ' + esc(r.documento) : '') + '</b><div class="mu">' + esc(fechaTxt(r.fecha)) + ' · ' + esc(r.responsable || '') + ' · ' + (r.items || []).map(i => esc(i.nombre) + ' ' + fmt(i.entra)).join(', ') + '</div></div>' + (r.foto ? '<button class="ivb" data-bg="foto-ver" data-id="' + esc(r.id) + '">📷 Ver recibo</button>' : '') + '</div>').join('') + '</div>';
