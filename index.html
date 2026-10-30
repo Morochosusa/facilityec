@@ -1853,17 +1853,23 @@
   @media screen and (max-width: 700px) {
     #guias-lista .guia-card { min-height: 72px; padding: 14px; }
     #guias-detalle .detalle-panel { padding: 12px; margin: 8px; }
-    #guias-detalle .gd-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px 2px; }
-    #guias-detalle .gd-row .gd-nm { flex: 1 1 calc(100% - 118px); min-width: 0; font-size: 15px; }
-    #guias-detalle .gd-row .gd-sub { font-size: 12px; }
-    #guias-detalle .gd-row .lcb { min-height: 36px; height: 36px; padding: 0 8px; font-size: 12px; white-space: nowrap; border-radius: 9px; border-width: 1.5px; font-weight: 700; }
-    #guias-detalle .gd-row .gd-q { flex: 0 0 auto; min-width: 0; font-size: 13px; margin-left: auto; }
-    #guias-detalle .gd-row .gd-or { display: contents; }
-    #guias-detalle .gd-row .gd-or .lcb { flex: 0 0 auto; }
-    #guias-detalle .gd-row .gd-x { margin-left: auto; }
-    #guias-detalle .gd-row .gd-x { min-width: 0; }
+    #dsp-detalle .detalle-panel { padding: 10px; margin: 8px; }
+    #dsp-detalle .gd-row { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; padding: 7px 2px; }
+    #dsp-detalle .gd-row .gd-nm { flex: 1 1 100%; min-width: 0; font-size: 14px; line-height: 1.2; }
+    #dsp-detalle .gd-row .gd-sub { font-size: 11px; margin-top: 1px; }
+    #dsp-detalle .gd-row .lcb { min-height: 32px; height: 32px; padding: 0 9px; font-size: 12px; white-space: nowrap; border-radius: 8px; border-width: 1.5px; font-weight: 700; }
+    #dsp-detalle .gd-row .gd-q { flex: 1 1 auto; text-align: left; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; background: #f4f2ec; }
+    #dsp-detalle .gd-row .gd-or { display: flex; gap: 0; flex: 0 0 auto; }
+    #dsp-detalle .gd-row .gd-or .lcb { flex: 0 0 auto; border-radius: 0; }
+    #dsp-detalle .gd-row .gd-or .lcb:first-child { border-radius: 8px 0 0 8px; border-right-width: 0; }
+    #dsp-detalle .gd-row .gd-or .lcb:last-child { border-radius: 0 8px 8px 0; }
+    #dsp-detalle .gd-row .gd-x { min-width: 0; margin-left: auto; }
+    #dsp-detalle .gd-row > .lcb:not(.gd-q):not(.gd-x) { flex: 0 0 auto; }
+    #dsp-detalle .badge.por_despachar { font-size: 11px; padding: 3px 8px; }
+    #dsp-detalle .detalle-header h2 { font-size: 17px; margin: 0; }
+    #dsp-detalle .btn-cerrar { width: 40px; height: 40px; min-height: 40px; font-size: 26px; }
     .gd-acts { position: sticky; bottom: 0; background: #fff; padding: 10px 0 12px; margin: 14px 0 0; border-top: 1px solid #e2e0d6; z-index: 4; }
-    .gd-acts .lcb { min-height: 46px; }
+    .gd-acts .lcb { min-height: 44px; font-size: 15px; }
     .gd-acts .lcb.big { flex: 1 1 100%; font-size: 17px; }
     .gd-acts .lcb.er { flex: 1 1 100%; }
   }
@@ -1876,6 +1882,20 @@
   .dsp-n:empty { display: none; }
   #dsp-lista, #guias-lista { padding-top: 10px; }
   @media print { .dsp-tabs, #dsp-pd, #dsp-man { display: none !important; } #guias-detalle .gd-screen { display: none !important; } }
+
+  /* ===== Despacho: revisado ===== */
+  .gd-row .gd-nm { display: flex; align-items: flex-start; gap: 10px; }
+  .gd-row .gd-nt { flex: 1; min-width: 0; }
+  .gd-chk { flex: 0 0 auto; width: 30px; height: 30px; border-radius: 8px; border: 2px solid #9a988f; background: #fff; color: #fff; font-size: 20px; font-weight: 800; line-height: 1; padding: 0; display: flex; align-items: center; justify-content: center; font-family: inherit; }
+  .gd-chk.on { background: #1d8a4e; border-color: #1d8a4e; }
+  .gd-row.rev { background: #eef8f1; }
+  .gd-row.rev.falta { background: #eef8f1; }
+  .gd-prog { font-size: 13px; color: #5f5e5a; margin: 8px 2px 2px; }
+  #gd-snack { position: fixed; left: 0; right: 0; bottom: 84px; display: none; justify-content: center; z-index: 60; padding: 0 12px; pointer-events: none; }
+  #gd-snack.show { display: flex; }
+  .gd-sn { pointer-events: auto; background: #2c2c2a; color: #fff; border-radius: 12px; padding: 8px 8px 8px 14px; display: flex; align-items: center; gap: 12px; font-size: 14px; box-shadow: 0 6px 20px rgba(0,0,0,.3); }
+  .gd-sn .lcb { min-height: 36px; height: 36px; font-size: 13px; padding: 0 12px; border-radius: 9px; }
+  @media print { #gd-snack { display: none !important; } }
 </style>
 </head>
 <body>
@@ -2981,8 +3001,20 @@ function gdCant(id, idx) {
 }
 function gdQuitar(id, idx) {
   const n = gdItems(id), it = n[idx]; if (!it) return;
-  it.cantidad_despachada = it.cantidad_despachada > 0 ? 0 : (it.cantidad_pedida != null ? it.cantidad_pedida : 1);
-  gdGuardar(id, n);
+  if (!(it.cantidad_despachada > 0)) { it.cantidad_despachada = it.cantidad_pedida != null ? it.cantidad_pedida : 1; gdGuardar(id, n); return; }   // (producto en 0 de antes) restaurar
+  gdUndo = {id: id, idx: idx, item: JSON.parse(JSON.stringify(it))};
+  n.splice(idx, 1); gdGuardar(id, n); gdSnack();
+}
+let gdUndo = null;
+function gdSnack() {
+  let el = document.getElementById("gd-snack"); if (!el) { el = document.createElement("div"); el.id = "gd-snack"; document.body.appendChild(el); }
+  el.innerHTML = '<div class="gd-sn"><span>Producto quitado de la lista</span><button class="lcb" onclick="gdDeshacerQuitar()">Deshacer</button></div>'; el.className = "show";
+  clearTimeout(gdSnack.t); gdSnack.t = setTimeout(() => { el.className = ""; gdUndo = null; }, 8000);
+}
+function gdDeshacerQuitar() {
+  const u = gdUndo; if (!u) return; gdUndo = null;
+  const n = gdItems(u.id); n.splice(Math.min(u.idx, n.length), 0, u.item); gdGuardar(u.id, n);
+  const el = document.getElementById("gd-snack"); if (el) el.className = "";
 }
 function gdRev(id, idx) { const n = gdItems(id); if(!n[idx]) return; n[idx].verificado_salida = !n[idx].verificado_salida; gdGuardar(id, n); }
 function gdOrigen(id, idx, o) { const n = gdItems(id); if (!n[idx]) return; n[idx].origen = o; gdGuardar(id, n); }
@@ -2991,7 +3023,7 @@ async function gdDespachar(id) {
   const items = g.items.filter(it => it.cantidad_despachada > 0);
   if (!items.length) { gdToast("No hay productos con cantidad para despachar"); return; }
   const falt = items.filter(it => gdSaca(it) && it.cantidad_despachada > gdStock(it));
-  const sinRev = items.filter(it => esFrio(consItem(it)) && !it.verificado_salida);
+  const sinRev = items.filter(it => !it.verificado_salida);
   if ((falt.length || sinRev.length) && !(gdGuard.id === id && gdGuard.until > Date.now())) { gdGuard = { id: id, until: Date.now() + 7000 }; verGuia(id); return; }
   gdBusy = true; gdGuard = { id: null, until: 0 };
   try {
@@ -3033,18 +3065,17 @@ function verGuiaPorDespachar(guia) {
   const fecha = gdFecha(guia.fecha_despacho);
   const id = guia.id, aviso = gdGuard.id === id && gdGuard.until > Date.now();
   const falt = guia.items.filter(it => it.cantidad_despachada > 0 && gdSaca(it) && it.cantidad_despachada > gdStock(it));
-  const sinRev = guia.items.filter(it => it.cantidad_despachada > 0 && esFrio(consItem(it)) && !it.verificado_salida);
+  const sinRev = guia.items.filter(it => it.cantidad_despachada > 0 && !it.verificado_salida), totN = guia.items.filter(it => it.cantidad_despachada > 0).length;
   const orden = guia.items.map((it, i) => i).sort((a, b) => (esFrio(consItem(guia.items[a])) ? 1 : 0) - (esFrio(consItem(guia.items[b])) ? 1 : 0) || a - b);   // lo frío sale al final
   let pos = 0;
   const filas = orden.map(idx => { const it = guia.items[idx]; pos++;
     const q = it.cantidad_despachada, off = !(q > 0), hay = gdStock(it), falta = !off && gdSaca(it) && q > hay, cs = consItem(it), frio = esFrio(cs);
-    return `<div class="gd-row ${off ? "off" : ""} ${falta ? "falta" : ""}">
-      <div class="gd-nm"><span class="gd-n">${pos}.</span> ${it.producto_nombre}${frio ? ` <span class="frio-tag ${cs}">${CONS_TXT[cs]}</span>` : ""}
-        <div class="gd-sub">${gdSaca(it) ? "En bodega hay " + gdFmt(hay) : "Compra directa: no baja del inventario"}${falta ? ` · <b class="gd-falta">faltan ${gdFmt(q - hay)}</b>` : ""}${it.cantidad_pedida != null && it.cantidad_pedida !== q && !off ? " · pidieron " + gdFmt(it.cantidad_pedida) : ""}</div></div>
+    return `<div class="gd-row ${off ? "off" : ""} ${falta ? "falta" : ""} ${it.verificado_salida && !off ? "rev" : ""}">
+      <div class="gd-nm">${off ? "" : `<button class="gd-chk ${it.verificado_salida ? "on" : ""}" onclick="gdRev('${id}', ${idx})" aria-label="Revisado">${it.verificado_salida ? "✓" : ""}</button>`}<div class="gd-nt"><span class="gd-n">${pos}.</span> ${it.producto_nombre}${frio ? ` <span class="frio-tag ${cs}">${CONS_TXT[cs]}</span>` : ""}
+        <div class="gd-sub">${gdSaca(it) ? "En bodega hay " + gdFmt(hay) : "Compra directa: no baja del inventario"}${falta ? ` · <b class="gd-falta">faltan ${gdFmt(q - hay)}</b>` : ""}${it.cantidad_pedida != null && it.cantidad_pedida !== q && !off ? " · pidieron " + gdFmt(it.cantidad_pedida) : ""}</div></div></div>
       <button class="lcb gd-q" onclick="gdCant('${id}', ${idx})">${off ? "Quitado" : gdFmt(q) + " " + (it.unidad_medida || "")}</button>
       <div class="gd-or"><button class="lcb ${gdSaca(it) ? "on" : ""}" onclick="gdOrigen('${id}', ${idx}, 'stock')">De stock</button><button class="lcb ${gdSaca(it) ? "" : "on"}" onclick="gdOrigen('${id}', ${idx}, 'compra_directa')">Compra directa</button></div>
-      ${frio && !off ? `<button class="lcb ${it.verificado_salida ? "on" : ""}" onclick="gdRev('${id}', ${idx})">${it.verificado_salida ? "✓ Revisado" : "☐ Revisar"}</button>` : ""}
-      <button class="lcb gd-x ${off ? "" : "er"}" onclick="gdQuitar('${id}', ${idx})">${off ? "Restaurar" : "Quitar"}</button>
+      <button class="lcb gd-x ${off ? "" : "er"}" onclick="gdQuitar('${id}', ${idx})">${off ? "Restaurar" : "✕ Quitar"}</button>
     </div>`;
   }).join("");
   const n = guia.items.filter(it => it.cantidad_despachada > 0).length;
@@ -3058,9 +3089,10 @@ function verGuiaPorDespachar(guia) {
         </div>
         <button class="btn-cerrar" onclick="cerrarDetalleGuia()">&times;</button>
       </div>
+      <div class="gd-prog">Revisados <b>${totN - sinRev.length}</b> de <b>${totN}</b></div>
       ${filas}
       <div class="gd-acts">
-        <button class="lcb ${aviso ? "gd-warn" : "okb"} big" onclick="gdDespachar('${id}')">${aviso ? (falt.length ? "Falta stock en " + falt.length : "Sin revisar: " + sinRev.length + " producto" + (sinRev.length === 1 ? "" : "s") + " frío" + (sinRev.length === 1 ? "" : "s")) + " · toca otra vez para despachar igual" : "Despachar (" + n + ")"}</button>
+        <button class="lcb ${aviso ? "gd-warn" : "okb"} big" onclick="gdDespachar('${id}')">${aviso ? (falt.length ? "Falta stock en " + falt.length : "Sin revisar: " + sinRev.length + " producto" + (sinRev.length === 1 ? "" : "s")) + " · toca otra vez para despachar igual" : "Despachar (" + n + ")"}</button>
         <button class="lcb er" onclick="gdEliminar('${id}')">Eliminar guía</button>
       </div>
     </div>`;
