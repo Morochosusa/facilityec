@@ -939,21 +939,29 @@
   @media print{
     #guias-detalle .gd-print{display:block;color:#000}
     #guias-detalle .badge.por_despachar,#guias-detalle .btn-cerrar{display:none !important}
-    #guias-detalle .gd-pr{display:grid;grid-template-columns:minmax(0,2fr) 120px minmax(0,1.7fr) minmax(0,1.7fr);gap:14px;padding:6px 0;break-inside:avoid;font-size:13px;align-items:end}
-    #guias-detalle .gd-ph{font-size:11px;font-weight:800;padding-bottom:4px;border:0}
+    #guias-detalle .gd-pr{display:grid;grid-template-columns:minmax(0,2fr) 90px minmax(0,1.5fr) minmax(0,1.5fr);gap:10px;padding:1px 0;line-height:1.1;border-bottom:1px solid #ccc;break-inside:avoid;font-size:11px;align-items:end}
+    #guias-detalle .gd-pq{display:grid;grid-template-columns:34px 1fr;gap:5px;align-items:baseline;text-align:left;padding-right:0;min-width:0}
+    #guias-detalle .gd-qn{text-align:right;font-variant-numeric:tabular-nums}
+    #guias-detalle .gd-qu{text-align:left;font-size:9px;white-space:nowrap}
+    #guias-detalle .gd-pqh{display:block}
+    #guias-detalle .gd-pc{min-height:15px}
+    #guias-detalle .gd-gav{margin-top:6px;padding:4px 10px;font-size:11px;border-width:1.5px;gap:10px}
+    #guias-detalle .gd-gav > span:first-child{flex:0 0 190px}
+    #guias-detalle .gd-gav .gd-gav-box{height:24px;flex:0 0 80px;border-width:1.5px}
+    #guias-detalle .gd-ph{font-size:9px;font-weight:800;padding-bottom:2px;border-bottom:2px solid #000}
     #guias-detalle .gd-pn{font-weight:600}
-    #guias-detalle .gd-pw{font-size:15px;font-weight:700}
-    #guias-detalle .gd-pq{font-size:15px;font-weight:800;white-space:nowrap;min-width:70px;padding-right:6px;text-align:right}
-    #guias-detalle .gd-pq small,#guias-detalle .gd-pn small{font-size:11px;font-weight:400;color:#444}
-    #guias-detalle .gd-ph .gd-pw,#guias-detalle .gd-ph .gd-pq{font-size:11px;font-weight:800}
-    #guias-detalle .gd-sec{margin:12px 0 2px;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;border-bottom:2px solid #000;padding-bottom:2px;break-after:avoid}
-    #guias-detalle .gd-pc{display:flex;gap:8px;align-items:flex-end;min-height:24px}
+    #guias-detalle .gd-pw{font-size:12px;font-weight:700}
+    #guias-detalle .gd-pq{font-size:12px;font-weight:800;white-space:nowrap;min-width:70px;padding-right:6px;text-align:right}
+    #guias-detalle .gd-pq small,#guias-detalle .gd-pn small{font-size:9px;font-weight:400;color:#444}
+    #guias-detalle .gd-ph .gd-pw,#guias-detalle .gd-ph .gd-pq{font-size:9px;font-weight:800}
+    #guias-detalle .gd-sec{margin:5px 0 1px;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;border-bottom:2px solid #000;padding-bottom:2px;break-after:avoid}
+    #guias-detalle .gd-pc{display:flex;gap:6px;align-items:flex-end;min-height:15px}
     #guias-detalle .gd-ph .gd-pc{min-height:0}
-    #guias-detalle .gd-cb{flex:0 0 18px;height:18px;border:1.5px solid #000;border-radius:3px}
-    #guias-detalle .gd-ln{flex:1;border-bottom:1px solid #000;height:18px}
+    #guias-detalle .gd-cb{flex:0 0 13px;height:13px;border:1.2px solid #000;border-radius:2px}
+    #guias-detalle .gd-ln{flex:1;border-bottom:1px solid #000;height:13px}
     #guias-detalle .gd-ph .gd-cb,#guias-detalle .gd-ph .gd-ln{display:none}
     #guias-detalle .gd-top{display:none !important}
-    #guias-detalle .gd-quien{display:flex;gap:30px;margin:26px 0 6px;font-size:13px}
+    #guias-detalle .gd-quien{display:flex;gap:30px;margin:16px 0 4px;font-size:11px}
     #guias-detalle .gd-quien div{flex:1;border-bottom:1px solid #000;padding-bottom:3px}
     #guias-detalle .gd-quien small{display:block;color:#555;font-size:10px;text-transform:uppercase}
     #guias-detalle .gd-obs-b{margin-top:10px;display:flex;gap:18px;font-size:12px}
@@ -2992,15 +3000,15 @@ function gdImpresion(guia, orden) {
   let secPrev = -1;
   const filas = vis.map((i, k) => { const it = guia.items[i], sc = secDe(it);
     const hd = sc !== secPrev ? `<div class="gd-sec">${SECN[sc]}</div>` : ""; secPrev = sc;
-    return hd + `<div class="gd-pr"><div class="gd-pn"><b>${k + 1}.</b> ${it.producto_nombre}${esFrio(consItem(it)) ? " <small>(" + (consItem(it) === "congelado" ? "congelado" : "refrigerado") + ")</small>" : ""}</div><div class="gd-pq">${gdFmt(it.cantidad_despachada)} <small>${it.unidad_medida || ""}</small></div><div class="gd-pc"><span class="gd-cb"></span><span class="gd-ln"></span></div><div class="gd-pc"><span class="gd-cb"></span><span class="gd-ln"></span></div></div>`; }).join("");
+    return hd + `<div class="gd-pr"><div class="gd-pn"><b>${k + 1}.</b> ${it.producto_nombre}${esFrio(consItem(it)) ? " <small>(" + (consItem(it) === "congelado" ? "congelado" : "refrigerado") + ")</small>" : ""}</div><div class="gd-pq"><span class="gd-qn">${gdFmt(it.cantidad_despachada)}</span><small class="gd-qu">${it.unidad_medida || ""}</small></div><div class="gd-pc"><span class="gd-cb"></span><span class="gd-ln"></span></div><div class="gd-pc"><span class="gd-cb"></span><span class="gd-ln"></span></div></div>`; }).join("");
   return `<div class="gd-print">
-    <div class="gd-pr gd-ph"><div class="gd-pn">Producto</div><div class="gd-pq">Cantidad</div><div class="gd-pc">ENVÍA</div><div class="gd-pc">RECIBE</div></div>
+    <div class="gd-pr gd-ph"><div class="gd-pn">Producto</div><div class="gd-pq gd-pqh">Cantidad</div><div class="gd-pc">ENVÍA</div><div class="gd-pc">RECIBE</div></div>
     ${filas}
     ${gdGavetas()}
     <div class="gd-quien"><div><small>Envía</small>&nbsp;</div><div><small>Recibe</small>&nbsp;</div></div>
   </div>`;
 }
-const gdGavetas = () => `<div class="gd-gav"><span>Total de gavetas enviadas:</span><span class="gd-gav-box"></span></div>`;
+const gdGavetas = () => `<div class="gd-gav"><span>Total de gavetas enviadas:</span><span class="gd-gav-box"></span></div><div class="gd-gav gd-gav2"><span>Total de tapas enviadas:</span><span class="gd-gav-box"></span></div>`;
 function verGuiaPorDespachar(guia) {
   const fecha = gdFecha(guia.fecha_despacho);
   const id = guia.id, aviso = gdGuard.id === id && gdGuard.until > Date.now();
