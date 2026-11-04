@@ -6374,20 +6374,22 @@ const LOCNOM = {la_victoria:'La Victoria', el_salado:'El Salado', facility_feria
 const PD_PERMITIR_ELIMINAR = true;
 const P = {lista:[], tab:'nuevos', open:null, ready:false, vistos:null, undo:null, undoElim:null, busy:false};
 const prod = id => PRODUCTOS.filter(p => p.id === id)[0] || null;
-const tipo = it => { const p = prod(it.producto_id); const sc = p ? p.subcategoria : it.subcategoria; return !sc ? 'revisar' : (sc === 'mercado' ? 'mercado' : 'bodega'); };
+const esProv = it => { const p = prod(it.producto_id), n = v => String(v == null ? '' : v).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); return /proveedor/.test(n(p ? p.subcategoria : it.subcategoria)) || /proveedor/.test(n(it.subcategoria)) || /proveedor/.test(n(it.categoria || (p && p.categoria))); };
+const tipo = it => { if(esProv(it)) return 'proveedores'; const p = prod(it.producto_id); const sc = p ? p.subcategoria : it.subcategoria; return !sc ? 'revisar' : (sc === 'mercado' ? 'mercado' : 'bodega'); };
 const qty = (ped, it) => { const a = ped.ajustes || {}; return a[it.producto_id] !== undefined ? a[it.producto_id] : it.cantidad; };
-const efectivos = (ped, t) => (ped.items || []).filter(it => tipo(it) === t && qty(ped, it) > 0);
+const efectivos = (ped, t) => (ped.items || []).filter(it => (tipo(it) === t || (t === 'mercado' && tipo(it) === 'proveedores')) && qty(ped, it) > 0);
 /* Estación de cada producto: campo del item (area/estacion) o del pedido, o la categoría (cocina, cafetería...). Sin dato = '' */
 const AREAS_EST = ['cocina', 'cafeteria', 'bebidas', 'panaderia', 'limpieza'];
 /* Si todos los productos con estación son de la misma, los que no la traen (ej. Facility) van a esa */
 function estUnica(ped){
   if(ped._eu !== undefined && ped._euN === (ped.items || []).length) return ped._eu;
   const lim = t => String(t == null ? '' : t).trim(), set = {};
-  (ped.items || []).forEach(it => { let a = lim(it.area || it.estacion || it.area_envio) || lim(ped.area || ped.estacion || ped.area_envio); if(!a){ const p = prod(it.producto_id), c = lim(it.categoria || (p && p.categoria)); if(AREAS_EST.indexOf(c) >= 0) a = c; } if(a) set[NOM_CAT[a] || a] = 1; });
+  (ped.items || []).forEach(it => { if(tipo(it) === 'proveedores') return; let a = lim(it.area || it.estacion || it.area_envio) || lim(ped.area || ped.estacion || ped.area_envio); if(!a){ const p = prod(it.producto_id), c = lim(it.categoria || (p && p.categoria)); if(AREAS_EST.indexOf(c) >= 0) a = c; } if(a) set[NOM_CAT[a] || a] = 1; });
   const k = Object.keys(set); Object.defineProperty(ped, '_eu', {value:k.length === 1 ? k[0] : '', writable:true, enumerable:false, configurable:true}); Object.defineProperty(ped, '_euN', {value:(ped.items || []).length, writable:true, enumerable:false, configurable:true});
   return ped._eu;
 }
 function estItem(ped, it){
+  if(tipo(it) === 'proveedores') return 'Proveedores';
   const lim = t => String(t == null ? '' : t).trim();
   let a = lim(it.area || it.estacion || it.area_envio) || lim(ped.area || ped.estacion || ped.area_envio);
   if(!a){ const p = prod(it.producto_id), c = lim(it.categoria || (p && p.categoria)); if(AREAS_EST.indexOf(c) >= 0) a = c; }
@@ -6403,7 +6405,8 @@ function tipo3(it){
 function estaciones(ped){
   const ord = [], map = {};
   (ped.items || []).forEach(it => { const e = estItem(ped, it); if(!map[e]){ map[e] = []; ord.push(e); } map[e].push(it); });
-  ord.sort((a, b) => (a === '' ? 1 : 0) - (b === '' ? 1 : 0));
+  const pr = e => e === '' ? 2 : e === 'Proveedores' ? 1 : 0;
+  ord.sort((a, b) => pr(a) - pr(b));
   return ord.map(e => ({est:e, items:map[e]}));
 }
 const etq = (n, u) => (window.lcEtq ? window.lcEtq({cantidad_solicitada:n, unidad_medida:u}) : nf.format(n) + ' ' + (u || ''));
@@ -6474,7 +6477,7 @@ function lista(){
 function filas(ped, t, est){
   const its = (ped.items || []).filter(it => tipo3(it) === t && (est === undefined || estItem(ped, it) === est));
   return its.map(it => {
-    const q = qty(ped, it), quitado = !(q > 0), cerrado = ped.estado === 'procesado' || (t === 'mercado' && ped.compra_lista_id) || ((t === 'bodega' || t === 'facility') && ped.despacho_id);
+    const q = qty(ped, it), quitado = !(q > 0), cerrado = ped.estado === 'procesado' || ((t === 'mercado' || t === 'proveedores') && ped.compra_lista_id) || ((t === 'bodega' || t === 'facility') && ped.despacho_id);
     return '<div class="pd-row ' + (quitado ? 'off' : '') + '"><div class="pd-nm">' + esc(it.producto_nombre || (prod(it.producto_id) || {}).nombre || it.producto_id) + (it.nota ? '<div class="pd-nota">' + esc(it.nota) + '</div>' : '') +
       (t === 'revisar' ? '<div class="pd-nota">Código no reconocido: ' + esc(it.producto_id) + '</div>' : '') + '</div>' +
       (cerrado || t === 'revisar'
@@ -6494,6 +6497,7 @@ function detalle(ped){
     const hay = t => g.items.some(it => tipo3(it) === t);
     if(conEst) h += '<div class="pd-est">' + esc(g.est || 'Sin estación') + '</div>';
     if(hay('mercado')) h += '<div class="pd-sec">🛒 Mercado · pasa a Guardadas</div>' + filas(ped, 'mercado', g.est);
+    if(hay('proveedores')) h += '<div class="pd-sec">🚚 Proveedores · pasa a Guardadas</div>' + filas(ped, 'proveedores', g.est);
     if(hay('facility')) h += '<div class="pd-sec">🏭 Facility · pasa a Despacho</div>' + filas(ped, 'facility', g.est);
     if(hay('bodega')) h += '<div class="pd-sec">📦 Bodega · pasa a Despacho</div>' + filas(ped, 'bodega', g.est);
   });
@@ -6515,7 +6519,7 @@ function detalle(ped){
 /* ---------- hoja imprimible del pedido ----------
    Lista completa numerada: Mercado / Facility / Bodega, y dentro de cada una por categoría.
    Cada producto trae un cuadro para marcar lo que ya se produjo / alistó. */
-const NOM_SUB = {mercado:'Mercado', facility:'Facility', bodega:'Bodega', revisar:'Por revisar'};
+const NOM_SUB = {mercado:'Mercado', proveedores:'Proveedores', facility:'Facility', bodega:'Bodega', revisar:'Por revisar'};
 const NOM_CAT = {empacado:'Empacado', procesado:'Procesado', cocina:'Cocina', cafeteria:'Cafetería', bebidas:'Bebidas', panaderia:'Panadería', limpieza:'Limpieza'};
 /* Área que envía el pedido: campo explícito (area / estacion) o, si no viene, la categoría única de sus productos. */
 function areaPedido(ped){
@@ -6532,18 +6536,17 @@ function hojaHtml(ped, f){
   const grupos = {};
   (ped.items || []).forEach(it => {
     const q = qty(ped, it); if(!(q > 0)) return;
-    const p = prod(it.producto_id), sc = (p && p.subcategoria) || it.subcategoria || 'revisar';
-    const sub = NOM_SUB[sc] ? sc : 'revisar', cat = (p && p.categoria) || it.categoria || '';
+    const p = prod(it.producto_id), sub = tipo3(it), cat = (p && p.categoria) || it.categoria || '', est = estItem(ped, it);
     if(f.subs && f.subs.length && f.subs.indexOf(sub) < 0) return;
     if(f.cats && f.cats.length && f.cats.indexOf(cat) < 0) return;
-    const est = estItem(ped, it);
+    if(f.ests && f.ests.length && f.ests.indexOf(est) < 0) return;
     (((grupos[est] = grupos[est] || {})[sub] = grupos[est][sub] || {})[cat] = grupos[est][sub][cat] || []).push({it:it, q:q});
   });
   let n = 0, filasH = '<tr class="th"><td></td><td class="ck">Listo</td><td></td><td></td><td class="ck">Procesar</td><td class="ck">Pedir</td></tr>';
-  const ests = Object.keys(grupos).sort((x, y) => (x === '' ? 1 : 0) - (y === '' ? 1 : 0)), conEst = ests.some(e => e);
+  const ests = Object.keys(grupos).sort((x, y) => (x === '' ? 2 : x === 'Proveedores' ? 1 : 0) - (y === '' ? 2 : y === 'Proveedores' ? 1 : 0)), conEst = ests.some(e => e);
   ests.forEach(est => {
     if(conEst) filasH += '<tr class="est"><td colspan="6">' + esc(est || 'Sin estación') + '</td></tr>';
-    ['mercado', 'facility', 'bodega', 'revisar'].forEach(sub => {
+    ['mercado', 'proveedores', 'facility', 'bodega', 'revisar'].forEach(sub => {
       const cats = grupos[est][sub]; if(!cats) return;
       const total = Object.keys(cats).reduce((a, c) => a + cats[c].length, 0);
       filasH += '<tr class="sub"><td colspan="6">' + esc(NOM_SUB[sub]) + ' <span>(' + total + ')</span></td></tr>';
@@ -6570,7 +6573,7 @@ function hojaHtml(ped, f){
     '.tot{margin-top:8px;font-size:12px;text-align:right}</style></head><body>' +
     '<h1>' + esc(LOCNOM[ped.local] || ped.local) + '</h1><div class="ped">Pedido ' + esc(numTxt(ped)) + (areaPedido(ped) ? ' ' + esc(areaPedido(ped)) : '') + '</div>' +
     '<div class="meta">' + esc(fe) + (ped.enviado_por ? ' · enviado por ' + esc(ped.enviado_por) : '') + ' · impreso ' + esc(new Date().toLocaleString('es-EC', {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'})) + '</div>' +
-    ((f.subs && f.subs.length) || (f.cats && f.cats.length) ? '<div class="nota"><b>Solo:</b> ' + esc((f.subs || []).map(x => NOM_SUB[x]).concat((f.cats || []).map(c => NOM_CAT[c] || c || 'Sin categoría')).join(' · ')) + '</div>' : '') +
+    ((f.subs && f.subs.length) || (f.cats && f.cats.length) || (f.ests && f.ests.length) ? '<div class="nota"><b>Solo:</b> ' + esc((f.ests || []).concat((f.subs || []).map(x => NOM_SUB[x])).concat((f.cats || []).map(c => NOM_CAT[c] || c || 'Sin categoría')).join(' · ')) + '</div>' : '') +
     (ped.nota ? '<div class="nota"><b>Nota:</b> ' + esc(ped.nota) + '</div>' : '') +
     '<table>' + filasH + '</table><div class="tot">' + n + ' producto' + (n === 1 ? '' : 's') + '</div>' +
     '<div class="pie"><div>Producido / alistado por</div><div>Revisado por</div><div>Fecha y hora</div></div></body></html>';
@@ -6590,32 +6593,32 @@ function imprimirHoja(ped, filtro){
 
 /* ---------- elegir qué imprimir: por sección y/o categoría ---------- */
 function gruposHoja(ped){
-  const subs = {}, cats = {}, items = [];
+  const subs = {}, cats = {}, ests = {}, items = [];
   (ped.items || []).forEach(it => {
     const q = qty(ped, it); if(!(q > 0)) return;
-    const p = prod(it.producto_id), sc = (p && p.subcategoria) || it.subcategoria || 'revisar';
-    const sub = NOM_SUB[sc] ? sc : 'revisar', cat = (p && p.categoria) || it.categoria || '';
-    subs[sub] = (subs[sub] || 0) + 1; cats[cat] = (cats[cat] || 0) + 1; items.push({sub:sub, cat:cat});
+    const p = prod(it.producto_id), sub = tipo3(it), cat = (p && p.categoria) || it.categoria || '', est = estItem(ped, it);
+    subs[sub] = (subs[sub] || 0) + 1; cats[cat] = (cats[cat] || 0) + 1; ests[est] = (ests[est] || 0) + 1; items.push({sub:sub, cat:cat, est:est});
   });
-  return {subs:subs, cats:cats, items:items};
+  return {subs:subs, cats:cats, ests:ests, items:items};
 }
-function pmFiltro(){ return {subs:Object.keys(P.pm.subs), cats:Object.keys(P.pm.cats)}; }
+function pmFiltro(){ return {subs:Object.keys(P.pm.subs), cats:Object.keys(P.pm.cats), ests:Object.keys(P.pm.ests || {})}; }
 function pmPintar(){
   const m = document.getElementById('pd-pm'), ped = P.lista.filter(p => p.id === P.pm.id)[0]; if(!m || !ped) return;
   const g = gruposHoja(ped), f = pmFiltro();
-  const n = g.items.filter(x => (!f.subs.length || f.subs.indexOf(x.sub) >= 0) && (!f.cats.length || f.cats.indexOf(x.cat) >= 0)).length;
+  const n = g.items.filter(x => (!f.subs.length || f.subs.indexOf(x.sub) >= 0) && (!f.cats.length || f.cats.indexOf(x.cat) >= 0) && (!f.ests.length || f.ests.indexOf(x.est) >= 0)).length;
   const chip = (tipo, k, nom, c, on) => '<button class="lcb ' + (on ? 'on' : '') + '" data-pd="pm-' + tipo + '" data-v="' + esc(k) + '">' + esc(nom) + ' <span>(' + c + ')</span></button>';
   m.innerHTML = '<div class="pd-pm-box"><h3>🖨 Imprimir hoja</h3><div class="pd-pm-sub">Marca lo que quieres imprimir. Si no marcas nada, se imprime todo el pedido.</div>' +
-    '<div class="pd-pm-l">Sección</div><div class="pd-pm-ch">' + ['mercado', 'facility', 'bodega', 'revisar'].filter(k => g.subs[k]).map(k => chip('sub', k, NOM_SUB[k], g.subs[k], !!P.pm.subs[k])).join('') + '</div>' +
+    (Object.keys(g.ests).length > 1 ? '<div class="pd-pm-l">Estación</div><div class="pd-pm-ch">' + Object.keys(g.ests).map(k => chip('est', k, k || 'Sin estación', g.ests[k], !!(P.pm.ests || {})[k])).join('') + '</div>' : '') +
+    '<div class="pd-pm-l">Sección</div><div class="pd-pm-ch">' + ['mercado', 'proveedores', 'facility', 'bodega', 'revisar'].filter(k => g.subs[k]).map(k => chip('sub', k, NOM_SUB[k], g.subs[k], !!P.pm.subs[k])).join('') + '</div>' +
     '<div class="pd-pm-l">Categoría</div><div class="pd-pm-ch">' + Object.keys(g.cats).sort().map(k => chip('cat', k, NOM_CAT[k] || k || 'Sin categoría', g.cats[k], !!P.pm.cats[k])).join('') + '</div>' +
-    '<div class="pd-pm-ac"><button class="lcb" data-pd="pm-x">Cancelar</button><button class="lcb pri" data-pd="pm-go"' + (n ? '' : ' disabled') + '>🖨 Imprimir ' + (f.subs.length || f.cats.length ? n + ' producto' + (n === 1 ? '' : 's') : 'todo (' + n + ')') + '</button></div></div>';
+    '<div class="pd-pm-ac"><button class="lcb" data-pd="pm-x">Cancelar</button><button class="lcb pri" data-pd="pm-go"' + (n ? '' : ' disabled') + '>🖨 Imprimir ' + (f.subs.length || f.cats.length || f.ests.length ? n + ' producto' + (n === 1 ? '' : 's') : 'todo (' + n + ')') + '</button></div></div>';
   m.className = 'pd-pm show';
 }
 function abrirImpresion(ped){
   const g = gruposHoja(ped);
-  if(Object.keys(g.subs).length <= 1 && Object.keys(g.cats).length <= 1){ imprimirHoja(ped); return; }
+  if(Object.keys(g.subs).length <= 1 && Object.keys(g.cats).length <= 1 && Object.keys(g.ests).length <= 1){ imprimirHoja(ped); return; }
   let m = document.getElementById('pd-pm'); if(!m){ m = document.createElement('div'); m.id = 'pd-pm'; document.body.appendChild(m); }
-  P.pm = {id:ped.id, subs:{}, cats:{}}; pmPintar();
+  P.pm = {id:ped.id, subs:{}, cats:{}, ests:{}}; pmPintar();
 }
 function cerrarImpresion(){ const m = document.getElementById('pd-pm'); if(m) m.className = 'pd-pm'; P.pm = null; }
 
@@ -6663,7 +6666,7 @@ function aceptar(ped){
   let nm = 0, nb = 0;
   estaciones(ped).forEach(g => {
     const k = g.est || '_';
-    const mer = g.items.filter(it => tipo(it) === 'mercado' && qty(ped, it) > 0), bod = g.items.filter(it => tipo(it) === 'bodega' && qty(ped, it) > 0);
+    const mer = g.items.filter(it => (tipo(it) === 'mercado' || tipo(it) === 'proveedores') && qty(ped, it) > 0), bod = g.items.filter(it => tipo(it) === 'bodega' && qty(ped, it) > 0);
     if(mer.length && !ped.compra_lista_id){ const r = crearLista(ped, mer, g.est); listas[k] = r.id; u.listas.push(r); nm += mer.length; }
     if(bod.length && !ped.despacho_id){ const r = crearGuia(ped, bod, g.est); guias[k] = r.id; u.guias.push(r); nb += bod.length; }
   });
@@ -6747,6 +6750,7 @@ document.addEventListener('click', e => {
     case 'deshacer-elim': deshacerEliminar(); break;
     case 'imprimir': if(ped) abrirImpresion(ped); break;
     case 'pm-sub': if(P.pm){ if(P.pm.subs[v]) delete P.pm.subs[v]; else P.pm.subs[v] = true; pmPintar(); } break;
+    case 'pm-est': if(P.pm){ P.pm.ests = P.pm.ests || {}; if(P.pm.ests[v]) delete P.pm.ests[v]; else P.pm.ests[v] = true; pmPintar(); } break;
     case 'pm-cat': if(P.pm){ if(P.pm.cats[v]) delete P.pm.cats[v]; else P.pm.cats[v] = true; pmPintar(); } break;
     case 'pm-x': cerrarImpresion(); break;
     case 'pm-go': if(P.pm){ const pp = P.lista.filter(p => p.id === P.pm.id)[0], f = pmFiltro(); cerrarImpresion(); if(pp) imprimirHoja(pp, f); } break;
