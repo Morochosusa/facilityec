@@ -1896,6 +1896,10 @@
   .gd-sn { pointer-events: auto; background: #2c2c2a; color: #fff; border-radius: 12px; padding: 8px 8px 8px 14px; display: flex; align-items: center; gap: 12px; font-size: 14px; box-shadow: 0 6px 20px rgba(0,0,0,.3); }
   .gd-sn .lcb { min-height: 36px; height: 36px; font-size: 13px; padding: 0 12px; border-radius: 9px; }
   @media print { #gd-snack { display: none !important; } }
+
+  /* ===== Pedidos por estación ===== */
+  .pd-est { font-size: 20px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; margin: 18px 0 2px; padding-bottom: 3px; border-bottom: 3px solid #2c2c2a; color: #1f1f1d; }
+  .est-nom { font-weight: 900; text-transform: uppercase; letter-spacing: .04em; }
 </style>
 </head>
 <body>
@@ -2849,7 +2853,7 @@ const NOMBRES_ESTADO = {
 
 let guiasCache = [];
 const guiaArea = g => { let a = (g && g.area) || ""; if(!a){ try { const P = window.PDS, ped = P && P.lista ? P.lista.filter(p => p.id === g.pedido_local_id)[0] : null; a = ped && window.pdAreaDe ? (window.pdAreaDe(ped) || "") : ""; } catch(e){} } a = String(a || "").trim(); return a ? a.charAt(0).toUpperCase() + a.slice(1) : ""; };
-const guiaTitulo = g => (NOMBRES_LOCAL[g.local] || g.local) + (guiaArea(g) ? " - " + guiaArea(g) : "");
+const guiaTitulo = g => (NOMBRES_LOCAL[g.local] || g.local) + (guiaArea(g) ? ' · <span class="est-nom">' + guiaArea(g) + '</span>' : "");
 let guiaAbiertaId = null;
 
 function escucharGuias() {
@@ -3243,7 +3247,7 @@ function renderListasCompraPendientes() {
         <div class="guia-card-top">
           ${lcElig(l) ? `<span class="lc-pick">${lcSel.has(l.id) ? '✓' : ''}</span>` : ''}
           <div class="lc-gl">
-            <div class="guia-local">${l.unificada ? '<span class="lc-pnum">Unificada</span> ' : (l.requerimiento ? '<span class="lc-pnum">Requerimiento</span> ' : (l.pedido_numero ? '<span class="lc-pnum">Pedido #' + l.pedido_numero + '</span> ' : ''))}${NOMBRES_LOCAL[l.local] || l.local}${l.unificada ? ' · <b>' + origTxt + '</b>' : (areaLista(l) ? ' · <b>' + areaLista(l) + '</b>' : '')}</div>
+            <div class="guia-local">${l.unificada ? '<span class="lc-pnum">Unificada</span> ' : (l.requerimiento ? '<span class="lc-pnum">Requerimiento</span> ' : (l.pedido_numero ? '<span class="lc-pnum">Pedido #' + l.pedido_numero + '</span> ' : ''))}${NOMBRES_LOCAL[l.local] || l.local}${l.unificada ? ' · <b>' + origTxt + '</b>' : (areaLista(l) ? ' · <b class="est-nom">' + areaLista(l) + '</b>' : '')}</div>
             <div class="guia-fecha">${fecha} - ${detalleTexto}${l.fecha_necesaria ? " - para el " + lcNecesaria(l.fecha_necesaria) : ""}${totalCosto > 0 ? " - $" + totalCosto.toFixed(2) : ""}</div>
           </div>
           ${badge}
@@ -3356,7 +3360,7 @@ function verListaCompra(id) {
     <div class="detalle-panel">
       <div class="detalle-header">
         <div>
-          <h2>${lista.unificada ? '<span class="lc-pnum">Unificada</span> ' : ''}${lista.requerimiento ? '<span class="lc-pnum">Requerimiento</span> ' : (lista.pedido_numero ? '<span class="lc-pnum">Pedido #' + lista.pedido_numero + '</span> ' : '')}${NOMBRES_LOCAL[lista.local] || lista.local}${areaLista(lista) ? ' · ' + areaLista(lista) : ''}</h2>
+          <h2>${lista.unificada ? '<span class="lc-pnum">Unificada</span> ' : ''}${lista.requerimiento ? '<span class="lc-pnum">Requerimiento</span> ' : (lista.pedido_numero ? '<span class="lc-pnum">Pedido #' + lista.pedido_numero + '</span> ' : '')}${NOMBRES_LOCAL[lista.local] || lista.local}${areaLista(lista) ? ' · <span class="est-nom">' + areaLista(lista) + '</span>' : ''}</h2>
           <div class="guia-fecha lc-fecha">${fecha}${lista.fecha_necesaria ? " · necesario para el " + lcNecesaria(lista.fecha_necesaria) : ""}${lista.recepcion_id ? " · ✓ recibida en bodega" : ""}</div>
           ${estadoEnvio}
         </div>
@@ -6373,6 +6377,35 @@ const prod = id => PRODUCTOS.filter(p => p.id === id)[0] || null;
 const tipo = it => { const p = prod(it.producto_id); const sc = p ? p.subcategoria : it.subcategoria; return !sc ? 'revisar' : (sc === 'mercado' ? 'mercado' : 'bodega'); };
 const qty = (ped, it) => { const a = ped.ajustes || {}; return a[it.producto_id] !== undefined ? a[it.producto_id] : it.cantidad; };
 const efectivos = (ped, t) => (ped.items || []).filter(it => tipo(it) === t && qty(ped, it) > 0);
+/* Estación de cada producto: campo del item (area/estacion) o del pedido, o la categoría (cocina, cafetería...). Sin dato = '' */
+const AREAS_EST = ['cocina', 'cafeteria', 'bebidas', 'panaderia', 'limpieza'];
+/* Si todos los productos con estación son de la misma, los que no la traen (ej. Facility) van a esa */
+function estUnica(ped){
+  if(ped._eu !== undefined && ped._euN === (ped.items || []).length) return ped._eu;
+  const lim = t => String(t == null ? '' : t).trim(), set = {};
+  (ped.items || []).forEach(it => { let a = lim(it.area || it.estacion || it.area_envio) || lim(ped.area || ped.estacion || ped.area_envio); if(!a){ const p = prod(it.producto_id), c = lim(it.categoria || (p && p.categoria)); if(AREAS_EST.indexOf(c) >= 0) a = c; } if(a) set[NOM_CAT[a] || a] = 1; });
+  const k = Object.keys(set); Object.defineProperty(ped, '_eu', {value:k.length === 1 ? k[0] : '', writable:true, enumerable:false, configurable:true}); Object.defineProperty(ped, '_euN', {value:(ped.items || []).length, writable:true, enumerable:false, configurable:true});
+  return ped._eu;
+}
+function estItem(ped, it){
+  const lim = t => String(t == null ? '' : t).trim();
+  let a = lim(it.area || it.estacion || it.area_envio) || lim(ped.area || ped.estacion || ped.area_envio);
+  if(!a){ const p = prod(it.producto_id), c = lim(it.categoria || (p && p.categoria)); if(AREAS_EST.indexOf(c) >= 0) a = c; }
+  if(!a){ const u = estUnica(ped); if(u) return u; }
+  return a ? (NOM_CAT[a] || a) : '';
+}
+function tipo3(it){
+  const t = tipo(it); if(t !== 'bodega') return t;
+  const p = prod(it.producto_id), sc = p ? p.subcategoria : it.subcategoria;
+  return sc === 'facility' ? 'facility' : 'bodega';
+}
+/* [{est, items}] en el orden en que aparecen; '' (sin estación) al final */
+function estaciones(ped){
+  const ord = [], map = {};
+  (ped.items || []).forEach(it => { const e = estItem(ped, it); if(!map[e]){ map[e] = []; ord.push(e); } map[e].push(it); });
+  ord.sort((a, b) => (a === '' ? 1 : 0) - (b === '' ? 1 : 0));
+  return ord.map(e => ({est:e, items:map[e]}));
+}
 const etq = (n, u) => (window.lcEtq ? window.lcEtq({cantidad_solicitada:n, unidad_medida:u}) : nf.format(n) + ' ' + (u || ''));
 function fechaTxt(ts){
   const d = ts && ts.toDate ? ts.toDate() : null; if(!d) return 'Enviando...';
@@ -6438,10 +6471,10 @@ function lista(){
   }).join('') + '</div>';
   return h;
 }
-function filas(ped, t){
-  const its = (ped.items || []).filter(it => tipo(it) === t);
+function filas(ped, t, est){
+  const its = (ped.items || []).filter(it => tipo3(it) === t && (est === undefined || estItem(ped, it) === est));
   return its.map(it => {
-    const q = qty(ped, it), quitado = !(q > 0), cerrado = ped.estado === 'procesado' || (t === 'mercado' && ped.compra_lista_id) || (t === 'bodega' && ped.despacho_id);
+    const q = qty(ped, it), quitado = !(q > 0), cerrado = ped.estado === 'procesado' || (t === 'mercado' && ped.compra_lista_id) || ((t === 'bodega' || t === 'facility') && ped.despacho_id);
     return '<div class="pd-row ' + (quitado ? 'off' : '') + '"><div class="pd-nm">' + esc(it.producto_nombre || (prod(it.producto_id) || {}).nombre || it.producto_id) + (it.nota ? '<div class="pd-nota">' + esc(it.nota) + '</div>' : '') +
       (t === 'revisar' ? '<div class="pd-nota">Código no reconocido: ' + esc(it.producto_id) + '</div>' : '') + '</div>' +
       (cerrado || t === 'revisar'
@@ -6456,14 +6489,20 @@ function detalle(ped){
   let h = '<button class="lcb" data-pd="volver">← Volver a pedidos</button>' +
     '<div class="pd-head"><div><div class="pd-h1"><span class="pd-num">Pedido ' + numTxt(ped) + '</span>' + esc(LOCNOM[ped.local] || ped.local) + '</div><div class="pd-c2">' + esc(fechaTxt(ped.fecha_envio)) + (ped.enviado_por ? ' · enviado por ' + esc(ped.enviado_por) : '') + '</div></div><button class="lcb pri" data-pd="imprimir">🖨 Imprimir hoja</button></div>' +
     (ped.nota ? '<div class="pd-banner">📝 ' + esc(ped.nota) + '</div>' : '');
-  if(hayM) h += '<div class="pd-sec">🛒 Mercado · pasa a Guardadas</div>' + filas(ped, 'mercado');
-  if(hayB) h += '<div class="pd-sec">📦 Bodega · pasa a Despacho</div>' + filas(ped, 'bodega');
+  const grs = estaciones(ped), conEst = grs.some(g => g.est);
+  grs.forEach(g => {
+    const hay = t => g.items.some(it => tipo3(it) === t);
+    if(conEst) h += '<div class="pd-est">' + esc(g.est || 'Sin estación') + '</div>';
+    if(hay('mercado')) h += '<div class="pd-sec">🛒 Mercado · pasa a Guardadas</div>' + filas(ped, 'mercado', g.est);
+    if(hay('facility')) h += '<div class="pd-sec">🏭 Facility · pasa a Despacho</div>' + filas(ped, 'facility', g.est);
+    if(hay('bodega')) h += '<div class="pd-sec">📦 Bodega · pasa a Despacho</div>' + filas(ped, 'bodega', g.est);
+  });
   if(hayR) h += '<div class="pd-sec bad">⚠ Por revisar · producto no reconocido</div>' + filas(ped, 'revisar') + '<div class="pd-nota" style="padding:6px 4px">Estos productos no traen mercado/bodega ni están en el catálogo. Agrégalos a mano en Compras o Despacho.</div>';
   h += '<div class="pd-bar">';
   const aceptado = !!(ped.compra_lista_id || ped.despacho_id);
   if(PD_PERMITIR_ELIMINAR && !aceptado && ped.estado !== 'procesado') h += '<button class="lcb er" data-pd="eliminar" style="flex:0 0 auto;min-width:160px">🗑 Eliminar pedido</button>';
   if(!m && !b) h += '<button class="lcb okb big" data-pd="archivar">Cerrar pedido (no hay nada que procesar)</button>';
-  else if(!aceptado) h += '<div class="pd-resumen">Al aceptar: ' + (m ? '🛒 ' + m + ' van a <b>Guardadas</b> (Lista de compras)' : '') + (m && b ? ' · ' : '') + (b ? '📦 ' + b + ' van a <b>Guías</b> (por despachar)' : '') + '</div>' +
+  else if(!aceptado) h += '<div class="pd-resumen">Al aceptar: ' + (m ? '🛒 ' + m + ' a <b>Compras</b>' : '') + (m && b ? ' · ' : '') + (b ? '📦 ' + b + ' a <b>Despacho</b>' : '') + '</div>' +
     '<button class="lcb okb big" data-pd="aceptar">Aceptar pedido</button>';
   else {
     h += '<div class="pd-resumen ok">✓ Pedido aceptado</div>';
@@ -6497,18 +6536,23 @@ function hojaHtml(ped, f){
     const sub = NOM_SUB[sc] ? sc : 'revisar', cat = (p && p.categoria) || it.categoria || '';
     if(f.subs && f.subs.length && f.subs.indexOf(sub) < 0) return;
     if(f.cats && f.cats.length && f.cats.indexOf(cat) < 0) return;
-    ((grupos[sub] = grupos[sub] || {})[cat] = grupos[sub][cat] || []).push({it:it, q:q});
+    const est = estItem(ped, it);
+    (((grupos[est] = grupos[est] || {})[sub] = grupos[est][sub] || {})[cat] = grupos[est][sub][cat] || []).push({it:it, q:q});
   });
   let n = 0, filasH = '<tr class="th"><td></td><td class="ck">Listo</td><td></td><td></td><td class="ck">Procesar</td><td class="ck">Pedir</td></tr>';
-  ['mercado', 'facility', 'bodega', 'revisar'].forEach(sub => {
-    const cats = grupos[sub]; if(!cats) return;
-    const total = Object.keys(cats).reduce((a, c) => a + cats[c].length, 0);
-    filasH += '<tr class="sub"><td colspan="6">' + esc(NOM_SUB[sub]) + ' <span>(' + total + ')</span></td></tr>';
-    Object.keys(cats).sort().forEach(cat => {
-      cats[cat].forEach(x => {
-        n++;
-        const nom = x.it.producto_nombre || (prod(x.it.producto_id) || {}).nombre || x.it.producto_id;
-        filasH += '<tr><td class="n">' + n + '</td><td class="ck"><i></i></td><td class="nm">' + esc(nom) + (x.it.nota ? '<small>' + esc(x.it.nota) + '</small>' : '') + '</td><td class="q">' + esc(etq(x.q, x.it.unidad_medida)) + '</td><td class="ck"><i></i></td><td class="ck"><i></i></td></tr>';
+  const ests = Object.keys(grupos).sort((x, y) => (x === '' ? 1 : 0) - (y === '' ? 1 : 0)), conEst = ests.some(e => e);
+  ests.forEach(est => {
+    if(conEst) filasH += '<tr class="est"><td colspan="6">' + esc(est || 'Sin estación') + '</td></tr>';
+    ['mercado', 'facility', 'bodega', 'revisar'].forEach(sub => {
+      const cats = grupos[est][sub]; if(!cats) return;
+      const total = Object.keys(cats).reduce((a, c) => a + cats[c].length, 0);
+      filasH += '<tr class="sub"><td colspan="6">' + esc(NOM_SUB[sub]) + ' <span>(' + total + ')</span></td></tr>';
+      Object.keys(cats).sort().forEach(cat => {
+        cats[cat].forEach(x => {
+          n++;
+          const nom = x.it.producto_nombre || (prod(x.it.producto_id) || {}).nombre || x.it.producto_id;
+          filasH += '<tr><td class="n">' + n + '</td><td class="ck"><i></i></td><td class="nm">' + esc(nom) + (x.it.nota ? '<small>' + esc(x.it.nota) + '</small>' : '') + '</td><td class="q">' + esc(etq(x.q, x.it.unidad_medida)) + '</td><td class="ck"><i></i></td><td class="ck"><i></i></td></tr>';
+        });
       });
     });
   });
@@ -6519,7 +6563,7 @@ function hojaHtml(ped, f){
     'h1{font-size:34px;line-height:1.05;margin:0;text-transform:uppercase}.ped{font-size:16px;font-weight:800;text-transform:uppercase;margin:2px 0}.meta{font-size:11px;color:#333;margin-bottom:4px}.nota{border:1px solid #000;padding:3px 7px;margin:4px 0;font-size:11px}' +
     'table{width:100%;border-collapse:collapse;margin-top:4px}td{border-bottom:1px solid #ccc;padding:5px 6px;vertical-align:middle;line-height:1.3}' +
     'tr{page-break-inside:avoid}tr.sub td{background:none;color:#000;font-weight:900;font-size:16px;letter-spacing:.5px;text-transform:uppercase;padding:8px 4px 2px;border-bottom:2px solid #000}tr.sub span{font-weight:400}' +
-    'tr.cat td{background:none;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#444;padding:6px 4px 2px}' +
+    'tr.est td{font-weight:900;font-size:22px;letter-spacing:.8px;text-transform:uppercase;padding:14px 4px 2px;border-bottom:3px solid #000}tr.cat td{background:none;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#444;padding:6px 4px 2px}' +
     'td.n{width:26px;text-align:right;color:#444;font-size:11px}td.ck i{display:inline-block;width:16px;height:16px;border:1.5px solid #000;border-radius:2px;vertical-align:middle}' +
     'td.nm{font-size:14px;font-weight:400;padding-left:10px}td.nm small{display:block;font-weight:400;font-size:10px;color:#444}td.q{width:140px;text-align:right;font-size:14px;font-weight:400;white-space:nowrap}tr.th td{border-bottom:1px solid #000;font-size:10px;font-weight:700;text-transform:uppercase;padding:0 2px 1px}td.ck{width:54px;text-align:center}' +
     '.pie{margin-top:12px;display:flex;gap:24px;font-size:12px}.pie div{flex:1;border-top:1px solid #000;padding-top:3px}' +
@@ -6588,7 +6632,7 @@ function actualizarEstado(ped, extra){
   ped.estado = est;
   return db.collection('pedidos_locales').doc(ped.id).update(upd).catch(e => { console.error(e); toast('No se pudo guardar. Revisa la conexión.'); });
 }
-function crearLista(ped, its){
+function crearLista(ped, its, area){
   const cat = (window.LC_LISTAS && window.LC_LISTAS[ped.local]) || [], fich = (window.LCS && window.LCS.fichas) || {};
   const items = its.map(it => {
     const c = cat.filter(x => x.id === it.producto_id)[0], f = fich[it.producto_id] || {};
@@ -6596,11 +6640,11 @@ function crearLista(ped, its){
       unidad_medida:c ? c.unidad : (it.unidad_medida || (prod(it.producto_id) || {}).unidad || ''), cantidad_solicitada:qty(ped, it), comprado:false, costo:null, nota:(c && c.nota) || '', precio_sugerido:(f.precio > 0 ? f.precio : ((c && c.precio > 0) ? c.precio : null)), vendedor:null};
   });
   const ref = db.collection('listas_compra').doc();
-  ref.set({local:ped.local, area:areaPedido(ped) || null, estado:'pendiente', pedido_id:ped.id, pedido_numero:ped.numero || null, monto_asignado:null, total_costo:null, saldo:null, impresa:false, fecha_creacion:SV(), creado_por:'Pedido de ' + (LOCNOM[ped.local] || ped.local), items:items})
+  ref.set({local:ped.local, area:(area !== undefined ? area : areaPedido(ped)) || null, estado:'pendiente', pedido_id:ped.id, pedido_numero:ped.numero || null, monto_asignado:null, total_costo:null, saldo:null, impresa:false, fecha_creacion:SV(), creado_por:'Pedido de ' + (LOCNOM[ped.local] || ped.local), items:items})
     .catch(e => { console.error(e); toast('No se pudo crear la lista de compras'); });
   return ref;
 }
-function crearGuia(ped, its){
+function crearGuia(ped, its, area){
   const items = its.map(it => {
     const p = prod(it.producto_id) || {};
     const q = qty(ped, it);
@@ -6608,19 +6652,26 @@ function crearGuia(ped, its){
       unidad_medida:it.unidad_medida || p.unidad || '', cantidad_pedida:q, cantidad_despachada:q, origen:'stock', cantidad_recibida:null, diferencia:null, nota_diferencia:''};
   });
   const ref = db.collection('pedidos').doc();
-  ref.set({local:ped.local, area:areaPedido(ped) || null, estado:'por_despachar', pedido_local_id:ped.id, pedido_local_numero:ped.numero || null, fecha_despacho:SV(), fecha_recepcion:null, despachado_por:null, recibido_por:null, items:items})
+  ref.set({local:ped.local, area:(area !== undefined ? area : areaPedido(ped)) || null, estado:'por_despachar', pedido_local_id:ped.id, pedido_local_numero:ped.numero || null, fecha_despacho:SV(), fecha_recepcion:null, despachado_por:null, recibido_por:null, items:items})
     .catch(e => { console.error(e); toast('No se pudo crear la guía de despacho'); });
   return ref;
 }
 /* Aceptar: de una vez el mercado va a Guardadas (Lista de compras) y la bodega a Guías (por despachar). Sin seleccionar nada a mano. */
 function aceptar(ped){
   if(P.busy) return; P.busy = true; setTimeout(() => { P.busy = false; }, 1500);
-  const mer = efectivos(ped, 'mercado'), bod = efectivos(ped, 'bodega'), upd = {}, u = {ped:ped, lista:null, guia:null};
-  if(mer.length && !ped.compra_lista_id){ u.lista = crearLista(ped, mer); upd.compra_lista_id = u.lista.id; }
-  if(bod.length && !ped.despacho_id){ u.guia = crearGuia(ped, bod); upd.despacho_id = u.guia.id; }
-  if(!u.lista && !u.guia){ toast('No hay nada nuevo que aceptar'); return; }
+  const upd = {}, u = {ped:ped, listas:[], guias:[]}, listas = Object.assign({}, ped.compra_listas || {}), guias = Object.assign({}, ped.despachos || {});
+  let nm = 0, nb = 0;
+  estaciones(ped).forEach(g => {
+    const k = g.est || '_';
+    const mer = g.items.filter(it => tipo(it) === 'mercado' && qty(ped, it) > 0), bod = g.items.filter(it => tipo(it) === 'bodega' && qty(ped, it) > 0);
+    if(mer.length && !ped.compra_lista_id){ const r = crearLista(ped, mer, g.est); listas[k] = r.id; u.listas.push(r); nm += mer.length; }
+    if(bod.length && !ped.despacho_id){ const r = crearGuia(ped, bod, g.est); guias[k] = r.id; u.guias.push(r); nb += bod.length; }
+  });
+  if(!u.listas.length && !u.guias.length){ toast('No hay nada nuevo que aceptar'); return; }
+  if(u.listas.length){ upd.compra_lista_id = u.listas[0].id; upd.compra_listas = listas; }
+  if(u.guias.length){ upd.despacho_id = u.guias[0].id; upd.despachos = guias; }
   actualizarEstado(ped, upd);
-  P.undo = u; P.open = ped.id; render(); snack(u.lista ? mer.length : 0, u.guia ? bod.length : 0);
+  P.undo = u; P.open = ped.id; render(); snack(nm, nb);
 }
 function snack(nm, nb){
   let s = $('#pd-snack'); if(!s){ s = document.createElement('div'); s.id = 'pd-snack'; document.body.appendChild(s); }
@@ -6630,8 +6681,8 @@ function snack(nm, nb){
 function deshacer(){
   const u = P.undo; if(!u) return;
   const upd = {};
-  if(u.lista){ u.lista.delete().catch(e => console.error(e)); u.ped.compra_lista_id = null; upd.compra_lista_id = null; }
-  if(u.guia){ u.guia.delete().catch(e => console.error(e)); u.ped.despacho_id = null; upd.despacho_id = null; }
+  if(u.listas.length){ u.listas.forEach(r => r.delete().catch(e => console.error(e))); u.ped.compra_lista_id = null; u.ped.compra_listas = null; upd.compra_lista_id = null; upd.compra_listas = null; }
+  if(u.guias.length){ u.guias.forEach(r => r.delete().catch(e => console.error(e))); u.ped.despacho_id = null; u.ped.despachos = null; upd.despacho_id = null; upd.despachos = null; }
   u.ped.estado = estadoDe(u.ped); upd.estado = u.ped.estado; upd.fecha_proceso = null;
   db.collection('pedidos_locales').doc(u.ped.id).update(upd).catch(e => console.error(e));
   P.undo = null; const s = $('#pd-snack'); if(s) s.className = ''; render(); toast('Deshecho');
