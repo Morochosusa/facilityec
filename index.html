@@ -1861,7 +1861,7 @@
   .fx-pl{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #eee} .fx-pn{flex:1;min-width:0} .fx-fe{display:grid;gap:4px;font-size:13px;font-weight:700;margin:8px 0}
   .fx-subh{font-size:13px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;margin:16px 0 2px;padding-top:12px;border-top:2px solid #1f1f1d}
   .fx-r{grid-template-columns:48px minmax(0,1fr) auto auto} .fx-r.sp{grid-template-columns:48px minmax(0,1fr) auto}
-  .fx-pk{width:44px;height:44px;border-radius:50%;border:1.5px solid #c9ced8;background:#fff;font-size:20px;font-weight:700;color:#2f5fd0;cursor:pointer;display:grid;place-items:center;font-family:inherit} .fx-pk.on{background:#2f5fd0;border-color:#2f5fd0;color:#fff}
+  .fx-pk{height:38px;padding:0 14px;border-radius:19px;border:1.5px solid #2f5fd0;background:#2f5fd0;font-size:14px;font-weight:700;color:#fff;cursor:pointer;white-space:nowrap;font-family:inherit} .fx-pk.on{background:#fff;color:#2f5fd0}
   .fx-kpi{margin:4px 0 8px} .fx-kt{text-align:left;cursor:pointer;font-family:inherit;color:#1f1f1d;border:1px solid #e4e7ec;background:#fff;border-radius:14px;padding:10px 12px;display:block} .fx-kt b{font-size:26px;line-height:1.1;display:block} .fx-kt small{font-size:12.5px;color:#6b6a64;display:block;margin-top:2px} .fx-kt.wn{border-color:#e08a00;background:#fff8ec}
   .fx-rapido{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#fff8ec;border:1px solid #e08a00;border-radius:12px;padding:8px 12px;margin:4px 0;font-weight:600;font-size:14px}
   @media (min-width:700px){.fx-kpi{grid-template-columns:repeat(4,1fr)}}
@@ -8885,7 +8885,8 @@ const phInv = (r, big) => { const f = fotoDe(r.id), sz = big ? 64 : 48;
 const tagCat = r => catDe(r.id) ? '<span class="fx-tag">' + esc(catNom(catDe(r.id))) + '</span>' : '<span class="fx-tag fx-sc">Sin categoría</span>';
 function vInv(){
   const q = norm(F.q);
-  const btnPedir = r => r.sec === 'terminado' ? '' : '<button class="fx-pk' + (F.sel[r.id] ? ' on' : '') + '" data-fx="sel-p" data-id="' + esc(r.id) + '" aria-label="' + (F.sel[r.id] ? 'Quitar del pedido' : 'Agregar al pedido') + '">' + (F.sel[r.id] ? '✓' : '＋') + '</button>';
+  const pdt = pendDe();
+  const btnPedir = r => { if(!F.sel[r.id] && (pdt[r.id] || !(r.stock <= 0.0001 || (r.min > 0 && r.stock < r.min)))) return ''; return '<button class="fx-pk' + (F.sel[r.id] ? ' on' : '') + '" data-fx="sel-p" data-id="' + esc(r.id) + '" aria-label="' + (F.sel[r.id] ? 'Quitar del pedido' : 'Agregar al pedido') + '">' + (F.sel[r.id] ? '✓ Pedir' : '＋ Pedir') + '</button>'; };
   const aTag = r => '<span class="fx-ar ' + r.sec + '">' + esc((SECS.find(x => x[0] === r.sec) || [0,''])[1]) + '</span>';
   const fila = r => { const e = estadoInv(r);
     return '<div class="fx-r' + (r.sec === 'terminado' ? ' sp' : '') + (F.sel[r.id] ? ' sel' : '') + '" role="button" tabindex="0" data-fx="ed" data-id="' + esc(r.id) + '" data-sec="' + r.sec + '">' + phInv(r) + '<div class="fx-rm"><div class="fx-rn">' + esc(r.nombre) + '</div><div class="fx-rs">' + aTag(r) + tagCat(r) + '<span>' + esc(r.pres || '') + '</span>' + (pend[r.id] ? '<span class="fx-pd">Pedido pendiente</span>' : '') + '</div></div>' +
@@ -8931,9 +8932,9 @@ function detalleTile(k){
   else if(k === 'rec'){ const l = movsHoy('recepcion'); modal('<h3>Llegó de Recepción hoy</h3>' + (l.length ? l.map(x => fila(x.nombre, x.cant, x.uni)).join('') : '<div class="rx-mu">Todavía no se recibió nada hoy.</div>')); }
   else if(k === 'pend'){ const p = pendDe(), ids = Object.keys(p); modal('<h3>Pedidos por llegar</h3>' + (ids.length ? ids.map(id => { const r = filaPorId(id), c = catPor(id); return fila((r && r.nombre) || (c && c.nombre) || id, p[id].cant, (r && r.uni) || '', p[id].fecha ? ' · ' + esc(p[id].fecha) : ''); }).join('') : '<div class="rx-mu">No hay pedidos pendientes de recibir.</div>')); }
 }
-function idsParaPedir(){   // Materia prima y Bodega: agotados o bajo el mínimo, sin pedido pendiente (lo Procesado se produce, no se pide)
+function idsParaPedir(){   // todas las áreas: agotados o bajo el mínimo, sin pedido pendiente
   const pend = pendDe(), ids = [];
-  SECS.forEach(sc => { if(sc[0] === 'terminado') return; filasInv(sc[0]).map(conDatosS(sc[0])).forEach(r => { if((r.stock <= 0.0001 || (r.min > 0 && r.stock < r.min)) && !pend[r.id]) ids.push(r.id); }); });
+  SECS.forEach(sc => { filasInv(sc[0]).map(conDatosS(sc[0])).forEach(r => { if((r.stock <= 0.0001 || (r.min > 0 && r.stock < r.min)) && !pend[r.id]) ids.push(r.id); }); });
   return ids;
 }
 function filaPorId(id){ for(const sc of SECS){ const r = filasInv(sc[0]).filter(x => x.id === id)[0]; if(r) return conDatos(Object.assign(r, {sec:sc[0]})); } return null; }
