@@ -4700,7 +4700,7 @@ function registrar(){
   const regRef = db.collection(prueba ? 'pruebas_produccion' : 'producciones_facility').doc();
   /* Firestore rechaza todo el lote si algún campo es undefined o NaN: se limpian antes de guardar (un insumo sin unidad no debe impedir el registro) */
   const limpio = v => { if(v === undefined) return null; if(typeof v === 'number') return isFinite(v) ? v : 0; if(Array.isArray(v)) return v.map(limpio); if(v && typeof v === 'object' && v.constructor === Object){ const o = {}; Object.keys(v).forEach(k => { o[k] = limpio(v[k]); }); return o; } return v; };
-  const batch0 = db.batch(), batch = {set:(r, d, o) => o ? batch0.set(r, limpio(d), o) : batch0.set(r, limpio(d)), update:(r, d) => batch0.update(r, limpio(d)), delete:r => batch0.delete(r), commit:() => batch0.commit()};
+  const batch0 = db.batch(), opsReg = [], batch = {set:(r, d, o) => { const c = limpio(d); opsReg.push({r:r, d:c, o:o}); return o ? batch0.set(r, c, o) : batch0.set(r, c); }, update:(r, d) => batch0.update(r, limpio(d)), delete:r => batch0.delete(r), commit:() => batch0.commit()};
   batch.set(regRef, {
     producto_id:f.id, producto_nombre:f.nombre, unidad_medida:f.unidad, presentacion:f.presentacion, estacion:S.op, inventario:!!f.inv,
     cantidad_producida:S.qty, cantidad_por_etiqueta:f.por_etiqueta > 0 ? f.por_etiqueta : 0, batches:round2(ratio), conservacion_modo:S.modo, dias_vida:dias, vence:vence ? TS().fromDate(vence) : null,
@@ -4733,11 +4733,17 @@ function registrar(){
     jobRef = db.collection('cola_impresion').doc();
     batch.set(jobRef, trabajoEtiqueta({id:regRef.id, pid:f.id, pres:f.presentacion, nombre:f.nombre, cant:S.qty, cpe:f.por_etiqueta > 0 ? f.por_etiqueta : 0, unidad:f.unidad, ts:now.getTime(), vence:vence.getTime(), dias:dias, modo:S.modo, lote:lote, op:opNombre, etq:etq, prueba:prueba}, U.directo ? {estado:'directo', directo:true} : null));
   }
-  batch.commit().catch(err => {
+  batch.commit().catch(async err => {
     console.error(err); const code = (err && (err.code || err.name)) || 'error', det = String((err && err.message) || '').slice(0, 160);
+    let denegadas = [];
+    if(code === 'permission-denied'){
+      /* Firebase rechazó el lote completo por UNA escritura sin permiso. Se reintenta una por una: lo permitido se guarda y se averigua cuál colección está bloqueada. */
+      const col = r => { try { return String(r.path || '').split('/')[0] || '?'; } catch(e){ return '?'; } };
+      for(const op of opsReg){ try { await (op.o ? op.r.set(op.d, op.o) : op.r.set(op.d)); } catch(e2){ const c = col(op.r); if(denegadas.indexOf(c) < 0) denegadas.push(c); } }
+    }
     flash('er', 'No se guardó'); snd('err');
-    toast(/unavailable|offline|network/i.test(code + det) ? 'No se pudo guardar. Revisa la conexión.' : 'No se guardó (' + code + '). Avísale a Meli: ' + f.nombre);
-    try { db.collection('errores_app').add({modulo:'produccion', producto_id:f.id, producto:f.nombre, cantidad:S.qty, codigo:code, detalle:det, operador:opNombre, insumos:insumos.map(x => x.materia_prima_id || ''), fecha:SV()}).catch(() => {}); } catch(e){}
+    toast(denegadas.length ? 'Sin permiso en: ' + denegadas.join(', ') + '. Avísale a Meli: ' + f.nombre : (/unavailable|offline|network/i.test(code + det) ? 'No se pudo guardar. Revisa la conexión.' : 'No se guardó (' + code + '). Avísale a Meli: ' + f.nombre));
+    try { db.collection('errores_app').add({modulo:'produccion', producto_id:f.id, producto:f.nombre, cantidad:S.qty, codigo:code, detalle:det, sin_permiso:denegadas, operador:opNombre, insumos:insumos.map(x => x.materia_prima_id || ''), fecha:SV()}).catch(() => {}); } catch(e){}
   });
 
   S.ultima[f.id] = S.qty; LS.set('ultima', S.ultima);
