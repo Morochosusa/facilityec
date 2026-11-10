@@ -1957,6 +1957,7 @@
   .pd-est-t { font-size: 1em; font-weight: 900; color: #1f1f1d; }
 .fx-ar{font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;background:#eef2f7;color:#334155;white-space:nowrap}.fx-ar.terminado{background:#dcfce7;color:#166534}.fx-ar.mp{background:#fee2e2;color:#991b1b}.fx-ar.directo{background:#e0e7ff;color:#3730a3}.fx-chips{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.fx-chip{border:1px solid #cbd5e1;background:#fff;border-radius:99px;padding:6px 12px;font-size:13px;cursor:pointer}.fx-chip.on{background:#111827;color:#fff;border-color:#111827}.fx-cnt{margin:6px 2px}.fx-solo{cursor:pointer;font-weight:600;color:#1f1f1d}.fx-solo.on{background:#2f5fd0;border-color:#2f5fd0;color:#fff}.fx-fl.fx-pb{flex:1 1 150px!important} @media (min-width:900px){.fx-fl.fx-chips{flex:0 0 auto!important}.fx-fb{flex-wrap:wrap}.fx-fl.fx-pb{flex:0 0 auto!important}} .fx-fl.fx-chips{flex:1 1 100%;height:auto;min-height:46px;padding:6px 12px;justify-content:flex-start;border-radius:23px}
 .pd-pv{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 4px 4px;border-bottom:2px solid #1f1f1d;font-size:15px}.pd-pv span{color:#6b7280}.pd-pv .lcb{padding:6px 12px;min-height:0;height:auto}.pd-ps{height:38px;width:auto;min-width:200px;display:block;margin-top:4px;max-width:100%;padding:6px 8px;border:1px solid #c9ced8;border-radius:8px;font:inherit;font-size:13px;background:#fff}
+.pd-row{position:relative}.pd-n{flex:0 0 34px;min-width:34px;height:34px;border-radius:50%;background:#1f1f1d;color:#fff;font-weight:800;font-size:15px;display:grid;place-items:center;margin-right:10px}.pd-row.off .pd-n{background:#d6d9e0;color:#6b7280}
 </style>
 </head>
 <body>
@@ -4696,7 +4697,9 @@ function registrar(){
   const email = (typeof auth !== 'undefined' && auth.currentUser) ? auth.currentUser.email : null;
 
   const regRef = db.collection(prueba ? 'pruebas_produccion' : 'producciones_facility').doc();
-  const batch = db.batch();
+  /* Firestore rechaza todo el lote si algún campo es undefined o NaN: se limpian antes de guardar (un insumo sin unidad no debe impedir el registro) */
+  const limpio = v => { if(v === undefined) return null; if(typeof v === 'number') return isFinite(v) ? v : 0; if(Array.isArray(v)) return v.map(limpio); if(v && typeof v === 'object' && v.constructor === Object){ const o = {}; Object.keys(v).forEach(k => { o[k] = limpio(v[k]); }); return o; } return v; };
+  const batch0 = db.batch(), batch = {set:(r, d, o) => o ? batch0.set(r, limpio(d), o) : batch0.set(r, limpio(d)), update:(r, d) => batch0.update(r, limpio(d)), delete:r => batch0.delete(r), commit:() => batch0.commit()};
   batch.set(regRef, {
     producto_id:f.id, producto_nombre:f.nombre, unidad_medida:f.unidad, presentacion:f.presentacion, estacion:S.op, inventario:!!f.inv,
     cantidad_producida:S.qty, cantidad_por_etiqueta:f.por_etiqueta > 0 ? f.por_etiqueta : 0, batches:round2(ratio), conservacion_modo:S.modo, dias_vida:dias, vence:vence ? TS().fromDate(vence) : null,
@@ -4729,7 +4732,12 @@ function registrar(){
     jobRef = db.collection('cola_impresion').doc();
     batch.set(jobRef, trabajoEtiqueta({id:regRef.id, pid:f.id, pres:f.presentacion, nombre:f.nombre, cant:S.qty, cpe:f.por_etiqueta > 0 ? f.por_etiqueta : 0, unidad:f.unidad, ts:now.getTime(), vence:vence.getTime(), dias:dias, modo:S.modo, lote:lote, op:opNombre, etq:etq, prueba:prueba}, U.directo ? {estado:'directo', directo:true} : null));
   }
-  batch.commit().catch(err => { console.error(err); flash('er', 'No se guardó'); snd('err'); toast('No se pudo guardar. Revisa la conexión.'); });
+  batch.commit().catch(err => {
+    console.error(err); const code = (err && (err.code || err.name)) || 'error', det = String((err && err.message) || '').slice(0, 160);
+    flash('er', 'No se guardó'); snd('err');
+    toast(/unavailable|offline|network/i.test(code + det) ? 'No se pudo guardar. Revisa la conexión.' : 'No se guardó (' + code + '). Avísale a Meli: ' + f.nombre);
+    try { db.collection('errores_app').add({modulo:'produccion', producto_id:f.id, producto:f.nombre, cantidad:S.qty, codigo:code, detalle:det, operador:opNombre, insumos:insumos.map(x => x.materia_prima_id || ''), fecha:SV()}).catch(() => {}); } catch(e){}
+  });
 
   S.ultima[f.id] = S.qty; LS.set('ultima', S.ultima);
   const r = {id:regRef.id, col:prueba ? 'pruebas_produccion' : 'producciones_facility', prueba:prueba, pid:f.id, pres:f.presentacion, nombre:f.nombre, unidad:f.unidad, cant:S.qty, cpe:f.por_etiqueta > 0 ? f.por_etiqueta : 0, modo:S.modo, ts:now.getTime(),
@@ -6538,11 +6546,13 @@ function lista(){
   }).join('') + '</div>';
   return h;
 }
+let NUMFILA = 0;   // numeración corrida de los productos de la lista (igual que la hoja impresa)
 function filas(ped, t, est, pf){
   const its = (ped.items || []).filter(it => tipo3(it) === t && (est === undefined || estItem(ped, it) === est) && (!pf || pf(it)));
   return its.map(it => {
     const q = qty(ped, it), quitado = !(q > 0), cerrado = ped.estado === 'procesado' || ((t === 'mercado' || t === 'proveedores') && ped.compra_lista_id) || ((t === 'bodega' || t === 'facility') && ped.despacho_id);
-    return '<div class="pd-row ' + (quitado ? 'off' : '') + '"><div class="pd-nm">' + esc(it.producto_nombre || (prod(it.producto_id) || {}).nombre || it.producto_id) + (it.nota ? '<div class="pd-nota">' + esc(it.nota) + '</div>' : '') +
+    const nro = quitado ? '' : ++NUMFILA;
+    return '<div class="pd-row ' + (quitado ? 'off' : '') + '"><span class="pd-n">' + (nro || '–') + '</span><div class="pd-nm">' + esc(it.producto_nombre || (prod(it.producto_id) || {}).nombre || it.producto_id) + (it.nota ? '<div class="pd-nota">' + esc(it.nota) + '</div>' : '') +
       (t === 'revisar' ? '<div class="pd-nota">Código no reconocido: ' + esc(it.producto_id) + '</div>' : '') + (t === 'proveedores' && !cerrado ? '<select class="pd-ps" data-pd-prov="' + esc(it.producto_id) + '" aria-label="Proveedor"><option value="">' + (provDe(it) ? 'Cambiar proveedor…' : 'Elegir proveedor…') + '</option>' + P.provs.map(p => '<option value="' + esc(p.id) + '"' + (provDe(it) === p.id ? ' selected' : '') + '>' + esc(p.nombre || p.id) + '</option>').join('') + '<option value="__nuevo">＋ Proveedor nuevo…</option></select>' : '') + '</div>' +
       (cerrado || t === 'revisar'
         ? '<b class="pd-q">' + esc(etq(q, it.unidad_medida)) + '</b>'
@@ -6551,6 +6561,7 @@ function filas(ped, t, est, pf){
   }).join('');
 }
 function detalle(ped){
+  NUMFILA = 0;
   const m = efectivos(ped, 'mercado').length, b = efectivos(ped, 'bodega').length;
   const hayM = (ped.items || []).some(it => tipo(it) === 'mercado'), hayB = (ped.items || []).some(it => tipo(it) === 'bodega'), hayR = (ped.items || []).some(it => tipo(it) === 'revisar');
   let h = '<button class="lcb" data-pd="volver">← Volver a pedidos</button>' +
