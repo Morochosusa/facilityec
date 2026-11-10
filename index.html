@@ -1958,6 +1958,7 @@
 .fx-ar{font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;background:#eef2f7;color:#334155;white-space:nowrap}.fx-ar.terminado{background:#dcfce7;color:#166534}.fx-ar.mp{background:#fee2e2;color:#991b1b}.fx-ar.directo{background:#e0e7ff;color:#3730a3}.fx-chips{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.fx-chip{border:1px solid #cbd5e1;background:#fff;border-radius:99px;padding:6px 12px;font-size:13px;cursor:pointer}.fx-chip.on{background:#111827;color:#fff;border-color:#111827}.fx-cnt{margin:6px 2px}.fx-solo{cursor:pointer;font-weight:600;color:#1f1f1d}.fx-solo.on{background:#2f5fd0;border-color:#2f5fd0;color:#fff}.fx-fl.fx-pb{flex:1 1 150px!important} @media (min-width:900px){.fx-fl.fx-chips{flex:0 0 auto!important}.fx-fb{flex-wrap:wrap}.fx-fl.fx-pb{flex:0 0 auto!important}} .fx-fl.fx-chips{flex:1 1 100%;height:auto;min-height:46px;padding:6px 12px;justify-content:flex-start;border-radius:23px}
 .pd-pv{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 4px 4px;border-bottom:2px solid #1f1f1d;font-size:15px}.pd-pv span{color:#6b7280}.pd-pv .lcb{padding:6px 12px;min-height:0;height:auto}.pd-ps{height:38px;width:auto;min-width:200px;display:block;margin-top:4px;max-width:100%;padding:6px 8px;border:1px solid #c9ced8;border-radius:8px;font:inherit;font-size:13px;background:#fff}
 .pd-row{position:relative}.pd-n{flex:0 0 34px;min-width:34px;height:34px;border-radius:50%;background:#1f1f1d;color:#fff;font-weight:800;font-size:15px;display:grid;place-items:center;margin-right:10px}.pd-row.off .pd-n{background:#d6d9e0;color:#6b7280}
+.pd-lrs{display:flex;flex-direction:column;gap:6px}.pd-lr{font:inherit;display:flex;align-items:center;gap:10px;background:#fff;border:1.5px solid #e2e0d6;border-radius:12px;padding:8px 12px;cursor:pointer;text-align:left;min-height:46px;touch-action:manipulation}.pd-lr .pd-num{flex:0 0 auto}.pd-lr b{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pd-lr-a,.pd-lr-f,.pd-lr-n{font-size:13px;color:#6b7280;white-space:nowrap}.pd-lr-g{font-size:20px;color:#9aa0ab}@media(max-width:560px){.pd-lr-a,.pd-lr-n{display:none}}
 </style>
 </head>
 <body>
@@ -6483,7 +6484,7 @@ function estaciones(ped){
 }
 const etq = (n, u) => (window.lcEtq ? window.lcEtq({cantidad_solicitada:n, unidad_medida:u}) : nf.format(n) + ' ' + (u || ''));
 function fechaTxt(ts){
-  const d = ts && ts.toDate ? ts.toDate() : null; if(!d) return 'Enviando...';
+  const m = ts && typeof ts === 'object' && (ts.items || ts.local) ? fechaPed(ts) : msDe(ts); const d = m ? new Date(m) : null; if(!d) return 'Sin fecha';
   const min = Math.round((Date.now() - d.getTime()) / 60000);
   const dia = d.toLocaleDateString('es-EC', {weekday:'long'}), dc = dia.charAt(0).toUpperCase() + dia.slice(1);
   if(min < 1) return dc + ' · ahora mismo'; if(min < 60) return dc + ' · hace ' + min + ' min';
@@ -6497,11 +6498,13 @@ function estadoDe(ped){
 }
 const pend = () => P.lista.filter(p => p.estado !== 'procesado');
 const numTxt = p => p.numero ? '#' + p.numero : '#…';
-const msDe = ts => ts && ts.toMillis ? ts.toMillis() : 0;
+/* La fecha del pedido puede llegar como Timestamp, Date, número, texto o {seconds}: se normaliza (y se prueban otros nombres de campo) */
+const msDe = ts => { if(!ts) return 0; if(ts.toMillis) return ts.toMillis(); if(ts instanceof Date) return ts.getTime(); if(typeof ts === 'number') return ts < 1e12 ? ts * 1000 : ts; if(typeof ts === 'string'){ const t = Date.parse(ts); return isFinite(t) ? t : 0; } if(typeof ts.seconds === 'number') return ts.seconds * 1000; if(typeof ts._seconds === 'number') return ts._seconds * 1000; return 0; };
+const fechaPed = p => msDe(p && p.fecha_envio) || msDe(p && p.fecha) || msDe(p && p.fecha_creacion) || msDe(p && p.creado) || msDe(p && p.created_at) || msDe(p && p.timestamp);
 /* Cada pedido recibe su numero consecutivo (contadores/pedidos_locales). Lo asigna Facility, una vez, con transaccion. */
 const numerando = {}; let cadenaNum = Promise.resolve();
 function asignarNumeros(arr){
-  arr.filter(p => !p.numero && !numerando[p.id] && msDe(p.fecha_envio)).sort((a, b) => msDe(a.fecha_envio) - msDe(b.fecha_envio)).forEach(p => {
+  arr.filter(p => !p.numero && !numerando[p.id] && fechaPed(p)).sort((a, b) => fechaPed(a) - fechaPed(b)).forEach(p => {
     numerando[p.id] = 1;
     cadenaNum = cadenaNum.then(() => db.runTransaction(async t => {
       const cr = db.collection('contadores').doc('pedidos_locales'), pr = db.collection('pedidos_locales').doc(p.id);
@@ -6532,16 +6535,18 @@ function render(){
   r.innerHTML = ped ? detalle(ped) : lista();
 }
 function lista(){
-  const nuevos = pend(), hechos = P.lista.filter(p => p.estado === 'procesado').slice(0, 30);
+  const nuevos = pend(), hechos = P.lista.filter(p => p.estado === 'procesado').sort((a, b) => (fechaPed(a) - fechaPed(b)) || ((a.numero || 0) - (b.numero || 0)));   // en el orden en que llegaron
   const show = P.tab === 'nuevos' ? nuevos : hechos;
   let h = '<div class="pd-tabs"><button class="lcb ' + (P.tab === 'nuevos' ? 'on' : '') + '" data-pd="tab" data-v="nuevos">Por revisar' + (nuevos.length ? ' (' + nuevos.length + ')' : '') + '</button>' +
     '<button class="lcb ' + (P.tab === 'hechos' ? 'on' : '') + '" data-pd="tab" data-v="hechos">Procesados</button></div>';
   if(!show.length) h += '<div class="pd-empty"><b>' + (P.tab === 'nuevos' ? 'No hay pedidos nuevos' : 'Todavía no hay pedidos procesados') + '</b><br>' + (P.tab === 'nuevos' ? 'Cuando un local envíe su lista, aparece aquí con un aviso.' : '') + '</div>';
+  if(P.tab === 'hechos' && show.length) return h + '<div class="pd-lrs">' + show.map(p => { const n = (p.items || []).filter(it => qty(p, it) > 0).length;
+    return '<button class="pd-lr" data-pd="abrir" data-id="' + p.id + '"><span class="pd-num">' + numTxt(p) + '</span><b>' + esc(LOCNOM[p.local] || p.local) + '</b>' + (areaPedido(p) ? '<span class="pd-lr-a">' + esc(areaPedido(p)) + '</span>' : '') + '<span class="pd-lr-f">' + esc(fechaTxt(p)) + '</span><span class="pd-lr-n">' + n + ' prod.</span><span class="pd-lr-g">›</span></button>'; }).join('') + '</div>';
   h += '<div class="pd-cards">' + show.map(p => {
     const m = efectivos(p, 'mercado').length, b = efectivos(p, 'bodega').length, rv = (p.items || []).filter(it => tipo(it) === 'revisar').length;
     const st = p.estado === 'procesado' ? '<span class="pd-st ok">Procesado</span>' : p.estado === 'en_proceso' ? '<span class="pd-st wn">En proceso</span>' : '<span class="pd-st nw">Nuevo</span>';
     return '<button class="pd-card ' + (p.estado === 'enviado' ? 'nuevo' : '') + '" data-pd="abrir" data-id="' + p.id + '"><div class="pd-c1"><span><span class="pd-num">' + numTxt(p) + '</span><b>' + esc(LOCNOM[p.local] || p.local) + '</b>' + (areaPedido(p) ? ' <span class="est-nom pd-est-t">· ' + esc(areaPedido(p)) + '</span>' : '') + '</span>' + st + '</div>' +
-      '<div class="pd-c2">' + esc(fechaTxt(p.fecha_envio)) + (p.enviado_por ? ' · ' + esc(p.enviado_por) : '') + '</div>' +
+      '<div class="pd-c2">' + esc(fechaTxt(p)) + (p.enviado_por ? ' · ' + esc(p.enviado_por) : '') + '</div>' +
       '<div class="pd-c3">' + estaciones(p).filter(g => g.k !== 'revisar').map(g => '<span class="pd-chip pd-est-chip ' + g.k + '"><b>' + esc(g.est) + '</b> ' + g.items.filter(it => qty(p, it) > 0).length + '</span>').join('') + (rv ? '<span class="pd-chip bad">⚠ ' + rv + ' por revisar</span>' : '') + '</div></button>';
   }).join('') + '</div>';
   return h;
@@ -6565,7 +6570,7 @@ function detalle(ped){
   const m = efectivos(ped, 'mercado').length, b = efectivos(ped, 'bodega').length;
   const hayM = (ped.items || []).some(it => tipo(it) === 'mercado'), hayB = (ped.items || []).some(it => tipo(it) === 'bodega'), hayR = (ped.items || []).some(it => tipo(it) === 'revisar');
   let h = '<button class="lcb" data-pd="volver">← Volver a pedidos</button>' +
-    '<div class="pd-head"><div><div class="pd-h1"><span class="pd-num">Pedido ' + numTxt(ped) + '</span>' + esc(LOCNOM[ped.local] || ped.local) + (areaPedido(ped) ? ' <span class="est-nom pd-est-t">· ' + esc(areaPedido(ped)) + '</span>' : '') + '</div><div class="pd-c2">' + esc(fechaTxt(ped.fecha_envio)) + (ped.enviado_por ? ' · enviado por ' + esc(ped.enviado_por) : '') + '</div></div><button class="lcb pri" data-pd="imprimir">🖨 Imprimir hoja</button></div>' +
+    '<div class="pd-head"><div><div class="pd-h1"><span class="pd-num">Pedido ' + numTxt(ped) + '</span>' + esc(LOCNOM[ped.local] || ped.local) + (areaPedido(ped) ? ' <span class="est-nom pd-est-t">· ' + esc(areaPedido(ped)) + '</span>' : '') + '</div><div class="pd-c2">' + esc(fechaTxt(ped)) + (ped.enviado_por ? ' · enviado por ' + esc(ped.enviado_por) : '') + '</div></div><button class="lcb pri" data-pd="imprimir">🖨 Imprimir hoja</button></div>' +
     (ped.nota ? '<div class="pd-banner">📝 ' + esc(ped.nota) + '</div>' : '');
   const SUBT = {mercado:'pasa a Guardadas', proveedores:'pasa a Guardadas', facility:'pasa a Despacho', bodega:'pasa a Despacho', revisar:'producto no reconocido'};
   estaciones(ped).forEach(g => {
@@ -6579,7 +6584,7 @@ function detalle(ped){
   });
   h += '<div class="pd-bar">';
   const aceptado = !!(ped.compra_lista_id || ped.despacho_id);
-  if(PD_PERMITIR_ELIMINAR && !aceptado && ped.estado !== 'procesado') h += '<button class="lcb er" data-pd="eliminar" style="flex:0 0 auto;min-width:160px">🗑 Eliminar pedido</button>';
+  h += '<button class="lcb er" data-pd="eliminar" style="flex:0 0 auto;min-width:160px">🔒 Eliminar pedido</button>';   // siempre disponible, pero pide código
   if(!m && !b) h += '<button class="lcb okb big" data-pd="archivar">Cerrar pedido (no hay nada que procesar)</button>';
   else if(!aceptado) h += '<div class="pd-resumen">Al aceptar: ' + (m ? '🛒 ' + m + ' a <b>Compras</b>' : '') + (m && b ? ' · ' : '') + (b ? '📦 ' + b + ' a <b>Despacho</b>' : '') + '</div>' +
     '<button class="lcb okb big" data-pd="aceptar">Aceptar pedido</button>';
@@ -6621,7 +6626,7 @@ function hojaHtml(ped, f){
     });
   });
   if(!n) filasH = '<tr><td colspan="6" style="padding:20px;text-align:center">Este pedido no tiene productos.</td></tr>';
-  const fe = ped.fecha_envio && ped.fecha_envio.toDate ? ped.fecha_envio.toDate().toLocaleString('es-EC', {weekday:'long', day:'2-digit', month:'long', hour:'2-digit', minute:'2-digit'}) : '';
+  const fe = fechaPed(ped) ? new Date(fechaPed(ped)).toLocaleString('es-EC', {weekday:'long', day:'2-digit', month:'long', hour:'2-digit', minute:'2-digit'}) : '';
   return '<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Pedido ' + esc(numTxt(ped)) + '</title><style>' +
     '@page{size:letter portrait;margin:12mm}*{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;color:#000;margin:0;font-size:13px}' +
     'h1{font-size:34px;line-height:1.05;margin:0;text-transform:uppercase}.ped{font-size:16px;font-weight:800;text-transform:uppercase;margin:2px 0}.meta{font-size:11px;color:#333;margin-bottom:4px}.nota{border:1px solid #000;padding:3px 7px;margin:4px 0;font-size:11px}' +
@@ -6741,7 +6746,7 @@ function deshacer(){
 }
 /* ---------- eliminar un pedido (solo mientras esta en Por revisar) ---------- */
 function eliminarPedido(ped){
-  if(!PD_PERMITIR_ELIMINAR || ped.compra_lista_id || ped.despacho_id || P.busyElim) return;
+  if(P.busyElim) return;   // eliminar pide código y vale en Por revisar y en Procesados
   P.busyElim = true; setTimeout(() => { P.busyElim = false; }, 800);
   const data = Object.assign({}, ped); delete data.id;
   P.undoElim = {id:ped.id, data:data, num:ped.numero, local:ped.local};
@@ -6795,7 +6800,7 @@ document.addEventListener('click', e => {
     case 'ver-compra': cambiarVista('compra'); if(window.LCS){ window.LCS.tab = 'listas'; if(ped) window.LCS.local = ped.local; } if(window.lcRefresh) lcRefresh(); { const b = document.querySelector('#lc-root [data-lc="tab"][data-v="listas"]'); if(b) b.click(); } break;
     case 'archivar': if(ped){ ped.estado = 'procesado'; db.collection('pedidos_locales').doc(ped.id).update({estado:'procesado', fecha_proceso:SV()}).catch(er => console.error(er)); P.open = null; render(); } break;
     case 'deshacer': deshacer(); break;
-    case 'eliminar': if(ped) eliminarPedido(ped); break;
+    case 'eliminar': if(ped){ const fn = window.lcPedirCodigo; if(!fn){ toast('No se pudo pedir el código'); break; } const pid = ped.id; fn(() => { const pp = P.lista.filter(x => x.id === pid)[0]; if(pp) eliminarPedido(pp); }); } break;
     case 'deshacer-elim': deshacerEliminar(); break;
     case 'imprimir': if(ped) abrirImpresion(ped); break;
     case 'pm-sub': if(P.pm){ if(P.pm.subs[v]) delete P.pm.subs[v]; else P.pm.subs[v] = true; pmPintar(); } break;
