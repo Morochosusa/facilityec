@@ -6634,7 +6634,7 @@ function detalle(ped){
   h += '<button class="lcb er" data-pd="eliminar" style="flex:0 0 auto;min-width:160px">🔒 Eliminar pedido</button>';   // siempre disponible, pero pide código
   if(!m && !b) h += '<button class="lcb okb big" data-pd="archivar">Cerrar pedido (no hay nada que procesar)</button>';
   else if(!aceptado) h += '<div class="pd-resumen">Al aceptar: ' + (m ? '🛒 ' + m + ' a <b>Compras</b>' : '') + (m && b ? ' · ' : '') + (b ? '📦 ' + b + ' a <b>Despacho</b>' : '') + '</div>' +
-    '<button class="lcb okb big" data-pd="aceptar">Aceptar pedido</button>';
+    (sinProv(ped).length ? '<div class="pd-resumen" style="color:#b42318;font-weight:700">⚠ Elige el proveedor de ' + sinProv(ped).length + ' producto' + (sinProv(ped).length > 1 ? 's' : '') + ' (marcados abajo en "Sin proveedor") para poder aceptar</div><button class="lcb okb big" data-pd="aceptar" disabled style="opacity:.4;cursor:not-allowed">Aceptar pedido</button>' : '<button class="lcb okb big" data-pd="aceptar">Aceptar pedido</button>');
   else {
     h += '<div class="pd-resumen ok">✓ Pedido aceptado</div>';
     if(ped.compra_lista_id) h += '<button class="lcb pd-done" data-pd="ver-compra">🛒 Ver en Guardadas</button>';
@@ -6762,7 +6762,9 @@ function crearGuia(ped, its, secc){
   return ref;
 }
 /* Aceptar: de una vez el mercado va a Guardadas (Lista de compras) y la bodega a Guías (por despachar). Sin seleccionar nada a mano. */
+const sinProv = ped => (ped.items || []).filter(it => tipo3(it) === 'proveedores' && qty(ped, it) > 0 && !provDe(it));
 function aceptar(ped){
+  const fp = sinProv(ped); if(fp.length){ toast('Falta elegir proveedor en ' + fp.length + ' producto' + (fp.length > 1 ? 's' : '')); return; }
   if(P.busy) return; P.busy = true; setTimeout(() => { P.busy = false; }, 1500);
   const upd = {}, u = {ped:ped, listas:[], guias:[]}, listas = Object.assign({}, ped.compra_listas || {}), guias = Object.assign({}, ped.despachos || {});
   let nm = 0, nb = 0;
