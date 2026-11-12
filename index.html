@@ -2031,6 +2031,10 @@
   .rt-dot{width:12px;height:12px;border-radius:50%;border:2px solid #555;background:transparent;transition:background .2s,border-color .2s}
   .rt-dot.filled{background:#fff;border-color:#fff}.rt-dot.error{background:#D0021B;border-color:#D0021B}
   .rt-msg{position:fixed;left:50%;transform:translateX(-50%);bottom:30px;background:#c0392b;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;font-weight:600;z-index:9100;display:none}
+  .st-wrap{max-width:640px;margin:0 auto;padding:6px 0 40px;display:flex;flex-direction:column;gap:14px}
+  .st-card{background:#fff;border:1px solid #e3e0d6;border-radius:16px;padding:16px 18px}.st-card h3{margin:0 0 10px;font-size:17px}
+  .st-f{display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-top:1px solid #efece3;font-size:15px}.st-f:first-of-type{border-top:0}.st-f span{color:#6b6a64}.st-f b{text-align:right;font-weight:600;word-break:break-word}
+  .st-bt{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
 </style>
 </head>
 <body>
@@ -2077,16 +2081,16 @@
     <button class="nav-item" id="nav-pedidos" onclick="cambiarVista('pedidos')"><span class="nav-ic">📨</span><span class="nav-tx">Pedidos locales</span></button>
     <button class="nav-item activo" id="nav-compra" onclick="cambiarVista('compra')"><span class="nav-ic">🛒</span><span class="nav-tx">Lista de compras</span></button>
     <div class="nav-grupo"><span class="nav-ic">📥</span><span class="nav-tx">Recepción</span></div>
-    <button class="nav-item nav-sub" id="nav-recepcion" onclick="cambiarVista('recepcion')"><span class="nav-ic">📦</span><span class="nav-tx">Recepción de productos</span></button>
+    <button class="nav-item nav-sub" id="nav-recepcion" onclick="cambiarVista('recepcion')"><span class="nav-ic">📦</span><span class="nav-tx">Recepción</span></button>
     <button class="nav-item nav-sub" id="nav-provs" onclick="cambiarVista('provs')"><span class="nav-ic">👥</span><span class="nav-tx">Proveedores</span></button>
     <div class="nav-grupo"><span class="nav-ic">🏭</span><span class="nav-tx">Producción</span></div>
     <button class="nav-item nav-sub" id="nav-estaciones" onclick="cambiarVista('estaciones')"><span class="nav-ic">📝</span><span class="nav-tx">Lista interna</span></button>
-    <button class="nav-item nav-sub" id="nav-produccion" onclick="cambiarVista('produccion')"><span class="nav-ic">🏷️</span><span class="nav-tx">Registro de producción</span></button>
+    <button class="nav-item nav-sub" id="nav-produccion" onclick="cambiarVista('produccion')"><span class="nav-ic">🏷️</span><span class="nav-tx">Producción</span></button>
     <div class="nav-grupo" style="margin-top:0"></div>
     <button class="nav-item" id="nav-inventario" onclick="cambiarVista('fx')"><span class="nav-ic">📦</span><span class="nav-tx">Inventario</span></button>
     <button class="nav-item" id="nav-despacho" onclick="cambiarVista('despacho')"><span class="nav-ic">🚚</span><span class="nav-tx">Despacho</span></button>
     <button class="nav-item" id="nav-guias" onclick="cambiarVista('guias')"><span class="nav-ic">📋</span><span class="nav-tx">Guías</span></button>
-    <button class="nav-item" id="nav-prueba" onclick="mpAlternar()"><span class="nav-ic">🧪</span><span class="nav-tx">Modo prueba</span></button>
+    <button class="nav-item" id="nav-settings" onclick="cambiarVista('settings')"><span class="nav-ic">⚙️</span><span class="nav-tx">Settings</span></button>
     <button class="nav-item" id="nav-pantalla" onclick="pantallaCompletaOInstalar()" style="display:none;"></button>
 
   </aside>
@@ -2158,6 +2162,7 @@
 
 <!-- VISTA: INVENTARIO DEL FACILITY (por estaciones) -->
 <div class="vista" id="vista-fx"><div id="fx-root"></div></div>
+<div class="vista" id="vista-settings"><div id="st-root"></div></div>
 
 <!-- VISTA: RECEPCIÓN (materia prima, v1) -->
 <div class="vista" id="vista-recepcion"><div id="rx-root"></div></div>
@@ -2803,14 +2808,15 @@ const TITULOS_VISTA = {
   compra: ["Lista de compras", ""],
   provs: ["Proveedores", "Los proveedores que nos entregan: nombre, teléfono y qué nos venden"],
   fx: ["Inventario", "Qué hay, dónde está y cuánto"],
-  recepcion: ["Recepción de productos", "Proveedor, factura, productos y diferencias en pocos toques"],
+  recepcion: ["Recepción", "Proveedor, factura, productos y diferencias en pocos toques"],
   proveedores: ["Recepcion proveedores", "Registra lo que llega de cada proveedor: cantidad, costo y observaciones"],
   estaciones: ["Lista interna", "Toca lo que necesita la estación: va directo a Lista de compras"],
-  produccion: ["Producción · Registro", "Registra lo producido: suma al inventario, descuenta materia prima y saca la etiqueta"],
+  produccion: ["Producción", "Registra lo producido: suma al inventario, descuenta materia prima y saca la etiqueta"],
   despacho: ["Despacho", "Lo aceptado en Pedidos: revisa, ajusta y despacha"],
   guias: ["Guías", "Último paso: imprime la guía de lo despachado"],
   bodega: ["Bodega", "Recibe la materia prima, procesa con receta fija y mira el inventario"],
-  inventario: ["Inventario", "Qué hay en bodega ahora, dónde está y conteos físicos"]
+  inventario: ["Inventario", "Qué hay en bodega ahora, dónde está y conteos físicos"],
+  settings: ["Settings", "Datos de la aplicación y ajustes"]
 };
 
 /* Nombre del producto con su presentación justo después (ej. "Pure de zapallo 600 g"). Sirve en Producción y en Bodega. */
@@ -2921,6 +2927,7 @@ function cambiarVista(nombre) {
   if (typeof bgView === 'function') bgView(nombre);
   if (typeof rxView === 'function') rxView(nombre);
   if (typeof fxView === 'function') fxView(nombre);
+  if (typeof stView === 'function') stView(nombre);
   if (hubTab && typeof bgIr === 'function') bgIr(hubTab);
   try { localStorage.setItem('ultima_vista', nombre); } catch (e) {}
 }
@@ -8067,7 +8074,20 @@ function pintar(){
   const b = $('#mp-banner'); if(b) b.style.display = on ? '' : 'none';
   const n = $('#nav-prueba'); if(n){ n.classList.toggle('activo', on); const t = n.querySelector('.nav-tx'); if(t) t.textContent = on ? 'Modo prueba: ACTIVO' : 'Modo prueba'; }
   if(window.bgRefresh) try { bgRefresh(); } catch(e){}
+  try { const v = $('#vista-settings'); if(v && v.classList.contains('activa') && window.stRender) stRender(); } catch(e){}
 }
+/* ---------- SETTINGS: datos de la aplicación y ajustes (aquí se irán sumando más opciones) ---------- */
+const APP_INFO = {nombre:'Morochos Facility OS EC', version:'2026.11.12', descripcion:'Bodega, producción, inventario y despacho de Facility Ecuador'};
+window.stRender = function(){
+  const r = $('#st-root'); if(!r) return; const usr = (typeof auth !== 'undefined' && auth.currentUser) ? auth.currentUser.email : '—';
+  const fila = (a, b) => '<div class="st-f"><span>' + a + '</span><b>' + esc(String(b)) + '</b></div>';
+  r.innerHTML = '<div class="st-wrap">' +
+    '<div class="st-card"><h3>Aplicación</h3>' + fila('Nombre', APP_INFO.nombre) + fila('Versión', APP_INFO.version) + fila('Descripción', APP_INFO.descripcion) + fila('Proyecto Firebase', firebaseConfig.projectId) + fila('Sitio', location.host || 'local') + fila('Usuario', usr) + fila('Conexión', navigator.onLine ? 'En línea' : 'Sin conexión') + '</div>' +
+    '<div class="st-card"><h3>Modo prueba</h3><div class="mu">' + (on ? '<b>Activo.</b> Puedes borrar listas y datos de ejemplo.' : 'Apagado. Actívalo solo para probar: pide el código de seguridad.') + '</div>' +
+    '<div class="st-bt"><button class="btn-secundario" onclick="mpAlternar()">' + (on ? 'Desactivar modo prueba' : 'Activar modo prueba') + '</button>' + (on ? '<button class="btn-secundario" onclick="mpAbrir()">🧹 Borrar datos de prueba</button>' : '') + '</div></div>' +
+    '</div>';
+};
+window.stView = function(n){ if(n === 'settings') stRender(); };
 window.mpAlternar = function(){
   if(on){ on = false; try { localStorage.setItem('modo_prueba', '0'); } catch(e){} pintar(); return; }
   const act = () => { on = true; try { localStorage.setItem('modo_prueba', '1'); } catch(e){} pintar(); };
