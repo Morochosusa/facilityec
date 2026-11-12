@@ -2011,6 +2011,8 @@
   .ig-fe{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.ig-fe>div{border:1px solid #d6d4cb;border-radius:10px;padding:6px 10px}.ig-fe small{display:block;color:#6b6a64;font-size:12px}
   .ig-dh{font-weight:700;margin:14px 2px 6px}.ig-sep{flex:1 1 12px}
   @media (min-width:700px){.ig-cal{flex-direction:row}.ig-pre{flex-direction:column;flex:0 0 150px}.ig-mes{flex:1}}
+  .ig-in{font-size:12px;font-weight:700;color:#1d7a4d;background:#e6f4ec;border-radius:99px;padding:2px 8px;margin-right:6px;white-space:nowrap}
+  .fx-kt.ig-on{border-color:#1d7a4d;background:#f0faf4}.fx-kt.ig-dt b{font-size:22px}
 </style>
 </head>
 <body>
@@ -8783,7 +8785,7 @@ window.fxSalidaSimple = async function(inv, pid, nombre, qty, tipo, ref){   // p
 function escuchar(){
   if(F.ready || typeof db === 'undefined') return; F.ready = true;
   db.collection('stock_facility').onSnapshot(snap => { F.stock = {}; snap.forEach(d => { F.stock[d.id] = Object.assign({}, d.data(), {id:d.id}); }); refrescar(); }, e => console.error(e));
-  db.collection('movimientos_estacion').orderBy('fecha', 'desc').limit(250).onSnapshot(snap => { F.movs = []; snap.forEach(d => F.movs.push(Object.assign({}, d.data({serverTimestamps:'estimate'}), {id:d.id}))); refrescar(); }, e => console.error(e));
+  db.collection('movimientos_estacion').orderBy('fecha', 'desc').limit(250).onSnapshot(snap => { F.movs = []; snap.forEach(d => F.movs.push(Object.assign({}, d.data({serverTimestamps:'estimate'}), {id:d.id}))); refrescar(); if(F.ing && F.ing.h >= igIso(new Date())) igCargar(); }, e => console.error(e));
   db.collection('config_facility').doc('categorias_inventario').onSnapshot(s => { const x = s.exists ? s.data() : {}; F.cats = x.lista || []; F.asig = x.asignadas || {}; refrescar(); }, e => console.error(e));
   db.collection('config_facility').doc('inventario_producir').onSnapshot(s => { F.prod = s.exists ? (s.data().items || {}) : {}; refrescar(); }, e => console.error(e));
   db.collection('config_facility').doc('inventario_datos').onSnapshot(s => { F.dat = s.exists ? (s.data().items || {}) : {}; refrescar(); }, e => console.error(e));
@@ -8830,7 +8832,7 @@ function estChips(todas){
 function render(){
   const r = $('#fx-root'); if(!r) return;
   let h = '';
-  h += (F.ing && F.ing.on) ? vIng() : vInv();   // solo Existencias: se quitaron Resumen, Estaciones y Movimientos
+  h += vInv();   // solo Existencias: se quitaron Resumen, Estaciones y Movimientos
   r.innerHTML = h;
   const a = r.querySelector('[data-focus]'); if(a && F.focus){ try { a.focus(); a.setSelectionRange(a.value.length, a.value.length); } catch(e){} } F.focus = false;
 }
@@ -9010,10 +9012,11 @@ function igRango(k){
   if(k === 'mes_ant') return [igIso(new Date(d0.getFullYear(), d0.getMonth() - 1, 1)), igIso(new Date(d0.getFullYear(), d0.getMonth(), 0))];
   return [hoy, hoy];
 }
-function igAbrir(){
-  const r = igRango('hoy'); F.ing = {on:true, d:r[0], h:r[1], mes:r[0].slice(0, 7), cal:false, pick:null, preset:'hoy', tipo:'todo', modo:'dia', data:[], cargando:false, tk:0};
-  igCargar(); render(); window.scrollTo(0, 0);
+function igInit(){
+  if(F.ing) return; const r = igRango('hoy'); F.ing = {d:r[0], h:r[1], mes:r[0].slice(0, 7), cal:false, pick:null, preset:'hoy', data:[], cargando:true, tk:0, err:''}; igCargar();
 }
+const ET_ING = {recepcion:1, produccion:1, procesamiento:1};
+function igMapa(){ const m = {}; ((F.ing && F.ing.data) || []).forEach(x => { const e = m[x.producto_id] || (m[x.producto_id] = {c:0, k:0}); e.c += x.cantidad; e.k++; }); return m; }
 function igCargar(){
   const G = F.ing; if(!G) return; const tk = ++G.tk; G.cargando = true; G.err = '';
   const a = igDate(G.d), b = igDate(igSum(G.h, 1));
@@ -9042,30 +9045,6 @@ function igCal(G){
     '<div class="ig-g">' + c + '</div><div class="ig-fe"><div><small>Desde</small><b>' + esc(G.d.split('-').reverse().join('/')) + '</b></div><div><small>Hasta</small><b>' + esc(G.h.split('-').reverse().join('/')) + '</b></div></div>' +
     '<div class="rx-mu s" style="margin:6px 0">' + (G.pick ? 'Toca el último día del rango (o toca “Listo” para un solo día).' : 'Toca un día, o dos días para ver un rango.') + '</div><button class="rx-b ac" style="width:100%" data-fx="ing-ok">Listo</button></div></div>';
 }
-function vIng(){
-  const G = F.ing, ET = {recepcion:'recepcion', produccion:'produccion', procesamiento:'produccion'};
-  let l = G.data.filter(m => G.tipo === 'todo' || ET[m.tipo] === G.tipo);
-  const nRec = G.data.filter(m => ET[m.tipo] === 'recepcion').length, nPro = G.data.filter(m => ET[m.tipo] === 'produccion').length;
-  const prods = {}; l.forEach(m => { prods[m.producto_id] = 1; });
-  let h = '<div class="ig-top"><button class="rx-b" data-fx="ing-x">← Inventario</button><h3>Ingresos</h3></div>' +
-    '<div class="ig-fecha"><button class="rx-b sm" data-fx="ing-sh" data-v="-1" aria-label="Anterior">‹</button><button class="rx-b ig-fb" data-fx="ing-cal">📅 ' + esc(igTitulo(G)) + '</button><button class="rx-b sm" data-fx="ing-sh" data-v="1" aria-label="Siguiente">›</button></div>' +
-    (G.cal ? igCal(G) : '') +
-    '<div class="rx-chips sm">' + [['todo', 'Todo (' + (nRec + nPro) + ')'], ['recepcion', 'Recepción (' + nRec + ')'], ['produccion', 'Producción (' + nPro + ')']].map(x => '<button class="rx-chip ' + (G.tipo === x[0] ? 'on' : '') + '" data-fx="ing-t" data-v="' + x[0] + '">' + x[1] + '</button>').join('') +
-    '<span class="ig-sep"></span>' + [['dia', 'Por día'], ['prod', 'Por producto']].map(x => '<button class="rx-chip ' + (G.modo === x[0] ? 'on' : '') + '" data-fx="ing-md" data-v="' + x[0] + '">' + x[1] + '</button>').join('') + '</div>';
-  if(G.cargando) return h + '<div class="rx-vacio">Cargando…</div>';
-  if(G.err) return h + '<div class="rx-vacio">No se pudo cargar. ' + esc(G.err) + '</div>';
-  h += '<div class="fx-cnt rx-mu">' + l.length + ' ingreso' + (l.length === 1 ? '' : 's') + ' · ' + Object.keys(prods).length + ' producto' + (Object.keys(prods).length === 1 ? '' : 's') + '</div>';
-  if(!l.length) return h + '<div class="rx-vacio">No entró nada en estas fechas.</div>';
-  const hora = m => { const t = ms(m.fecha); return t ? new Date(t).toLocaleTimeString('es-EC', {hour:'2-digit', minute:'2-digit'}) : ''; };
-  const fila = m => '<div class="fx-row"><div class="fx-n"><b>' + esc(m.producto_nombre || m.producto_id) + '</b><div class="rx-mu">' + esc(TIPOS[m.tipo] || m.tipo) + (m.lote ? ' · Lote ' + esc(m.lote) : '') + (m.responsable ? ' · ' + esc(m.responsable) : '') + (G.d !== G.h ? '' : '') + ' · ' + esc(hora(m)) + (m.nota ? '<br>' + esc(String(m.nota).slice(0, 90)) : '') + '</div></div><div class="fx-q pos">+' + fmt(r3(m.cantidad)) + '<small> ' + esc(unidadDe(m)) + '</small></div></div>';
-  if(G.modo === 'prod'){
-    const a = {}; l.forEach(m => { const e = a[m.producto_id] || (a[m.producto_id] = {n:m.producto_nombre || m.producto_id, c:0, k:0, u:unidadDe(m)}); e.c += m.cantidad; e.k++; });
-    return h + '<div class="rx-list">' + Object.keys(a).map(k => a[k]).sort((x, y) => String(x.n).localeCompare(String(y.n))).map(e => '<div class="fx-row"><div class="fx-n"><b>' + esc(e.n) + '</b><div class="rx-mu">' + e.k + ' ingreso' + (e.k === 1 ? '' : 's') + '</div></div><div class="fx-q pos">+' + fmt(r3(e.c)) + '<small> ' + esc(e.u) + '</small></div></div>').join('') + '</div>';
-  }
-  const dias = {}; l.forEach(m => { const k = igIso(new Date(ms(m.fecha))); (dias[k] = dias[k] || []).push(m); });
-  return h + Object.keys(dias).sort().reverse().map(k => { const d = igDate(k), t = d.toLocaleDateString('es-EC', {weekday:'long', day:'numeric', month:'long'});
-    return '<div class="ig-dh">' + esc(t.charAt(0).toUpperCase() + t.slice(1)) + ' <span class="rx-mu">· ' + dias[k].length + '</span></div><div class="rx-list">' + dias[k].map(fila).join('') + '</div>'; }).join('');
-}
 function vInv(){
   const q = norm(F.q);
   const pdt = pendDe();
@@ -9077,12 +9056,13 @@ function vInv(){
   const aTag = r => '<span class="fx-ar ' + r.sec + '">' + esc((SECS.find(x => x[0] === r.sec) || [0,''])[1]) + '</span>';
   const fila = r => { const e = estadoInv(r);
     return '<div class="fx-r' + (r.sec === 'terminado' ? ' sp' : '') + (F.sel[r.id] ? ' sel' : '') + '" role="button" tabindex="0" data-fx="ed" data-id="' + esc(r.id) + '" data-sec="' + r.sec + '">' + phInv(r) + '<div class="fx-rm"><div class="fx-rn">' + esc(r.nombre) + '</div><div class="fx-rs">' + (F.prod[r.id] && bajo(r) ? '<span class="fx-pd">Por producir</span>' : '') + (pend[r.id] ? '<span class="fx-pd">Pedido pendiente</span>' : '') + '</div></div>' +
-      '<div class="fx-rq"><span class="fx-big">' + fmt(r3(r.stock)) + '<small>' + esc(r.uni) + '</small></span><span class="fx-es ' + e[0] + '">' + e[1] + '</span>' + btnPedir(r) + '</div></div>'; };
+      '<div class="fx-rq">' + ingTag(r) + '<span class="fx-big">' + fmt(r3(r.stock)) + '<small>' + esc(r.uni) + '</small></span><span class="fx-es ' + e[0] + '">' + e[1] + '</span>' + btnPedir(r) + '</div></div>'; };
   const trow = r => { const e = estadoInv(r);
-    return '<tr' + (F.sel[r.id] ? ' class="sel"' : '') + ' data-fx="ed" data-id="' + esc(r.id) + '" data-sec="' + r.sec + '"><td class="fx-tp">' + phInv(r) + '</td><td class="fx-tn">' + esc(r.nombre) + (pend[r.id] ? ' <span class="fx-pd">Pedido pendiente</span>' : '') + (F.prod[r.id] && bajo(r) ? ' <span class="fx-pd">Por producir</span>' : '') + '</td><td class="fx-tc"><span class="fx-big">' + fmt(r3(r.stock)) + '</span> <small>' + esc(r.uni) + '</small></td><td><span class="fx-es ' + e[0] + '">' + e[1] + '</span></td><td class="fx-tc">' + btnPedir(r) + '</td><td class="fx-tc">›</td></tr>'; };
+    return '<tr' + (F.sel[r.id] ? ' class="sel"' : '') + ' data-fx="ed" data-id="' + esc(r.id) + '" data-sec="' + r.sec + '"><td class="fx-tp">' + phInv(r) + '</td><td class="fx-tn">' + esc(r.nombre) + ingTag(r) + (pend[r.id] ? ' <span class="fx-pd">Pedido pendiente</span>' : '') + (F.prod[r.id] && bajo(r) ? ' <span class="fx-pd">Por producir</span>' : '') + '</td><td class="fx-tc"><span class="fx-big">' + fmt(r3(r.stock)) + '</span> <small>' + esc(r.uni) + '</small></td><td><span class="fx-es ' + e[0] + '">' + e[1] + '</span></td><td class="fx-tc">' + btnPedir(r) + '</td><td class="fx-tc">›</td></tr>'; };
   const pend = pendDe(), nSel = Object.keys(F.sel).length;
   const bajoN = idsParaPedir().length, atenN = idsAtencion().length;
-  let h = '<button class="rx-b ig-btn" data-fx="ing-abrir">📅 Ver ingresos por fecha</button>' + tilesHoy(pend, atenN) + (F.rap === 'pedir' ? '<div class="fx-rapido">Mostrando solo lo que hay que pedir <button class="rx-b sm" data-fx="rap-x">✕ Ver todo</button></div>' : '') + '<div class="fx-fb"><div class="fx-fs"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="fx-q" type="search" placeholder="Buscar" autocomplete="off" value="' + esc(F.q) + '"></div>' +
+  igInit();
+  let h = tilesHoy(pend, atenN) + (F.rap === 'ing' ? '<div class="fx-rapido">Ingresó · ' + esc(igTitulo(F.ing)) + (F.ing.cargando ? ' · cargando…' : '') + ' <button class="rx-b sm" data-fx="rap-x">✕ Ver todo</button></div>' : '') + (F.rap === 'pedir' ? '<div class="fx-rapido">Mostrando solo lo que hay que pedir <button class="rx-b sm" data-fx="rap-x">✕ Ver todo</button></div>' : '') + '<div class="fx-fb"><div class="fx-fs"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="fx-q" type="search" placeholder="Buscar" autocomplete="off" value="' + esc(F.q) + '"></div>' +
     '<div class="fx-fl fx-chips" role="group" aria-label="Área"><span>Área</span>' + [['todas','Todas']].concat(SECS.map(x => [x[0], x[1]])).map(x => '<button class="fx-chip' + (F.loc === x[0] ? ' on' : '') + '" data-fx="area" data-v="' + x[0] + '">' + x[1] + '</button>').join('') + '</div>' +
     '<button class="fx-fl fx-solo' + (F.rap === 'pedir' ? ' on' : '') + '" data-fx="kp" data-v="pedir" aria-pressed="' + (F.rap === 'pedir') + '">Solo por pedir</button>' +
     '<label class="fx-fl"><span>Categoría</span><select id="fx-fcat"><option value="todas">Todas</option>' + F.cats.map(c => '<option value="' + esc(c.id) + '"' + (F.cat === c.id ? ' selected' : '') + '>' + esc(c.nombre) + '</option>').join('') + '<option value=""' + (F.cat === '' ? ' selected' : '') + '>Sin categoría</option></select></label>' +
@@ -9091,11 +9071,13 @@ function vInv(){
   if(q) l = l.filter(r => norm(r.nombre).indexOf(q) >= 0);
   if(F.cat !== 'todas') l = l.filter(r => F.cat === '' ? !catDe(r.id) : catDe(r.id) === F.cat);
   if(F.rap === 'pedir'){ const ids = idsAtencion(); l = l.filter(r => ids.indexOf(r.id) >= 0); }
+  const igM = F.rap === 'ing' ? igMapa() : null; if(igM) l = l.filter(r => igM[r.id]);
+  const ingTag = r => igM && igM[r.id] ? '<span class="ig-in">+' + fmt(r3(igM[r.id].c)) + ' ingresó</span>' : '';
   const ordCat = r => { const k = F.cats.findIndex(c => c.id === catDe(r.id)); return k < 0 ? 999 : k; };
   const ordAr = r => SECS.findIndex(x => x[0] === r.sec);
   l.sort((a, b) => ordAr(a) - ordAr(b) || ordCat(a) - ordCat(b) || String(a.nombre).localeCompare(String(b.nombre)));
   h += '<div class="fx-cnt rx-mu">' + l.length + ' producto' + (l.length === 1 ? '' : 's') + '</div>';
-  if(!l.length) h += '<div class="rx-mu" style="padding:4px 4px 10px">' + (q ? 'Sin resultados' : 'Aquí aparecen los productos de Producción y lo que entra por Recepción.') + '</div>';
+  if(!l.length) h += '<div class="rx-mu" style="padding:4px 4px 10px">' + (F.rap === 'ing' ? (F.ing.cargando ? 'Cargando…' : 'No entró nada en estas fechas.') : q ? 'Sin resultados' : 'Aquí aparecen los productos de Producción y lo que entra por Recepción.') + '</div>';
   else h += '<div class="fx-lista">' + l.map(fila).join('') + '</div><div class="fx-tw"><table class="fx-tb"><thead><tr><th></th><th>Producto</th><th>Stock actual</th><th>Estado</th><th>Pedir</th><th></th></tr></thead><tbody>' + l.map(trow).join('') + '</tbody></table></div>';
   if(nSel) h += '<div class="fx-pie"><button class="rx-b" data-fx="ped-limpiar">Cancelar</button><button class="rx-b ac" data-fx="ped-abrir">Pedir a proveedor (' + nSel + ')</button></div>';
   return h;
@@ -9110,10 +9092,11 @@ function movsHoy(tipo){
   return Object.keys(m).map(k => m[k]).sort((a, b) => String(a.nombre).localeCompare(String(b.nombre)));
 }
 function tilesHoy(pend, bajoN){
-  const proc = movsHoy('produccion'), rec = movsHoy('recepcion'), pp = Object.keys(pend || {}).length;
+  const pp = Object.keys(pend || {}).length, G = F.ing, nIng = Object.keys(igMapa()).length, hoyI = G.preset === 'hoy';
   const t = (k, n, lbl, cls) => '<button class="rx-card fx-kt ' + (cls || '') + '" data-fx="kp" data-v="' + k + '"><b>' + n + '</b><small>' + lbl + '</small></button>';
   let total = 0; SECS.forEach(sc => { total += filasInv(sc[0]).length; });
-  return '<div class="fx-kp fx-kpi">' + t('total', total, 'productos registrados') + t('pedir', bajoN, 'por pedir o producir', bajoN ? 'wn' : '') + t('rec', rec.length, 'recibidos hoy') + '</div>';
+  return '<div class="fx-kp fx-kpi">' + t('total', total, 'productos registrados') + t('pedir', bajoN, 'por pedir o producir', bajoN ? 'wn' : '') + '<button class="rx-card fx-kt' + (F.rap === 'ing' ? ' ig-on' : '') + '" data-fx="ing-f"><b>' + (G.cargando ? '…' : nIng) + '</b><small>ingresados' + (hoyI ? ' hoy' : '') + '</small></button>' +
+    '<button class="rx-card fx-kt ig-dt" data-fx="ing-cal"><b>📅</b><small>' + esc(igTitulo(G)) + '</small></button></div>' + (G.cal ? igCal(G) : '');
 }
 function detalleTile(k){
   const fila = (n, c, u, x) => '<div class="fx-er" style="cursor:default"><span>' + esc(n) + '</span><b>' + (c != null ? fmt(r3(c)) + ' ' + esc(u || '') : '') + (x || '') + '</b></div>';
@@ -9283,16 +9266,12 @@ document.addEventListener('click', e => {
     case 'cat-ed': F.catEd = !F.catEd; if(F.catCtx) catProducto(F.catCtx.pid, F.catCtx.sec); break;
     case 'cat-ren': { const c = F.cats.filter(x => x.id === v)[0]; const n = c && prompt('Nuevo nombre', c.nombre); if(n && n.trim()){ guardarCats(F.cats.map(x => x.id === v ? {id:x.id, nombre:n.trim()} : x), F.asig); setTimeout(() => { if(F.catCtx) catProducto(F.catCtx.pid, F.catCtx.sec); else modal(null); }, 120); } break; }
     case 'cat-del': { if(!confirm('¿Eliminar esta categoría? Sus productos quedan sin categoría.')) break; const asig = {}; Object.keys(F.asig).forEach(k => { if(F.asig[k] !== v) asig[k] = F.asig[k]; }); if(F.cat === v) F.cat = 'todas'; guardarCats(F.cats.filter(x => x.id !== v), asig); setTimeout(() => { if(F.catCtx) catProducto(F.catCtx.pid, F.catCtx.sec); else modal(null); }, 120); break; }
-    case 'ing-abrir': igAbrir(); break;
-    case 'ing-x': F.ing = null; render(); window.scrollTo(0, 0); break;
-    case 'ing-cal': F.ing.cal = !F.ing.cal; F.ing.pick = null; render(); break;
+    case 'ing-f': igInit(); F.rap = F.rap === 'ing' ? '' : 'ing'; render(); break;
+    case 'ing-cal': igInit(); F.ing.cal = !F.ing.cal; F.ing.pick = null; render(); break;
     case 'ing-ok': F.ing.cal = false; F.ing.pick = null; render(); break;
-    case 'ing-pre': { if(v === 'custom'){ F.ing.preset = 'custom'; render(); break; } const r = igRango(v); igPon(r[0], r[1], v); F.ing.cal = false; F.ing.pick = null; render(); break; }
-    case 'ing-dia': { const G = F.ing; if(!G.pick){ G.pick = v; igPon(v, v, 'custom'); } else { const x = G.pick < v ? [G.pick, v] : [v, G.pick]; G.pick = null; igPon(x[0], x[1], 'custom'); G.cal = false; } render(); break; }
+    case 'ing-pre': { if(v === 'custom'){ F.ing.preset = 'custom'; render(); break; } const r = igRango(v); igPon(r[0], r[1], v); F.ing.cal = false; F.ing.pick = null; F.rap = 'ing'; render(); break; }
+    case 'ing-dia': { const G = F.ing; F.rap = 'ing'; if(!G.pick){ G.pick = v; igPon(v, v, 'custom'); } else { const x = G.pick < v ? [G.pick, v] : [v, G.pick]; G.pick = null; igPon(x[0], x[1], 'custom'); G.cal = false; } render(); break; }
     case 'ing-m': { const G = F.ing, p = G.mes.split('-'), d = new Date(+p[0], +p[1] - 1 + (+v), 1); G.mes = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); render(); break; }
-    case 'ing-sh': { const G = F.ing, n = Math.round((igDate(G.h) - igDate(G.d)) / 86400000) + 1, k = +v * n; igPon(igSum(G.d, k), igSum(G.h, k), 'custom'); render(); break; }
-    case 'ing-t': F.ing.tipo = v; render(); break;
-    case 'ing-md': F.ing.modo = v; render(); break;
     case 'tab': F.tab = v; render(); break;
     case 'est': F.est = v; render(); break;
     case 'est-ir': F.est = v; F.tab = 'est'; render(); window.scrollTo(0, 0); break;
