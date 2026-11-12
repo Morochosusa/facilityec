@@ -2014,6 +2014,10 @@
   .ig-in{font-size:12px;font-weight:700;color:#1d7a4d;background:#e6f4ec;border-radius:99px;padding:2px 8px;margin-right:6px;white-space:nowrap}
   .fx-kt.ig-on{border-color:#1d7a4d;background:#f0faf4}.fx-kt.ig-dt b{font-size:22px}
   .fx-impl{max-height:46vh;overflow:auto;margin:8px 0}
+  .cf-ses{display:flex;flex-direction:column;gap:2px;align-items:flex-start;width:100%;text-align:left;background:#fff;border:1px solid #d6d4cb;border-radius:12px;padding:12px 14px;margin:6px 0;font:inherit;cursor:pointer;color:#1f1f1d}.cf-ses b{font-size:17px}.cf-ses.fin{cursor:default;opacity:.75}
+  .cf-r{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:#fff;border:2px solid #e3e0d6;border-radius:12px;padding:10px 12px;margin:6px 0;font:inherit;cursor:pointer;color:#1f1f1d}.cf-r.ok{border-color:#1d7a4d;background:#f0faf4}.cf-r.cero{border-color:#a85f00;background:#fffaf0}
+  .cf-n{flex:1;min-width:0;display:flex;flex-direction:column}.cf-n b{font-size:16px}.cf-v{text-align:right;display:flex;flex-direction:column;align-items:flex-end;font-size:14px}.cf-v b{font-size:24px}.cf-v small{font-size:12px;color:#6b6a64}
+  .cf-prog{position:sticky;top:0;background:#f7f5ef;padding:8px 0;z-index:3}.cf-prog b{font-size:17px}
 </style>
 </head>
 <body>
@@ -8788,6 +8792,7 @@ window.fxSalidaSimple = async function(inv, pid, nombre, qty, tipo, ref){   // p
 function escuchar(){
   if(F.ready || typeof db === 'undefined') return; F.ready = true;
   db.collection('stock_facility').onSnapshot(snap => { F.stock = {}; snap.forEach(d => { F.stock[d.id] = Object.assign({}, d.data(), {id:d.id}); }); refrescar(); }, e => console.error(e));
+  db.collection('conteos_fisicos').orderBy('fecha', 'desc').limit(60).onSnapshot(snap => { const l = []; snap.forEach(d => { const x = d.data({serverTimestamps:'estimate'}) || {}; if(x.version === 2) l.push(Object.assign({}, x, {id:d.id})); }); F.cfl = l; refrescar(); }, e => console.error(e));
   db.collection('catalogo_materia_prima').onSnapshot(snap => { const m = {}; snap.forEach(d => { const n = (d.data() || {}).nombre; if(n) m[d.id] = n; }); F.mpn = m; refrescar(); }, e => console.error(e));   // nombre vigente de lo que se registra en Recepción
   db.collection('movimientos_estacion').orderBy('fecha', 'desc').limit(250).onSnapshot(snap => { F.movs = []; snap.forEach(d => F.movs.push(Object.assign({}, d.data({serverTimestamps:'estimate'}), {id:d.id}))); refrescar(); if(F.ing && F.ing.h >= igIso(new Date())) igCargar(); }, e => console.error(e));
   db.collection('config_facility').doc('categorias_inventario').onSnapshot(s => { const x = s.exists ? s.data() : {}; F.cats = x.lista || []; F.asig = x.asignadas || {}; refrescar(); }, e => console.error(e));
@@ -8836,7 +8841,7 @@ function estChips(todas){
 function render(){
   const r = $('#fx-root'); if(!r) return;
   let h = '';
-  h += vInv();   // solo Existencias: se quitaron Resumen, Estaciones y Movimientos
+  h += F.cf ? vCf() : vInv();   // solo Existencias: se quitaron Resumen, Estaciones y Movimientos
   r.innerHTML = h;
   const a = r.querySelector('[data-focus]'); if(a && F.focus){ try { a.focus(); a.setSelectionRange(a.value.length, a.value.length); } catch(e){} } F.focus = false;
 }
@@ -9006,6 +9011,62 @@ async function impBodegaOk(){
   } catch(e){ console.error(e); toast(errTxt(e)); }
   F.busy = false; modal(null);
 }
+/* ---------- CONTEO FÍSICO (Fase 1): contar a ciegas, guardar avances. NO modifica el inventario. ---------- */
+const CF_ALC = [['general', 'Conteo general', 'Todas las áreas'], ['terminado', 'Procesado', ''], ['mp', 'Materia prima', ''], ['directo', 'Bodega', ''], ['productos', 'Productos específicos', 'Tú eliges cuáles']];
+const cfSes = id => (F.cfl || []).filter(x => x.id === id)[0] || null;
+const cfFecha = ms0 => { if(!ms0) return ''; const d = new Date(ms0); return d.toLocaleDateString('es-EC', {day:'numeric', month:'short'}) + ' ' + d.toLocaleTimeString('es-EC', {hour:'2-digit', minute:'2-digit'}); };
+function cfProductos(alc){
+  const m = {}, out = [];
+  SECS.forEach(sc => { if(alc !== 'general' && alc !== 'productos' && alc !== sc[0]) return; filasInv(sc[0]).forEach(r => { if(m[r.id]) return; m[r.id] = 1; out.push({id:r.id, nombre:r.nombre, uni:r.uni || '', sec:sc[0], ref:r3(r.stock || 0)}); }); });
+  return out;
+}
+const cfCont = s0 => { const l = s0.lineas || {}; return Object.keys(l).filter(k => l[k] && typeof l[k].c === 'number').length; };
+function vCf(){
+  const C = F.cf; let h = '<div class="ig-top"><button class="rx-b" data-fx="cf-x">← ' + (C.vista === 'home' ? 'Inventario' : 'Atrás') + '</button><h3>Conteo físico</h3></div>';
+  if(C.vista === 'home'){
+    const l = (F.cfl || []), prog = l.filter(x => x.estado === 'en_progreso'), fin = l.filter(x => x.estado !== 'en_progreso');
+    h += '<button class="rx-b ac big" data-fx="cf-nuevo">＋ Iniciar conteo</button><div class="fx-subh">Conteos en progreso</div>' +
+      (prog.length ? prog.map(x => '<button class="cf-ses" data-fx="cf-cont" data-id="' + esc(x.id) + '"><b>' + esc(x.alcance_nombre || 'Conteo') + '</b><span>' + cfCont(x) + ' de ' + (x.productos || []).length + ' contados</span><small class="rx-mu">' + esc(cfFecha(x.fecha_ms)) + ' · ' + esc(x.creado_por || '') + '</small></button>').join('') : '<div class="rx-mu">No hay conteos en progreso.</div>') +
+      (fin.length ? '<div class="fx-subh">Terminados · pendientes de revisión</div>' + fin.slice(0, 10).map(x => '<div class="cf-ses fin"><b>' + esc(x.alcance_nombre || 'Conteo') + '</b><span>' + cfCont(x) + ' de ' + (x.productos || []).length + ' contados</span><small class="rx-mu">' + esc(cfFecha(x.fecha_ms)) + ' · ' + esc(x.creado_por || '') + '</small></div>').join('') : '');
+    return h;
+  }
+  if(C.vista === 'nuevo'){
+    h += '<div class="fx-subh">¿Qué vas a contar?</div>' + CF_ALC.map(a => '<button class="cf-ses" data-fx="cf-alc" data-v="' + a[0] + '"><b>' + a[1] + '</b>' + (a[2] ? '<small class="rx-mu">' + a[2] + '</small>' : '') + '</button>').join('');
+    return h;
+  }
+  if(C.vista === 'elegir'){
+    const q = norm(C.q || ''), all = cfProductos('productos').filter(p => !q || norm(p.nombre).indexOf(q) >= 0), n = Object.keys(C.sel || {}).length;
+    h += '<input class="rx-in" id="fx-cfq" data-focus placeholder="Buscar producto…" autocomplete="off" value="' + esc(C.q || '') + '"><div class="fx-cnt rx-mu">' + n + ' elegido' + (n === 1 ? '' : 's') + '</div>' +
+      all.slice(0, 120).map(p => '<button class="cf-r' + (C.sel && C.sel[p.id] ? ' ok' : '') + '" data-fx="cf-sel" data-id="' + esc(p.id) + '">' + phInv(p) + '<div class="cf-n"><b>' + esc(p.nombre) + '</b><small class="rx-mu">' + esc(p.uni) + ' · ' + esc((SECS.filter(x => x[0] === p.sec)[0] || [0, ''])[1]) + '</small></div><span class="cf-v">' + (C.sel && C.sel[p.id] ? '✓' : '') + '</span></button>').join('') +
+      '<div class="fx-pie"><button class="rx-b ac big" data-fx="cf-go"' + (n ? '' : ' disabled') + '>Empezar a contar (' + n + ')</button></div>';
+    return h;
+  }
+  const s0 = cfSes(C.id); if(!s0) return h + '<div class="rx-vacio">Este conteo ya no está disponible.</div>';
+  const prods = s0.productos || [], ln = s0.lineas || {}, hecho = cfCont(s0), pct = prods.length ? Math.round(hecho * 100 / prods.length) : 0, cerrado = s0.estado !== 'en_progreso';
+  let l = prods; if(C.f === 'pend') l = prods.filter(p => !(ln[p.id] && typeof ln[p.id].c === 'number')); else if(C.f === 'cont') l = prods.filter(p => ln[p.id] && typeof ln[p.id].c === 'number');
+  h += '<div class="cf-prog"><b>' + hecho + ' de ' + prods.length + ' productos contados</b><div class="iv-prog"><i style="width:' + pct + '%;display:block;height:100%;background:#1d7a4d"></i></div></div>' +
+    '<div class="rx-chips sm">' + [['todos', 'Todos'], ['pend', 'Pendientes (' + (prods.length - hecho) + ')'], ['cont', 'Contados (' + hecho + ')']].map(x => '<button class="rx-chip ' + ((C.f || 'todos') === x[0] ? 'on' : '') + '" data-fx="cf-f" data-v="' + x[0] + '">' + x[1] + '</button>').join('') + '</div>' +
+    l.map(p => { const e = ln[p.id], ok = e && typeof e.c === 'number';
+      return '<button class="cf-r' + (ok ? (e.c === 0 ? ' cero' : ' ok') : '') + '" data-fx="cf-n" data-id="' + esc(p.id) + '"' + (cerrado ? ' disabled' : '') + '>' + phInv(p) + '<div class="cf-n"><b>' + esc(p.nombre) + '</b><small class="rx-mu">' + esc(p.uni) + '</small></div><span class="cf-v">' + (ok ? '<b>' + fmt(e.c) + '</b> ' + esc(p.uni) + '<small>' + (e.c === 0 ? 'Contado: cero' : 'Contado ✓') + '</small>' : '<small>Pendiente</small>') + '</span></button>'; }).join('') +
+    (l.length ? '' : '<div class="rx-vacio">' + (C.f === 'pend' ? 'No quedan pendientes 🎉' : 'Nada por mostrar') + '</div>') +
+    (cerrado ? '<div class="rx-mu" style="padding:10px">Conteo terminado. Espera la revisión del administrador.</div>' : '<div class="fx-pie"><button class="rx-b" data-fx="cf-x">Guardar y salir</button><button class="rx-b ac" data-fx="cf-fin">Terminar conteo</button></div>');
+  return h;
+}
+function cfGuardar(pid, v){
+  const C = F.cf, s0 = cfSes(C.id); if(!s0) return; const ok = typeof v === 'number' && isFinite(v) && v >= 0;
+  s0.lineas = s0.lineas || {}; if(ok) s0.lineas[pid] = {c:r3(v), ms:Date.now()}; else delete s0.lineas[pid];
+  const upd = {actualizado:SV(), actualizado_por:respDe() || mail() || '', lineas:{}}; upd.lineas[pid] = ok ? {c:r3(v), ms:Date.now(), por:respDe() || mail() || ''} : firebase.firestore.FieldValue.delete();
+  db.collection('conteos_fisicos').doc(C.id).set(upd, {merge:true}).catch(e => { console.error(e); toast(errTxt(e)); });
+  render();
+}
+function cfCrear(alc, ids){
+  const quien = respDe() || mail() || 'Inventario', ref = db.collection('conteos_fisicos').doc(), nom = (CF_ALC.filter(a => a[0] === alc)[0] || [0, 'Conteo'])[1];
+  let prods = cfProductos(alc); if(ids) prods = prods.filter(p => ids.indexOf(p.id) >= 0);
+  if(!prods.length){ toast('No hay productos para contar'); return; }
+  const doc = {version:2, estado:'en_progreso', alcance:alc, alcance_nombre:nom + (alc === 'productos' ? ' (' + prods.length + ')' : ''), creado_por:quien, fecha:SV(), fecha_ms:Date.now(), productos:prods, lineas:{}, empresa:EMPRESA};
+  ref.set(doc).catch(e => { console.error(e); toast(errTxt(e)); });
+  F.cfl = [Object.assign({id:ref.id}, doc)].concat(F.cfl || []); F.cf = {vista:'contar', id:ref.id, f:'todos'}; render(); window.scrollTo(0, 0);
+}
 function filasInv(sec){
   const P = prodIds(), out = [], leg = (typeof inventarioActual !== 'undefined') ? inventarioActual : {};
   const meta = id => catPor(id) || {};
@@ -9105,7 +9166,7 @@ function vInv(){
     '<div class="fx-fl fx-chips" role="group" aria-label="Área"><span>Área</span>' + [['todas','Todas']].concat(SECS.map(x => [x[0], x[1]])).map(x => '<button class="fx-chip' + (F.loc === x[0] ? ' on' : '') + '" data-fx="area" data-v="' + x[0] + '">' + x[1] + '</button>').join('') + '</div>' +
     '<button class="fx-fl fx-solo' + (F.rap === 'pedir' ? ' on' : '') + '" data-fx="kp" data-v="pedir" aria-pressed="' + (F.rap === 'pedir') + '">Solo por pedir</button>' +
     '<label class="fx-fl"><span>Categoría</span><select id="fx-fcat"><option value="todas">Todas</option>' + F.cats.map(c => '<option value="' + esc(c.id) + '"' + (F.cat === c.id ? ' selected' : '') + '>' + esc(c.nombre) + '</option>').join('') + '<option value=""' + (F.cat === '' ? ' selected' : '') + '>Sin categoría</option></select></label>' +
-    '<button class="fx-fl fx-pb" data-fx="ped-bajos"' + (bajoN ? '' : ' disabled') + '>Pedir agotados y bajo mínimo' + (bajoN ? ' <b>' + bajoN + '</b>' : '') + '</button></div>';
+    '<button class="fx-fl fx-pb" data-fx="ped-bajos"' + (bajoN ? '' : ' disabled') + '>Pedir agotados y bajo mínimo' + (bajoN ? ' <b>' + bajoN + '</b>' : '') + '</button><button class="fx-fl fx-pb" data-fx="cf-abrir">📋 Conteo físico</button></div>';
   let l = []; SECS.forEach(sc => { if(F.loc !== 'todas' && F.loc !== sc[0]) return; l = l.concat(filasInv(sc[0]).map(conDatosS(sc[0]))); });
   if(q) l = l.filter(r => norm(r.nombre).indexOf(q) >= 0);
   if(F.cat !== 'todas') l = l.filter(r => F.cat === '' ? !catDe(r.id) : catDe(r.id) === F.cat);
@@ -9308,6 +9369,20 @@ document.addEventListener('click', e => {
     case 'cat-del': { if(!confirm('¿Eliminar esta categoría? Sus productos quedan sin categoría.')) break; const asig = {}; Object.keys(F.asig).forEach(k => { if(F.asig[k] !== v) asig[k] = F.asig[k]; }); if(F.cat === v) F.cat = 'todas'; guardarCats(F.cats.filter(x => x.id !== v), asig); setTimeout(() => { if(F.catCtx) catProducto(F.catCtx.pid, F.catCtx.sec); else modal(null); }, 120); break; }
     case 'imp-ver': impBodegaVer(); break;
     case 'imp-ok': impBodegaOk(); break;
+    case 'cf-abrir': F.cf = {vista:'home'}; render(); window.scrollTo(0, 0); break;
+    case 'cf-x': { const C = F.cf; if(!C || C.vista === 'home') F.cf = null; else F.cf = {vista:'home'}; render(); window.scrollTo(0, 0); break; }
+    case 'cf-nuevo': F.cf = {vista:'nuevo'}; render(); break;
+    case 'cf-alc': if(v === 'productos'){ F.cf = {vista:'elegir', sel:{}, q:''}; render(); } else cfCrear(v); break;
+    case 'cf-sel': { const C = F.cf; if(C.sel[id]) delete C.sel[id]; else C.sel[id] = 1; render(); break; }
+    case 'cf-go': cfCrear('productos', Object.keys(F.cf.sel || {})); break;
+    case 'cf-cont': F.cf = {vista:'contar', id:id, f:'todos'}; render(); window.scrollTo(0, 0); break;
+    case 'cf-f': F.cf.f = v; render(); break;
+    case 'cf-n': { const s0 = cfSes(F.cf.id), p = s0 && (s0.productos || []).filter(x => x.id === id)[0]; if(!p) break; const e = (s0.lineas || {})[id];
+      num('Contar · ' + p.nombre, p.uni, e && typeof e.c === 'number' ? e.c : '', val => cfGuardar(id, val == null ? null : Number(val))); break; }
+    case 'cf-fin': { const s0 = cfSes(F.cf.id); if(!s0) break; const falta = (s0.productos || []).length - cfCont(s0);
+      modal('<h3>Terminar conteo</h3><div class="rx-mu">' + cfCont(s0) + ' de ' + (s0.productos || []).length + ' productos contados.' + (falta ? ' Los ' + falta + ' que faltan quedan como <b>pendientes</b> (no se toman como cero).' : '') + ' El inventario <b>no cambia</b> todavía: el administrador revisa las diferencias después.</div><button class="rx-b ac big" data-fx="cf-fin-ok">Terminar</button><button class="rx-b big" data-fx="cf-fin-no">Seguir contando</button>'); break; }
+    case 'cf-fin-no': modal(null); break;
+    case 'cf-fin-ok': { const s0 = cfSes(F.cf.id); if(!s0) break; s0.estado = 'contado'; db.collection('conteos_fisicos').doc(F.cf.id).set({estado:'contado', finalizado_ms:Date.now(), finalizado_por:respDe() || mail() || '', actualizado:SV()}, {merge:true}).catch(e => { console.error(e); toast(errTxt(e)); }); modal(null); F.cf = {vista:'home'}; toast('Conteo terminado'); render(); window.scrollTo(0, 0); break; }
     case 'dup-ver': { const l = dupDirectos(); modal('<h3>Repetidos ocultos en Bodega</h3><div class="rx-mu">Estos productos ya existen en <b>Procesado</b> (Producción) con otro código. Se ocultan de Bodega para que no se dupliquen. Su stock no se perdió: sigue guardado.</div>' + l.map(x => '<div class="fx-er" style="cursor:default"><span>' + esc(x.nombre) + '<small class="rx-mu"> · código ' + esc(x.id) + '</small></span><b>' + fmt(r3(x.stock)) + ' ' + esc(x.uni) + '</b></div>').join('') + '<div class="rx-mu">Producción maneja el stock del Procesado con el código <b>' + esc(l[0] ? l[0].pid : '') + '</b>.</div>'); break; }
     case 'ing-f': igInit(); F.rap = F.rap === 'ing' ? '' : 'ing'; render(); break;
     case 'ing-cal': igInit(); F.ing.cal = !F.ing.cal; F.ing.pick = null; render(); break;
@@ -9342,6 +9417,7 @@ document.addEventListener('input', e => {
   const t = e.target; if(!t || !t.id) return;
   if(t.id === 'fx-q'){ F.q = t.value; F.focus = true; render(); }
   else if(t.id === 'fx-fecha' && F.ped){ F.ped.fecha = t.value || hoyMasF(2); }
+  else if(t.id === 'fx-cfq' && F.cf){ F.cf.q = t.value; F.focus = true; render(); }
   else if(t.id === 'fx-mq'){ F.mq = t.value; F.focus = true; render(); }
   else if(t.id === 'fx-pq' && F.m){ F.m.q = t.value; F.focusM = true; pickDoc(); }
 });
