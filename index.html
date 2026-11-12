@@ -8968,13 +8968,22 @@ async function empezarDeCero(){
 /* ---------- EXISTENCIAS: 3 secciones + categorías propias (se crean al gusto) ---------- */
 const SECS = [['terminado', 'Procesado', '✅'], ['mp', 'Materia prima', '🥩'], ['directo', 'Bodega', '📦']];
 function prodIds(){ const m = {}; try { window.PR.productos().forEach(p => { m[p.id] = p; }); } catch(e){} return m; }
+/* Un producto Procesado se maneja SOLO en Producción. Si en Bodega hay otro registro con el mismo nombre (otro código), se oculta de Bodega y se avisa. */
+const nombresProc = P => { const m = {}; Object.keys(P).forEach(id => { m[norm(P[id].nombre)] = id; }); return m; };
+function dupDirectos(){
+  const P = prodIds(), nomP = nombresProc(P), leg = (typeof inventarioActual !== 'undefined') ? inventarioActual : {}, out = [];
+  Object.keys(leg).forEach(id => { if(P[id]) return; const l = leg[id], m = catPor(id) || {}, nom = l.producto_nombre || m.nombre || id, pid = nomP[norm(nom)];
+    if(pid) out.push({id:id, nombre:nom, stock:l.cantidad_actual || 0, uni:l.unidad_medida || m.uAlmacen || m.unidad || '', pid:pid}); });
+  return out;
+}
 function filasInv(sec){
   const P = prodIds(), out = [], leg = (typeof inventarioActual !== 'undefined') ? inventarioActual : {};
   const meta = id => catPor(id) || {};
   if(sec === 'terminado'){
     Object.keys(P).forEach(id => { const p = P[id], l = leg[id] || {}, m = meta(id); out.push({id:id, nombre:p.nombre, stock:l.cantidad_actual || 0, uni:p.unidad || '', pres:p.presentacion || '', min:m.min || 0}); });
   } else if(sec === 'directo'){
-    Object.keys(leg).filter(id => !P[id]).forEach(id => { const l = leg[id], m = meta(id); out.push({id:id, nombre:l.producto_nombre || m.nombre || id, stock:l.cantidad_actual || 0, uni:l.unidad_medida || m.uAlmacen || m.unidad || '', pres:m.presentacion || '', min:m.min || 0}); });
+    const nomP = nombresProc(P);
+    Object.keys(leg).filter(id => !P[id] && !nomP[norm(leg[id].producto_nombre || (meta(id) || {}).nombre || id)]).forEach(id => { const l = leg[id], m = meta(id); out.push({id:id, nombre:l.producto_nombre || m.nombre || id, stock:l.cantidad_actual || 0, uni:l.unidad_medida || m.uAlmacen || m.unidad || '', pres:m.presentacion || '', min:m.min || 0}); });
   } else {
     let mp = []; try { mp = window.BGS.mp || []; } catch(e){}
     mp.forEach(l => { const m = meta(l.id); out.push({id:l.id, nombre:l.producto_nombre || l.id, stock:l.cantidad_actual || 0, uni:l.unidad_medida || '', pres:'', min:m.min || 0}); });
@@ -9061,8 +9070,8 @@ function vInv(){
     return '<tr' + (F.sel[r.id] ? ' class="sel"' : '') + ' data-fx="ed" data-id="' + esc(r.id) + '" data-sec="' + r.sec + '"><td class="fx-tp">' + phInv(r) + '</td><td class="fx-tn">' + esc(r.nombre) + ingTag(r) + (pend[r.id] ? ' <span class="fx-pd">Pedido pendiente</span>' : '') + (F.prod[r.id] && bajo(r) ? ' <span class="fx-pd">Por producir</span>' : '') + '</td><td class="fx-tc"><span class="fx-big">' + fmt(r3(r.stock)) + '</span> <small>' + esc(r.uni) + '</small></td><td><span class="fx-es ' + e[0] + '">' + e[1] + '</span></td><td class="fx-tc">' + btnPedir(r) + '</td><td class="fx-tc">›</td></tr>'; };
   const pend = pendDe(), nSel = Object.keys(F.sel).length;
   const bajoN = idsParaPedir().length, atenN = idsAtencion().length;
-  igInit();
-  let h = tilesHoy(pend, atenN) + (F.rap === 'ing' ? '<div class="fx-rapido">Ingresó · ' + esc(igTitulo(F.ing)) + (F.ing.cargando ? ' · cargando…' : '') + ' <button class="rx-b sm" data-fx="rap-x">✕ Ver todo</button></div>' : '') + (F.rap === 'pedir' ? '<div class="fx-rapido">Mostrando solo lo que hay que pedir <button class="rx-b sm" data-fx="rap-x">✕ Ver todo</button></div>' : '') + '<div class="fx-fb"><div class="fx-fs"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="fx-q" type="search" placeholder="Buscar" autocomplete="off" value="' + esc(F.q) + '"></div>' +
+  igInit(); const dups = dupDirectos();
+  let h = tilesHoy(pend, atenN) + (dups.length ? '<div class="fx-rapido">⚠ ' + dups.length + ' repetido' + (dups.length > 1 ? 's' : '') + ' oculto' + (dups.length > 1 ? 's' : '') + ' en Bodega (ya están en Procesado) <button class="rx-b sm" data-fx="dup-ver">Ver</button></div>' : '') + (F.rap === 'ing' ? '<div class="fx-rapido">Ingresó · ' + esc(igTitulo(F.ing)) + (F.ing.cargando ? ' · cargando…' : '') + ' <button class="rx-b sm" data-fx="rap-x">✕ Ver todo</button></div>' : '') + (F.rap === 'pedir' ? '<div class="fx-rapido">Mostrando solo lo que hay que pedir <button class="rx-b sm" data-fx="rap-x">✕ Ver todo</button></div>' : '') + '<div class="fx-fb"><div class="fx-fs"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="fx-q" type="search" placeholder="Buscar" autocomplete="off" value="' + esc(F.q) + '"></div>' +
     '<div class="fx-fl fx-chips" role="group" aria-label="Área"><span>Área</span>' + [['todas','Todas']].concat(SECS.map(x => [x[0], x[1]])).map(x => '<button class="fx-chip' + (F.loc === x[0] ? ' on' : '') + '" data-fx="area" data-v="' + x[0] + '">' + x[1] + '</button>').join('') + '</div>' +
     '<button class="fx-fl fx-solo' + (F.rap === 'pedir' ? ' on' : '') + '" data-fx="kp" data-v="pedir" aria-pressed="' + (F.rap === 'pedir') + '">Solo por pedir</button>' +
     '<label class="fx-fl"><span>Categoría</span><select id="fx-fcat"><option value="todas">Todas</option>' + F.cats.map(c => '<option value="' + esc(c.id) + '"' + (F.cat === c.id ? ' selected' : '') + '>' + esc(c.nombre) + '</option>').join('') + '<option value=""' + (F.cat === '' ? ' selected' : '') + '>Sin categoría</option></select></label>' +
@@ -9266,6 +9275,7 @@ document.addEventListener('click', e => {
     case 'cat-ed': F.catEd = !F.catEd; if(F.catCtx) catProducto(F.catCtx.pid, F.catCtx.sec); break;
     case 'cat-ren': { const c = F.cats.filter(x => x.id === v)[0]; const n = c && prompt('Nuevo nombre', c.nombre); if(n && n.trim()){ guardarCats(F.cats.map(x => x.id === v ? {id:x.id, nombre:n.trim()} : x), F.asig); setTimeout(() => { if(F.catCtx) catProducto(F.catCtx.pid, F.catCtx.sec); else modal(null); }, 120); } break; }
     case 'cat-del': { if(!confirm('¿Eliminar esta categoría? Sus productos quedan sin categoría.')) break; const asig = {}; Object.keys(F.asig).forEach(k => { if(F.asig[k] !== v) asig[k] = F.asig[k]; }); if(F.cat === v) F.cat = 'todas'; guardarCats(F.cats.filter(x => x.id !== v), asig); setTimeout(() => { if(F.catCtx) catProducto(F.catCtx.pid, F.catCtx.sec); else modal(null); }, 120); break; }
+    case 'dup-ver': { const l = dupDirectos(); modal('<h3>Repetidos ocultos en Bodega</h3><div class="rx-mu">Estos productos ya existen en <b>Procesado</b> (Producción) con otro código. Se ocultan de Bodega para que no se dupliquen. Su stock no se perdió: sigue guardado.</div>' + l.map(x => '<div class="fx-er" style="cursor:default"><span>' + esc(x.nombre) + '<small class="rx-mu"> · código ' + esc(x.id) + '</small></span><b>' + fmt(r3(x.stock)) + ' ' + esc(x.uni) + '</b></div>').join('') + '<div class="rx-mu">Producción maneja el stock del Procesado con el código <b>' + esc(l[0] ? l[0].pid : '') + '</b>.</div>'); break; }
     case 'ing-f': igInit(); F.rap = F.rap === 'ing' ? '' : 'ing'; render(); break;
     case 'ing-cal': igInit(); F.ing.cal = !F.ing.cal; F.ing.pick = null; render(); break;
     case 'ing-ok': F.ing.cal = false; F.ing.pick = null; render(); break;
