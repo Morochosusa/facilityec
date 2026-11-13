@@ -9078,12 +9078,13 @@ const cfSes = id => (F.cfl || []).filter(x => x.id === id)[0] || null;
 const cfFecha = ms0 => { if(!ms0) return ''; const d = new Date(ms0); return d.toLocaleDateString('es-EC', {day:'numeric', month:'short'}) + ' ' + d.toLocaleTimeString('es-EC', {hour:'2-digit', minute:'2-digit'}); };
 function cfProductos(alc){
   const m = {}, out = [];
-  SECS.forEach(sc => { if(alc !== 'general' && alc !== 'productos' && alc !== sc[0]) return; filasInv(sc[0]).forEach(r => { if(m[r.id]) return; m[r.id] = 1; out.push({id:r.id, nombre:r.nombre, uni:r.uni || '', sec:sc[0], ref:r3(r.stock || 0)}); }); });
+  SECS.forEach(sc => { if(alc !== 'general' && alc !== 'productos' && alc !== sc[0]) return; filasInv(sc[0]).forEach(r => { if(m[r.id]) return; m[r.id] = 1; out.push({id:r.id, nombre:r.nombre, uni:r.uni || '', sec:sc[0], ref:r3(r.stock || 0), pres:conDatos(Object.assign({}, r, {sec:sc[0]})).pres || ''}); }); });
   return out;
 }
+function cfPresMapa(){ const m = {}; cfProductos('general').forEach(p => { if(p.pres) m[p.id] = p.pres; }); return m; }
 const cfCont = s0 => { const l = s0.lineas || {}; return Object.keys(l).filter(k => l[k] && typeof l[k].c === 'number').length; };
 function vCf(){
-  const C = F.cf; let h = '<div class="ig-top"><button class="rx-b" data-fx="cf-x">← ' + (C.vista === 'home' ? 'Inventario' : 'Atrás') + '</button><h3>Conteo físico</h3></div>';
+  const C = F.cf, PM = cfPresMapa(); let h = '<div class="ig-top"><button class="rx-b" data-fx="cf-x">← ' + (C.vista === 'home' ? 'Inventario' : 'Atrás') + '</button><h3>Conteo físico</h3></div>';
   if(C.vista === 'home'){
     const l = (F.cfl || []), prog = l.filter(x => x.estado === 'en_progreso'), fin = l.filter(x => x.estado !== 'en_progreso');
     h += '<button class="rx-b ac big" data-fx="cf-nuevo">＋ Iniciar conteo</button><div class="fx-subh">Conteos en progreso</div>' +
@@ -9098,7 +9099,7 @@ function vCf(){
   if(C.vista === 'elegir'){
     const q = norm(C.q || ''), all = cfProductos('productos').filter(p => !q || norm(p.nombre).indexOf(q) >= 0), n = Object.keys(C.sel || {}).length;
     h += '<input class="rx-in" id="fx-cfq" data-focus placeholder="Buscar producto…" autocomplete="off" value="' + esc(C.q || '') + '"><div class="fx-cnt rx-mu">' + n + ' elegido' + (n === 1 ? '' : 's') + '</div>' +
-      all.slice(0, 120).map(p => '<button class="cf-r' + (C.sel && C.sel[p.id] ? ' ok' : '') + '" data-fx="cf-sel" data-id="' + esc(p.id) + '">' + phInv(p) + '<div class="cf-n"><b>' + esc(p.nombre) + '</b><small class="rx-mu">' + esc(p.uni) + ' · ' + esc((SECS.filter(x => x[0] === p.sec)[0] || [0, ''])[1]) + '</small></div><span class="cf-v">' + (C.sel && C.sel[p.id] ? '✓' : '') + '</span></button>').join('') +
+      all.slice(0, 120).map(p => '<button class="cf-r' + (C.sel && C.sel[p.id] ? ' ok' : '') + '" data-fx="cf-sel" data-id="' + esc(p.id) + '">' + phInv(p) + '<div class="cf-n"><b>' + esc(p.nombre) + '</b>' + (p.pres ? '<small class="fx-pre">' + esc(p.pres) + '</small>' : '') + '<small class="rx-mu">' + esc(p.uni) + ' · ' + esc((SECS.filter(x => x[0] === p.sec)[0] || [0, ''])[1]) + '</small></div><span class="cf-v">' + (C.sel && C.sel[p.id] ? '✓' : '') + '</span></button>').join('') +
       '<div class="fx-pie"><button class="rx-b ac big" data-fx="cf-go"' + (n ? '' : ' disabled') + '>Empezar a contar (' + n + ')</button></div>';
     return h;
   }
@@ -9115,7 +9116,7 @@ function vCf(){
     (cids.length ? '<label class="fx-fl"><span>Categoría</span><select id="fx-cfcat"><option value="todas">Todas</option>' + cids.map(c => '<option value="' + esc(c.id) + '"' + (C.cat === c.id ? ' selected' : '') + '>' + esc(c.nombre) + '</option>').join('') + '<option value=""' + (C.cat === '' ? ' selected' : '') + '>Sin categoría</option></select></label>' : '') +
     ((qn || C.sec || (C.cat != null && C.cat !== 'todas')) ? '<div class="fx-cnt rx-mu">' + l.length + ' producto' + (l.length === 1 ? '' : 's') + '</div>' : '') +
     l.map(p => { const e = ln[p.id], ok = e && typeof e.c === 'number';
-      return '<button class="cf-r' + (ok ? (e.c === 0 ? ' cero' : ' ok') : '') + '" data-fx="cf-n" data-id="' + esc(p.id) + '"' + (cerrado ? ' disabled' : '') + '>' + phInv(p) + '<div class="cf-n"><b>' + esc(p.nombre) + '</b><small class="rx-mu">' + esc(p.uni) + '</small></div><span class="cf-v">' + (ok ? '<b>' + fmt(e.c) + '</b> ' + esc(p.uni) + '<small>' + (e.c === 0 ? 'Contado: cero' : 'Contado ✓') + '</small>' : '<small>Pendiente</small>') + '</span></button>'; }).join('') +
+      return '<button class="cf-r' + (ok ? (e.c === 0 ? ' cero' : ' ok') : '') + '" data-fx="cf-n" data-id="' + esc(p.id) + '"' + (cerrado ? ' disabled' : '') + '>' + phInv(p) + '<div class="cf-n"><b>' + esc(p.nombre) + '</b>' + (PM[p.id] ? '<small class="fx-pre">' + esc(PM[p.id]) + '</small>' : '') + '<small class="rx-mu">' + esc(p.uni) + '</small></div><span class="cf-v">' + (ok ? '<b>' + fmt(e.c) + '</b> ' + esc(p.uni) + '<small>' + (e.c === 0 ? 'Contado: cero' : 'Contado ✓') + '</small>' : '<small>Pendiente</small>') + '</span></button>'; }).join('') +
     (l.length ? '' : '<div class="rx-vacio">' + (C.f === 'pend' ? 'No quedan pendientes 🎉' : 'Nada por mostrar') + '</div>') +
     (cerrado ? '<div class="rx-mu" style="padding:10px">Conteo terminado. Espera la revisión del administrador.</div>' : '<div class="fx-pie"><button class="rx-b" data-fx="cf-x">Guardar y salir</button><button class="rx-b ac" data-fx="cf-fin">Terminar conteo</button></div>');
   return h;
