@@ -8799,7 +8799,7 @@ function escuchar(){
   if(F.ready || typeof db === 'undefined') return; F.ready = true;
   db.collection('stock_facility').onSnapshot(snap => { F.stock = {}; snap.forEach(d => { F.stock[d.id] = Object.assign({}, d.data(), {id:d.id}); }); refrescar(); }, e => console.error(e));
   db.collection('conteos_fisicos').orderBy('fecha', 'desc').limit(60).onSnapshot(snap => { const l = []; snap.forEach(d => { const x = d.data({serverTimestamps:'estimate'}) || {}; if(x.version === 2) l.push(Object.assign({}, x, {id:d.id})); }); F.cfl = l; refrescar(); }, e => console.error(e));
-  db.collection('catalogo_materia_prima').onSnapshot(snap => { const m = {}; snap.forEach(d => { const n = (d.data() || {}).nombre; if(n) m[d.id] = n; }); F.mpn = m; refrescar(); }, e => console.error(e));   // nombre vigente de lo que se registra en Recepción
+  db.collection('catalogo_materia_prima').onSnapshot(snap => { const m = {}, u = {}; snap.forEach(d => { const x = d.data() || {}; if(x.nombre){ m[d.id] = x.nombre; u[d.id] = x.unidad || ''; } }); F.mpn = m; F.mpu = u; refrescar(); }, e => console.error(e));   // nombre vigente de lo que se registra en Recepción
   db.collection('movimientos_estacion').orderBy('fecha', 'desc').limit(250).onSnapshot(snap => { F.movs = []; snap.forEach(d => F.movs.push(Object.assign({}, d.data({serverTimestamps:'estimate'}), {id:d.id}))); refrescar(); if(F.ing && F.ing.h >= igIso(new Date())) igCargar(); }, e => console.error(e));
   db.collection('config_facility').doc('categorias_inventario').onSnapshot(s => { const x = s.exists ? s.data() : {}; F.cats = x.lista || []; F.asig = x.asignadas || {}; refrescar(); }, e => console.error(e));
   db.collection('config_facility').doc('inventario_producir').onSnapshot(s => { F.prod = s.exists ? (s.data().items || {}) : {}; refrescar(); }, e => console.error(e));
@@ -9017,6 +9017,52 @@ async function impBodegaOk(){
   } catch(e){ console.error(e); toast(errTxt(e)); }
   F.busy = false; modal(null);
 }
+/* ---------- UNIR DUPLICADOS: el repetido guarda unido_a = código del que se queda. Su stock se suma al que se queda y ya no se muestra. No se borra nada. ---------- */
+const UNI_SIN = {de:1, del:1, la:1, el:1, x:1, botella:1, botellas:1, unidad:1, unidades:1, und:1};
+const UNI_SYN = {kilo:'kg', kilos:'kg', kilogramo:'kg', kilogramos:'kg', litros:'litro', lt:'litro', lts:'litro', l:'litro', gramo:'g', gramos:'g', gr:'g', libras:'libra', lb:'libra', lbs:'libra', onza:'oz', onzas:'oz'};
+const uniClave = s0 => norm(s0).replace(/(\d)([a-z])/g, '$1 $2').split(' ').filter(w => w && !UNI_SIN[w]).map(w => UNI_SYN[w] || w).sort().join(' ');
+function uniDocs(){
+  const leg = (typeof inventarioActual !== 'undefined') ? inventarioActual : {}, out = []; let mp = []; try { mp = window.BGS.mp || []; } catch(e){}
+  Object.keys(leg).forEach(id => { const l = leg[id]; if(l && l.unido_a) out.push({id:id, col:'inventario_bodega', a:l.unido_a, nombre:F.mpn[id] || l.producto_nombre || id, stock:l.cantidad_actual || 0, uni:l.unidad_medida || ''}); });
+  mp.forEach(l => { if(l.unido_a) out.push({id:l.id, col:'inventario_materia_prima', a:l.unido_a, nombre:F.mpn[l.id] || l.producto_nombre || l.id, stock:l.cantidad_actual || 0, uni:l.unidad_medida || ''}); });
+  return out;
+}
+function uniMapa(){ const hid = {}, ex = {}; uniDocs().forEach(d => { hid[d.id] = d.a; ex[d.a] = (ex[d.a] || 0) + d.stock; }); return {hid:hid, ex:ex}; }
+function uniCand(){
+  const g = {}, leg = (typeof inventarioActual !== 'undefined') ? inventarioActual : {}, out = [];
+  ['mp', 'directo'].forEach(sec => filasInv(sec).forEach(r => { const k = uniClave(r.nombre); if(!k) return; (g[k] = g[k] || []).push(Object.assign({sec:sec}, r)); }));
+  const imp = r => (r.sec === 'directo' && (leg[r.id] || {}).origen === 'morochos_os') ? 1 : 0;
+  Object.keys(g).forEach(k => { const l = g[k]; if(l.length < 2) return;
+    l.sort((a, b) => imp(b) - imp(a) || ((b.sec === 'directo') - (a.sec === 'directo')) || (b.stock - a.stock));
+    out.push({quedan:l[0], unir:l.slice(1)}); });
+  out.sort((a, b) => String(a.quedan.nombre).localeCompare(String(b.quedan.nombre)));
+  return out;
+}
+const uniSecNom = sec => (SECS.filter(x => x[0] === sec)[0] || ['', sec])[1];
+function uniVer(){
+  const c = uniCand(), u = uniDocs(), n = c.reduce((a, x) => a + x.unir.length, 0);
+  let h = '<h3>Unir duplicados</h3>';
+  if(c.length) h += '<div class="rx-mu">Se queda el producto de la importación de bodega. El repetido se une a ese y su stock se suma. <b>No se borra nada</b> y se puede separar después.</div><div class="fx-impl">' +
+    c.map(x => '<div class="fx-er" style="cursor:default;display:block"><b>' + esc(x.quedan.nombre) + '</b> <small class="rx-mu">se queda · ' + esc(uniSecNom(x.quedan.sec)) + ' · ' + fmt(r3(x.quedan.stock)) + ' ' + esc(x.quedan.uni) + '</small>' +
+      x.unir.map(y => '<div class="rx-mu">+ une: ' + esc(y.nombre) + ' · ' + esc(uniSecNom(y.sec)) + ' · ' + fmt(r3(y.stock)) + ' ' + esc(y.uni) + '</div>').join('') + '</div>').join('') + '</div>' +
+    '<button class="rx-b ac big" data-fx="uni-ok">Unir ' + n + ' repetido' + (n === 1 ? '' : 's') + '</button>';
+  else h += '<div class="rx-mu">No hay productos repetidos por unir.</div>';
+  if(u.length) h += '<div class="fx-subh">Ya unidos</div><div class="fx-impl">' + u.map(y => '<div class="fx-er" style="cursor:default"><span>' + esc(y.nombre) + '</span><button class="rx-b sm" data-fx="uni-sep" data-id="' + esc(y.id) + '">Separar</button></div>').join('') + '</div>';
+  modal(h);
+}
+async function uniOk(){
+  if(F.busy) return; const c = uniCand(); if(!c.length){ modal(null); return; } F.busy = true;
+  try {
+    const ops = []; c.forEach(x => x.unir.forEach(y => ops.push([y.sec === 'mp' ? 'inventario_materia_prima' : 'inventario_bodega', y.id, x.quedan.id])));
+    for(let i = 0; i < ops.length; i += 400){ const b = db.batch(); ops.slice(i, i + 400).forEach(o => b.set(db.collection(o[0]).doc(o[1]), {unido_a:o[2], unido_fecha:SV()}, {merge:true})); await b.commit(); }
+    toast(ops.length + ' repetido' + (ops.length === 1 ? '' : 's') + ' unido' + (ops.length === 1 ? '' : 's'));
+  } catch(e){ console.error(e); toast(errTxt(e)); }
+  F.busy = false; modal(null);
+}
+async function uniSep(id){
+  const d = uniDocs().filter(x => x.id === id)[0]; if(!d) return;
+  try { await db.collection(d.col).doc(id).set({unido_a:firebase.firestore.FieldValue.delete(), unido_fecha:firebase.firestore.FieldValue.delete()}, {merge:true}); toast('Separado'); setTimeout(uniVer, 250); } catch(e){ console.error(e); toast(errTxt(e)); }
+}
 /* ---------- CONTEO FÍSICO (Fase 1): contar a ciegas, guardar avances. NO modifica el inventario. ---------- */
 const CF_ALC = [['general', 'Conteo general', 'Todas las áreas'], ['terminado', 'Procesado', ''], ['mp', 'Materia prima', ''], ['directo', 'Bodega', ''], ['productos', 'Productos específicos', 'Tú eliges cuáles']];
 const cfSes = id => (F.cfl || []).filter(x => x.id === id)[0] || null;
@@ -9081,16 +9127,19 @@ function cfCrear(alc, ids){
   F.cfl = [Object.assign({id:ref.id}, doc)].concat(F.cfl || []); F.cf = {vista:'contar', id:ref.id, f:'todos'}; render(); window.scrollTo(0, 0);
 }
 function filasInv(sec){
-  const P = prodIds(), out = [], leg = (typeof inventarioActual !== 'undefined') ? inventarioActual : {};
+  const P = prodIds(), out = [], leg = (typeof inventarioActual !== 'undefined') ? inventarioActual : {}, U = uniMapa();
   const meta = id => catPor(id) || {};
   if(sec === 'terminado'){
-    Object.keys(P).forEach(id => { const p = P[id], l = leg[id] || {}, m = meta(id); out.push({id:id, nombre:p.nombre, stock:l.cantidad_actual || 0, uni:p.unidad || '', pres:p.presentacion || '', min:m.min || 0}); });
+    Object.keys(P).forEach(id => { const p = P[id], l = leg[id] || {}, m = meta(id); out.push({id:id, nombre:p.nombre, stock:(l.cantidad_actual || 0) + (U.ex[id] || 0), uni:p.unidad || '', pres:p.presentacion || '', min:m.min || 0}); });
   } else if(sec === 'directo'){
     const nomP = nombresProc(P);
-    Object.keys(leg).filter(id => !P[id] && !nomP[norm(F.mpn[id] || leg[id].producto_nombre || (meta(id) || {}).nombre || id)]).forEach(id => { const l = leg[id], m = meta(id); out.push({id:id, nombre:F.mpn[id] || l.producto_nombre || m.nombre || id, stock:l.cantidad_actual || 0, uni:l.unidad_medida || m.uAlmacen || m.unidad || '', pres:m.presentacion || '', min:m.min || 0}); });
+    Object.keys(leg).filter(id => !P[id] && !U.hid[id] && !nomP[norm(F.mpn[id] || leg[id].producto_nombre || (meta(id) || {}).nombre || id)]).forEach(id => { const l = leg[id], m = meta(id); out.push({id:id, nombre:F.mpn[id] || l.producto_nombre || m.nombre || id, stock:(l.cantidad_actual || 0) + (U.ex[id] || 0), uni:l.unidad_medida || m.uAlmacen || m.unidad || '', pres:m.presentacion || '', min:m.min || 0}); });
   } else {
     let mp = []; try { mp = window.BGS.mp || []; } catch(e){}
-    mp.forEach(l => { const m = meta(l.id); out.push({id:l.id, nombre:F.mpn[l.id] || l.producto_nombre || l.id, stock:l.cantidad_actual || 0, uni:l.unidad_medida || '', pres:'', min:m.min || 0}); });
+    mp.forEach(l => { if(U.hid[l.id]) return; const m = meta(l.id); out.push({id:l.id, nombre:F.mpn[l.id] || l.producto_nombre || l.id, stock:(l.cantidad_actual || 0) + (U.ex[l.id] || 0), uni:l.unidad_medida || '', pres:'', min:m.min || 0}); });
+    /* la materia prima registrada en Producción/Recepción aparece aunque todavía no haya entrado (stock 0) */
+    const yaMp = {}; mp.forEach(l => { yaMp[l.id] = 1; });
+    Object.keys(F.mpn || {}).forEach(id => { if(yaMp[id] || U.hid[id] || P[id] || leg[id]) return; const m = meta(id); out.push({id:id, nombre:F.mpn[id], stock:U.ex[id] || 0, uni:(F.mpu || {})[id] || '', pres:'', min:m.min || 0}); });
   }
   return out.sort((a, b) => String(a.nombre).localeCompare(String(b.nombre)));
 }
@@ -9174,12 +9223,11 @@ function vInv(){
     return '<tr' + (F.sel[r.id] ? ' class="sel"' : '') + ' data-fx="ed" data-id="' + esc(r.id) + '" data-sec="' + r.sec + '"><td class="fx-tp">' + phInv(r) + '</td><td class="fx-tn">' + esc(r.nombre) + ingTag(r) + (pend[r.id] ? ' <span class="fx-pd">Pedido pendiente</span>' : '') + (F.prod[r.id] && bajo(r) ? ' <span class="fx-pd">Por producir</span>' : '') + '</td><td class="fx-tc"><span class="fx-big">' + fmt(r3(r.stock)) + '</span> <small>' + esc(r.uni) + '</small></td><td><span class="fx-es ' + e[0] + '">' + e[1] + '</span></td><td class="fx-tc">' + btnPedir(r) + '</td><td class="fx-tc">›</td></tr>'; };
   const pend = pendDe(), nSel = Object.keys(F.sel).length;
   const bajoN = idsParaPedir().length, atenN = idsAtencion().length;
-  igInit(); const dups = dupDirectos(), impN = impBodegaPend().nuevos.length;
-  let h = tilesHoy(pend, atenN) + (impN ? '<div class="fx-rapido">📥 ' + impN + ' producto' + (impN > 1 ? 's' : '') + ' de bodega de Morochos OS por importar <button class="rx-b sm" data-fx="imp-ver">Ver e importar</button></div>' : '') + (dups.length ? '<div class="fx-rapido">⚠ ' + dups.length + ' repetido' + (dups.length > 1 ? 's' : '') + ' oculto' + (dups.length > 1 ? 's' : '') + ' en Bodega (ya están en Procesado) <button class="rx-b sm" data-fx="dup-ver">Ver</button></div>' : '') + (F.rap === 'ing' ? '<div class="fx-rapido">Ingresó · ' + esc(igTitulo(F.ing)) + (F.ing.cargando ? ' · cargando…' : '') + ' <button class="rx-b sm" data-fx="rap-x">✕ Ver todo</button></div>' : '') + (F.rap === 'pedir' ? '<div class="fx-rapido">Mostrando solo lo que hay que pedir <button class="rx-b sm" data-fx="rap-x">✕ Ver todo</button></div>' : '') + '<div class="fx-fb"><div class="fx-fs"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="fx-q" type="search" placeholder="Buscar" autocomplete="off" value="' + esc(F.q) + '"></div>' +
+  igInit(); const dups = dupDirectos(), impN = impBodegaPend().nuevos.length, uniN = uniCand().reduce((a, x) => a + x.unir.length, 0), uniY = uniDocs().length;
+  let h = tilesHoy(pend, atenN) + (impN ? '<div class="fx-rapido">📥 ' + impN + ' producto' + (impN > 1 ? 's' : '') + ' de bodega de Morochos OS por importar <button class="rx-b sm" data-fx="imp-ver">Ver e importar</button></div>' : '') + ((uniN || uniY) ? '<div class="fx-rapido">🔗 ' + (uniN ? uniN + ' repetido' + (uniN > 1 ? 's' : '') + ' por unir' : uniY + ' unido' + (uniY > 1 ? 's' : '')) + ' <button class="rx-b sm" data-fx="uni-ver">' + (uniN ? 'Ver y unir' : 'Ver') + '</button></div>' : '') + (dups.length ? '<div class="fx-rapido">⚠ ' + dups.length + ' repetido' + (dups.length > 1 ? 's' : '') + ' oculto' + (dups.length > 1 ? 's' : '') + ' en Bodega (ya están en Procesado) <button class="rx-b sm" data-fx="dup-ver">Ver</button></div>' : '') + (F.rap === 'ing' ? '<div class="fx-rapido">Ingresó · ' + esc(igTitulo(F.ing)) + (F.ing.cargando ? ' · cargando…' : '') + ' <button class="rx-b sm" data-fx="rap-x">✕ Ver todo</button></div>' : '') + (F.rap === 'pedir' ? '<div class="fx-rapido">Mostrando solo lo que hay que pedir <button class="rx-b sm" data-fx="rap-x">✕ Ver todo</button></div>' : '') + '<div class="fx-fb"><div class="fx-fs"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="fx-q" type="search" placeholder="Buscar" autocomplete="off" value="' + esc(F.q) + '"></div>' +
     '<div class="fx-fl fx-chips" role="group" aria-label="Área"><span>Área</span>' + [['todas','Todas']].concat(SECS.map(x => [x[0], x[1]])).map(x => '<button class="fx-chip' + (F.loc === x[0] ? ' on' : '') + '" data-fx="area" data-v="' + x[0] + '">' + x[1] + '</button>').join('') + '</div>' +
-    '<button class="fx-fl fx-solo' + (F.rap === 'pedir' ? ' on' : '') + '" data-fx="kp" data-v="pedir" aria-pressed="' + (F.rap === 'pedir') + '">Solo por pedir</button>' +
     '<label class="fx-fl"><span>Categoría</span><select id="fx-fcat"><option value="todas">Todas</option>' + F.cats.map(c => '<option value="' + esc(c.id) + '"' + (F.cat === c.id ? ' selected' : '') + '>' + esc(c.nombre) + '</option>').join('') + '<option value=""' + (F.cat === '' ? ' selected' : '') + '>Sin categoría</option></select></label>' +
-    '<button class="fx-fl fx-pb" data-fx="ped-bajos"' + (bajoN ? '' : ' disabled') + '>Pedir agotados y bajo mínimo' + (bajoN ? ' <b>' + bajoN + '</b>' : '') + '</button><button class="fx-fl fx-pb" data-fx="cf-abrir">📋 Conteo físico</button></div>';
+    '<button class="fx-fl fx-pb" data-fx="ped-bajos"' + (bajoN ? '' : ' disabled') + '>Pedir' + (bajoN ? ' <b>' + bajoN + '</b>' : '') + '</button><button class="fx-fl fx-pb" data-fx="cf-abrir">📋 Conteo físico</button></div>';
   let l = []; SECS.forEach(sc => { if(F.loc !== 'todas' && F.loc !== sc[0]) return; l = l.concat(filasInv(sc[0]).map(conDatosS(sc[0]))); });
   if(q) l = l.filter(r => norm(r.nombre).indexOf(q) >= 0);
   if(F.cat !== 'todas') l = l.filter(r => F.cat === '' ? !catDe(r.id) : catDe(r.id) === F.cat);
@@ -9209,8 +9257,8 @@ function tilesHoy(pend, bajoN){
   const pp = Object.keys(pend || {}).length, G = F.ing, nIng = Object.keys(igMapa()).length, hoyI = G.preset === 'hoy';
   const t = (k, n, lbl, cls) => '<button class="rx-card fx-kt ' + (cls || '') + '" data-fx="kp" data-v="' + k + '"><b>' + n + '</b><small>' + lbl + '</small></button>';
   let total = 0; SECS.forEach(sc => { total += filasInv(sc[0]).length; });
-  return '<div class="fx-kp fx-kpi">' + t('total', total, 'productos registrados') + t('pedir', bajoN, 'por pedir o producir', bajoN ? 'wn' : '') + '<button class="rx-card fx-kt' + (F.rap === 'ing' ? ' ig-on' : '') + '" data-fx="ing-f"><b>' + (G.cargando ? '…' : nIng) + '</b><small>ingresados' + (hoyI ? ' hoy' : '') + '</small></button>' +
-    '<button class="rx-card fx-kt ig-dt" data-fx="ing-cal"><b>📅</b><small>' + esc(igTitulo(G)) + '</small></button></div>' + (G.cal ? igCal(G) : '');
+  return '<div class="fx-kp fx-kpi"><button class="rx-card fx-kt' + (F.rap === 'ing' ? ' ig-on' : '') + '" data-fx="ing-f"><b>' + (G.cargando ? '…' : nIng) + '</b><small>ingresados' + (hoyI ? ' hoy' : '') + '</small></button>' + t('pedir', bajoN, 'por pedir o producir', bajoN ? 'wn' : '') +
+    '<button class="rx-card fx-kt ig-dt" data-fx="ing-cal"><b>📅</b><small>' + esc(igTitulo(G)) + '</small></button>' + t('total', total, 'productos registrados') + '</div>' + (G.cal ? igCal(G) : '');
 }
 function detalleTile(k){
   const fila = (n, c, u, x) => '<div class="fx-er" style="cursor:default"><span>' + esc(n) + '</span><b>' + (c != null ? fmt(r3(c)) + ' ' + esc(u || '') : '') + (x || '') + '</b></div>';
@@ -9382,6 +9430,9 @@ document.addEventListener('click', e => {
     case 'cat-del': { if(!confirm('¿Eliminar esta categoría? Sus productos quedan sin categoría.')) break; const asig = {}; Object.keys(F.asig).forEach(k => { if(F.asig[k] !== v) asig[k] = F.asig[k]; }); if(F.cat === v) F.cat = 'todas'; guardarCats(F.cats.filter(x => x.id !== v), asig); setTimeout(() => { if(F.catCtx) catProducto(F.catCtx.pid, F.catCtx.sec); else modal(null); }, 120); break; }
     case 'imp-ver': impBodegaVer(); break;
     case 'imp-ok': impBodegaOk(); break;
+    case 'uni-ver': uniVer(); break;
+    case 'uni-ok': uniOk(); break;
+    case 'uni-sep': uniSep(id); break;
     case 'cf-abrir': F.cf = {vista:'home'}; render(); window.scrollTo(0, 0); break;
     case 'cf-x': { const C = F.cf; if(!C || C.vista === 'home') F.cf = null; else F.cf = {vista:'home'}; render(); window.scrollTo(0, 0); break; }
     case 'cf-nuevo': F.cf = {vista:'nuevo'}; render(); break;
