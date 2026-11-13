@@ -2042,6 +2042,8 @@
   .fx-sbg{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:70} .fx-sheet{position:fixed;left:0;right:0;bottom:0;max-height:88vh;overflow:auto;z-index:71;background:#fff;border-radius:20px 20px 0 0;padding:14px 18px calc(18px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 30px rgba(0,0,0,.2)} @media (min-width:700px){.fx-sheet{left:50%;right:auto;width:520px;transform:translateX(-50%)}}
   .fx-sh-top{display:flex;justify-content:space-between} .fx-sheet h3{margin:8px 0 4px;font-size:26px} .fx-subh2{font-size:13px;font-weight:800;color:#667085;margin:16px 0 6px} .fx-chips2{display:flex;flex-wrap:wrap;gap:8px} .fx-sel{width:100%;height:46px;border-radius:12px;border:1px solid #d6d9e0;background:#fff;font:inherit;font-size:16px;padding:0 10px}
   .fx-pre{font-size:13px;color:#667085;font-weight:500;line-height:1.25;margin-top:1px}
+  .fx-vis{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 4px} .fx-vis .rx-b{flex:1 1 150px}
+  .cf-d{background:#fff;border:1px solid #d6d9e0;border-radius:14px;padding:10px;margin:8px 0} .cf-d.off{opacity:.55} .cf-dh{display:flex;gap:10px;align-items:center} .cf-dd{margin-left:auto;font-size:19px;font-weight:800} .cf-dd.mas{color:#1d7a4d} .cf-dd.menos{color:#c0392b} .cf-mots{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 </style>
 </head>
 <body>
@@ -8092,6 +8094,7 @@ window.stRender = function(){
     '<div class="st-card"><h3>Aplicación</h3>' + fila('Nombre', APP_INFO.nombre) + fila('Versión', APP_INFO.version) + fila('Descripción', APP_INFO.descripcion) + fila('Proyecto Firebase', firebaseConfig.projectId) + fila('Sitio', location.host || 'local') + fila('Usuario', usr) + fila('Conexión', navigator.onLine ? 'En línea' : 'Sin conexión') + '</div>' +
     '<div class="st-card"><h3>Modo prueba</h3><div class="mu">' + (on ? '<b>Activo.</b> Puedes borrar listas y datos de ejemplo.' : 'Apagado. Actívalo solo para probar: pide el código de seguridad.') + '</div>' +
     '<div class="st-bt"><button class="btn-secundario" onclick="mpAlternar()">' + (on ? 'Desactivar modo prueba' : 'Activar modo prueba') + '</button>' + (on ? '<button class="btn-secundario" onclick="mpAbrir()">🧹 Borrar datos de prueba</button>' : '') + '</div></div>' +
+    '<div class="st-card"><h3>Aprobadores de conteo</h3><div class="mu">Quienes pueden aprobar los ajustes del inventario. Cada uno tiene un PIN de 4 números. Cambiarlo pide el código de seguridad.</div>' + (window.fxAprobadores ? window.fxAprobadores().map((a, i) => '<div class="st-f"><span>' + esc(a.nombre) + '</span><b>' + (a.pin ? 'PIN puesto ✓' : 'Sin PIN') + '</b></div><div class="st-bt"><button class="btn-secundario" onclick="fxAprPin(' + i + ')">' + (a.pin ? 'Cambiar PIN' : 'Poner PIN') + '</button></div>').join('') : '') + '</div>' +
     '<div class="st-card"><h3>Inventario</h3><div class="mu">Borra todo el inventario y deja solo los Procesados de Producción. Guarda copia y pide código. Es temporal.</div><div class="st-bt"><button class="btn-secundario" onclick="fxReiniciar()">🗑 Reiniciar inventario</button></div></div>' +
     '</div>';
 };
@@ -8807,6 +8810,7 @@ function escuchar(){
   if(F.ready || typeof db === 'undefined') return; F.ready = true;
   db.collection('stock_facility').onSnapshot(snap => { F.stock = {}; snap.forEach(d => { F.stock[d.id] = Object.assign({}, d.data(), {id:d.id}); }); refrescar(); }, e => console.error(e));
   db.collection('conteos_fisicos').orderBy('fecha', 'desc').limit(60).onSnapshot(snap => { const l = []; snap.forEach(d => { const x = d.data({serverTimestamps:'estimate'}) || {}; if(x.version === 2) l.push(Object.assign({}, x, {id:d.id})); }); F.cfl = l; refrescar(); }, e => console.error(e));
+  db.collection('config_facility').doc('aprobadores_conteo').onSnapshot(sn => { F.apr = (sn.exists && sn.data().lista) ? sn.data().lista : null; refrescar(); try { window.stRender(); } catch(e){} }, e => console.error(e));
   db.collection('catalogo_materia_prima').onSnapshot(snap => { const m = {}, u = {}; snap.forEach(d => { const x = d.data() || {}; if(x.nombre){ m[d.id] = x.nombre; u[d.id] = x.unidad || ''; } }); F.mpn = m; F.mpu = u; refrescar(); }, e => console.error(e));   // nombre vigente de lo que se registra en Recepción
   db.collection('movimientos_estacion').orderBy('fecha', 'desc').limit(250).onSnapshot(snap => { F.movs = []; snap.forEach(d => F.movs.push(Object.assign({}, d.data({serverTimestamps:'estimate'}), {id:d.id}))); refrescar(); if(F.ing && F.ing.h >= igIso(new Date())) igCargar(); }, e => console.error(e));
   db.collection('config_facility').doc('categorias_inventario').onSnapshot(s => { const x = s.exists ? s.data() : {}; F.cats = x.lista || []; F.asig = x.asignadas || {}; refrescar(); }, e => console.error(e));
@@ -9089,7 +9093,7 @@ function vCf(){
     const l = (F.cfl || []), prog = l.filter(x => x.estado === 'en_progreso'), fin = l.filter(x => x.estado !== 'en_progreso');
     h += '<button class="rx-b ac big" data-fx="cf-nuevo">＋ Iniciar conteo</button><div class="fx-subh">Conteos en progreso</div>' +
       (prog.length ? prog.map(x => '<button class="cf-ses" data-fx="cf-cont" data-id="' + esc(x.id) + '"><b>' + esc(x.alcance_nombre || 'Conteo') + '</b><span>' + cfCont(x) + ' de ' + (x.productos || []).length + ' contados</span><small class="rx-mu">' + esc(cfFecha(x.fecha_ms)) + ' · ' + esc(x.creado_por || '') + '</small></button>').join('') : '<div class="rx-mu">No hay conteos en progreso.</div>') +
-      (fin.length ? '<div class="fx-subh">Terminados · pendientes de revisión</div>' + fin.slice(0, 10).map(x => '<div class="cf-ses fin"><b>' + esc(x.alcance_nombre || 'Conteo') + '</b><span>' + cfCont(x) + ' de ' + (x.productos || []).length + ' contados</span><small class="rx-mu">' + esc(cfFecha(x.fecha_ms)) + ' · ' + esc(x.creado_por || '') + '</small></div>').join('') : '');
+      (fin.length ? '<div class="fx-subh">Terminados · revisión y aprobación</div>' + fin.slice(0, 10).map(x => '<button class="cf-ses fin" data-fx="cf-dif" data-id="' + esc(x.id) + '"><b>' + esc(x.alcance_nombre || 'Conteo') + '</b><span>' + esc(CF_EST[x.estado] || x.estado || '') + ' · ' + cfCont(x) + ' de ' + (x.productos || []).length + ' contados</span><small class="rx-mu">' + esc(cfFecha(x.fecha_ms)) + ' · ' + esc(x.creado_por || '') + '</small></button>').join('') : '');
     return h;
   }
   if(C.vista === 'nuevo'){
@@ -9103,6 +9107,7 @@ function vCf(){
       '<div class="fx-pie"><button class="rx-b ac big" data-fx="cf-go"' + (n ? '' : ' disabled') + '>Empezar a contar (' + n + ')</button></div>';
     return h;
   }
+  if(C.vista === 'dif') return vCfDif(h, C);
   const s0 = cfSes(C.id); if(!s0) return h + '<div class="rx-vacio">Este conteo ya no está disponible.</div>';
   const prods = s0.productos || [], ln = s0.lineas || {}, hecho = cfCont(s0), pct = prods.length ? Math.round(hecho * 100 / prods.length) : 0, cerrado = s0.estado !== 'en_progreso';
   const hechoP = p => ln[p.id] && typeof ln[p.id].c === 'number', qn = norm(C.q || ''), secs = SECS.filter(sc => prods.some(p => p.sec === sc[0])), cids = F.cats.filter(c => prods.some(p => catDe(p.id) === c.id));
@@ -9123,10 +9128,66 @@ function vCf(){
 }
 function cfGuardar(pid, v){
   const C = F.cf, s0 = cfSes(C.id); if(!s0) return; const ok = typeof v === 'number' && isFinite(v) && v >= 0;
-  s0.lineas = s0.lineas || {}; if(ok) s0.lineas[pid] = {c:r3(v), ms:Date.now()}; else delete s0.lineas[pid];
-  const upd = {actualizado:SV(), actualizado_por:respDe() || mail() || '', lineas:{}}; upd.lineas[pid] = ok ? {c:r3(v), ms:Date.now(), por:respDe() || mail() || ''} : firebase.firestore.FieldValue.delete();
+  const sis = ok ? cfStockAhora(pid) : null;
+  s0.lineas = s0.lineas || {}; if(ok) s0.lineas[pid] = {c:r3(v), ms:Date.now(), s:sis}; else delete s0.lineas[pid];
+  const upd = {actualizado:SV(), actualizado_por:respDe() || mail() || '', lineas:{}}; upd.lineas[pid] = ok ? {c:r3(v), ms:Date.now(), por:respDe() || mail() || '', s:sis} : firebase.firestore.FieldValue.delete();
   db.collection('conteos_fisicos').doc(C.id).set(upd, {merge:true}).catch(e => { console.error(e); toast(errTxt(e)); });
   render();
+}
+/* ---------- CONTEO FÍSICO (Fase 2): diferencias, motivos, aprobación con PIN y ajuste del inventario ---------- */
+const MOT_CF = ['Merma', 'Error de registro', 'Pérdida', 'Otro'];
+const APR_DEF = [{id:'mayra', nombre:'Mayra Velasquez', pin:''}, {id:'meliton', nombre:'Meliton Morocho', pin:''}, {id:'maria_belen', nombre:'Pinduisaca Peralta María Belén', pin:''}];
+const aprs = () => (F.apr && F.apr.length) ? F.apr : APR_DEF;
+window.fxAprobadores = () => aprs();
+window.fxAprPin = function(i){
+  const a = aprs()[i]; if(!a) return;
+  const ir = () => abrirTeclado({titulo:'PIN de ' + a.nombre, subtitulo:'4 números. No empieces con 0.', unidad:'', inicial:'', decimales:false, permitirCero:false, onListo:v => {
+    if(v == null) return; const n = Math.round(v);
+    if(!(n >= 1000 && n <= 9999)){ toast('El PIN debe tener 4 números'); return; }
+    const l = aprs().map((x, k) => k === i ? Object.assign({}, x, {pin:String(n)}) : x); F.apr = l;
+    db.collection('config_facility').doc('aprobadores_conteo').set({lista:l, actualizado:SV()}).catch(e => { console.error(e); toast(errTxt(e)); });
+    toast('PIN guardado'); try { window.stRender(); } catch(e){}
+  }});
+  if(window.lcPedirCodigo) window.lcPedirCodigo(ir); else ir();
+};
+function cfStockAhora(pid){ const q = cfProductos('general').filter(x => x.id === pid)[0]; return q ? q.ref : 0; }
+function cfDifs(s0){
+  const ln = s0.lineas || {}, out = [];
+  (s0.productos || []).forEach(p => { const e = ln[p.id]; if(!e || typeof e.c !== 'number') return;
+    const sis = typeof e.s === 'number' ? e.s : (p.ref || 0); out.push({p:p, c:e.c, sis:sis, dif:r3(e.c - sis), mot:e.mot || '', aj:e.aj !== false}); });
+  return out;
+}
+const CF_EST = {en_progreso:'Contando', contado:'Falta enviar a aprobación', por_aprobar:'Por aprobar', ajustado:'Ajustado ✓', sin_ajuste:'Cerrado sin ajustes'};
+function cfLinea(id, campos){ const s0 = cfSes(F.cf.id); if(!s0) return; s0.lineas = s0.lineas || {}; s0.lineas[id] = Object.assign({}, s0.lineas[id] || {}, campos);
+  const upd = {actualizado:SV(), lineas:{}}; upd.lineas[id] = campos; db.collection('conteos_fisicos').doc(F.cf.id).set(upd, {merge:true}).catch(e => { console.error(e); toast(errTxt(e)); }); render(); }
+function vCfDif(h, C){
+  const s0 = cfSes(C.id); if(!s0) return h + '<div class="rx-vacio">Este conteo ya no está disponible.</div>';
+  const ds = cfDifs(s0), con = ds.filter(x => x.dif !== 0), ok = ds.length - con.length, est = s0.estado, sinM = con.filter(x => !x.mot).length, pend = (s0.productos || []).length - ds.length, PMa = cfPresMapa();
+  h += '<div class="cf-prog"><b>' + esc(s0.alcance_nombre || 'Conteo') + '</b><div class="rx-mu">' + (CF_EST[est] || est) + ' · ' + con.length + ' con diferencia · ' + ok + ' coinciden' + (pend ? ' · ' + pend + ' sin contar (no se tocan)' : '') + '</div>' +
+    ((est === 'ajustado' || est === 'sin_ajuste') ? '<div class="rx-mu">Aprobó ' + esc(s0.aprobado_por || '') + ' · ' + esc(cfFecha(s0.aprobado_ms)) + (est === 'ajustado' ? ' · ' + (s0.ajustes || 0) + ' ajuste' + (s0.ajustes === 1 ? '' : 's') : '') + '</div>' : '') + '</div>';
+  h += con.length ? con.map(x => { const pr = PMa[x.p.id] || '';
+    return '<div class="cf-d' + ((est === 'por_aprobar' || est === 'ajustado') && !x.aj ? ' off' : '') + '"><div class="cf-dh">' + phInv(x.p) + '<div class="cf-n"><b>' + esc(x.p.nombre) + '</b>' + (pr ? '<small class="fx-pre">' + esc(pr) + '</small>' : '') + '<small class="rx-mu">Sistema ' + fmt(r3(x.sis)) + ' → Contado ' + fmt(x.c) + ' ' + esc(x.p.uni) + '</small></div><span class="cf-dd ' + (x.dif > 0 ? 'mas' : 'menos') + '">' + (x.dif > 0 ? '+' : '') + fmt(x.dif) + '</span></div>' +
+      (est === 'contado' ? '<div class="cf-mots">' + MOT_CF.map((m, i) => '<button class="rx-chip ' + (x.mot === m ? 'on' : '') + '" data-fx="cf-mot" data-id="' + esc(x.p.id) + '" data-v="' + i + '">' + m + '</button>').join('') + '</div>'
+        : '<div class="rx-mu">Motivo: ' + esc(x.mot || '—') + '</div>' + (est === 'por_aprobar' ? '<div class="cf-mots"><button class="rx-chip ' + (x.aj ? 'on' : '') + '" data-fx="cf-aj" data-id="' + esc(x.p.id) + '">' + (x.aj ? '✓ Se ajusta' : 'No se ajusta') + '</button></div>' : (est === 'ajustado' ? '<div class="rx-mu">' + (x.aj ? '✓ Ajustado' : 'No se ajustó') + '</div>' : ''))) + '</div>'; }).join('')
+    : '<div class="rx-vacio">No hay diferencias. Todo coincide ✓</div>';
+  if(est === 'contado') h += '<div class="fx-pie"><button class="rx-b ac big" data-fx="cf-env"' + (sinM ? ' disabled' : '') + '>' + (sinM ? 'Faltan ' + sinM + ' motivo' + (sinM === 1 ? '' : 's') : 'Enviar a aprobación') + '</button></div>';
+  else if(est === 'por_aprobar') h += '<div class="fx-pie"><button class="rx-b" data-fx="cf-apr" data-v="cerrar">No ajustar nada</button><button class="rx-b ac" data-fx="cf-apr" data-v="ajustar">Aprobar y ajustar</button></div>';
+  return h + '<div style="height:84px"></div>';
+}
+async function cfAplicar(s0, ap, modo){
+  if(F.busy) return; F.busy = true;
+  try {
+    const ds = modo === 'ajustar' ? cfDifs(s0).filter(x => x.dif !== 0 && x.aj) : [], INCR = firebase.firestore.FieldValue.increment;
+    for(let i = 0; i < ds.length; i += 200){ const b = db.batch();
+      ds.slice(i, i + 200).forEach(x => { const mp = x.p.sec === 'mp', col = mp ? 'inventario_materia_prima' : 'inventario_bodega';
+        b.set(db.collection(col).doc(x.p.id), {producto_nombre:x.p.nombre, cantidad_actual:INCR(x.dif), ultima_actualizacion:SV(), empresa:EMPRESA}, {merge:true});
+        b.set(db.collection('movimientos_inventario_bodega').doc(), Object.assign({producto_id:x.p.id, producto_nombre:x.p.nombre, tipo:'ajuste_conteo', cantidad:x.dif, sistema:x.sis, contado:x.c, motivo:x.mot, responsable:ap.nombre, conteo_id:s0.id, fecha:SV(), nota:'Conteo físico · ' + x.mot, empresa:EMPRESA}, mp ? {inventario:'materia_prima'} : {})); });
+      await b.commit(); }
+    const fin = {estado:modo === 'ajustar' ? 'ajustado' : 'sin_ajuste', aprobado_por:ap.nombre, aprobado_ms:Date.now(), ajustes:ds.length, actualizado:SV()};
+    await db.collection('conteos_fisicos').doc(s0.id).set(fin, {merge:true}); Object.assign(s0, fin);
+    toast(modo === 'ajustar' ? 'Inventario ajustado (' + ds.length + ')' : 'Conteo cerrado sin ajustes');
+  } catch(e){ console.error(e); toast(errTxt(e)); }
+  F.busy = false; render();
 }
 function cfCrear(alc, ids){
   const quien = respDe() || mail() || 'Inventario', ref = db.collection('conteos_fisicos').doc(), nom = (CF_ALC.filter(a => a[0] === alc)[0] || [0, 'Conteo'])[1];
@@ -9136,7 +9197,9 @@ function cfCrear(alc, ids){
   ref.set(doc).catch(e => { console.error(e); toast(errTxt(e)); });
   F.cfl = [Object.assign({id:ref.id}, doc)].concat(F.cfl || []); F.cf = {vista:'contar', id:ref.id, f:'todos'}; render(); window.scrollTo(0, 0);
 }
-function filasInv(sec){
+const estProd = id => ((F.dat || {})[id] || {}).est || '';
+function filasInv(sec){ return filasInvTodo(sec).filter(r => !estProd(r.id)); }
+function filasInvTodo(sec){
   const P = prodIds(), out = [], leg = (typeof inventarioActual !== 'undefined') ? inventarioActual : {}, U = uniMapa();
   const meta = id => catPor(id) || {};
   if(sec === 'terminado'){
@@ -9234,13 +9297,13 @@ function vInv(){
   const pend = pendDe(), nSel = Object.keys(F.sel).length;
   const bajoN = idsParaPedir().length, atenN = idsAtencion().length;
   igInit(); const dups = dupDirectos(), impN = impBodegaPend().nuevos.length, uniN = uniCand().reduce((a, x) => a + x.unir.length, 0), uniY = uniDocs().length;
-  const nFil = (F.loc !== 'todas' ? 1 : 0) + (F.cat !== 'todas' ? 1 : 0), G = F.ing, nIng = Object.keys(igMapa()).length;
+  const nFil = (F.loc !== 'todas' ? 1 : 0) + (F.cat !== 'todas' ? 1 : 0) + ((F.ver || 'activos') !== 'activos' ? 1 : 0), G = F.ing, nIng = Object.keys(igMapa()).length;
   const qc = (cls, a, v, n, lbl) => '<button class="fx-qc ' + cls + '" data-fx="' + a + '"' + (v ? ' data-v="' + v + '"' : '') + '><b>' + n + '</b> ' + lbl + '</button>';
   let h = '<div class="fx-top2"><div class="fx-fs"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="fx-q" data-focus type="search" placeholder="Buscar" autocomplete="off" value="' + esc(F.q) + '"></div>' +
     '<button class="fx-fbtn" data-fx="fil-abrir" aria-label="Filtros"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M7 12h10M10 17h4"/></svg>' + (nFil ? '<span class="fx-dot">' + nFil + '</span>' : '') + '</button></div>' +
     '<div class="fx-q2">' + qc(F.rap === 'ing' ? 'on' : '', 'ing-f', '', G.cargando ? '…' : nIng, 'ingresados' + (G.preset === 'hoy' ? ' hoy' : '')) + qc((F.rap === 'pedir' ? 'on ' : '') + (atenN ? 'wn' : ''), 'kp', 'pedir', atenN, 'por pedir o producir') + '<button class="fx-qc" data-fx="cf-abrir">📋 Conteo</button></div>' +
     (F.rap === 'ing' ? '<div class="fx-rapido">Ingresó · ' + esc(igTitulo(F.ing)) + (F.ing.cargando ? ' · cargando…' : '') + ' <button class="rx-b sm" data-fx="rap-x">✕ Ver todo</button></div>' : '');
-  let l = []; SECS.forEach(sc => { if(F.loc !== 'todas' && F.loc !== sc[0]) return; l = l.concat(filasInv(sc[0]).map(conDatosS(sc[0]))); });
+  const ver = F.ver || 'activos'; let l = []; SECS.forEach(sc => { if(F.loc !== 'todas' && F.loc !== sc[0]) return; l = l.concat((ver === 'activos' ? filasInv(sc[0]) : filasInvTodo(sc[0]).filter(r => estProd(r.id) === ver)).map(conDatosS(sc[0]))); });
   if(q) l = l.filter(r => norm(r.nombre).indexOf(q) >= 0);
   if(F.cat !== 'todas') l = l.filter(r => F.cat === '' ? !catDe(r.id) : catDe(r.id) === F.cat);
   if(F.rap === 'pedir'){ const ids = idsAtencion(); l = l.filter(r => ids.indexOf(r.id) >= 0); }
@@ -9259,6 +9322,7 @@ function vInv(){
     const fr = (t, extra) => '<div class="fx-fr">' + t + (extra || '') + '</div>';
     h += '<div class="fx-sbg" data-fx="fil-x"></div><div class="fx-sheet" role="dialog" aria-label="Filtros"><div class="fx-sh-top"><button class="rx-b sm" data-fx="fil-x" aria-label="Cerrar">✕</button><button class="rx-b sm" data-fx="fil-reset"' + (nFil || F.rap ? '' : ' disabled') + '>Reiniciar</button></div><h3>Filtros</h3>' +
       '<div class="fx-subh2">Área</div><div class="fx-chips2">' + [['todas','Todas']].concat(SECS.map(x => [x[0], x[1]])).map(x => '<button class="fx-chip' + (F.loc === x[0] ? ' on' : '') + '" data-fx="area" data-v="' + x[0] + '">' + x[1] + '</button>').join('') + '</div>' +
+      '' + (() => { const c = {oculto:0, archivado:0}; Object.keys(F.dat || {}).forEach(k => { const e = estProd(k); if(c[e] != null) c[e]++; }); return ['<div class="fx-subh2">Mostrar</div><div class="fx-chips2">' + [['activos', 'Activos'], ['oculto', 'Ocultos' + (c.oculto ? ' (' + c.oculto + ')' : '')], ['archivado', 'Archivados' + (c.archivado ? ' (' + c.archivado + ')' : '')]].map(x => '<button class="fx-chip' + ((F.ver || 'activos') === x[0] ? ' on' : '') + '" data-fx="ver" data-v="' + x[0] + '">' + x[1] + '</button>').join('') + '</div>'][0]; })() +
       '<div class="fx-subh2">Categoría</div><select id="fx-fcat" class="fx-sel"><option value="todas">Todas</option>' + F.cats.map(c => '<option value="' + esc(c.id) + '"' + (F.cat === c.id ? ' selected' : '') + '>' + esc(c.nombre) + '</option>').join('') + '<option value=""' + (F.cat === '' ? ' selected' : '') + '>Sin categoría</option></select>' +
       '<div class="fx-subh2">Fecha de ingresos</div><button class="fx-er" data-fx="ing-cal"><span>📅 ' + esc(igTitulo(G)) + '</span><b>' + (G.cal ? '▴' : '▾') + '</b></button>' + (G.cal ? igCal(G) : '') +
       ((impN || uniN || uniY || dups.length) ? '<div class="fx-subh2">Revisar</div>' : '') +
@@ -9341,7 +9405,7 @@ const fichaRaw = id => { try { return (window.ivFicha && window.ivFicha(id)) || 
 function fichaSet(pid, obj){ if(!catPor(pid)) return false; db.collection('inventario_fichas').doc(pid).set(Object.assign({}, obj, {actualizado:SV(), actualizado_por:mail()}), {merge:true}).catch(er => { console.error(er); toast(errTxt(er)); }); return true; }
 const CONS = [['ambiente', 'Ambiente'], ['refrigerado', '🧊 Refrigerado'], ['congelado', '❄️ Congelado']];
 function editarProd(pid, sec){
-  const r0 = filasInv(sec).filter(x => x.id === pid)[0]; if(!r0) return; const r = conDatos(Object.assign(r0, {sec:sec})), e = estadoInv(r);
+  const r0 = filasInvTodo(sec).filter(x => x.id === pid)[0]; if(!r0) return; const r = conDatos(Object.assign(r0, {sec:sec})), e = estadoInv(r);
   const cid = catDe(pid), b = (k, t, v) => '<button class="fx-er" data-fx="ed-f" data-v="' + k + '" data-id="' + esc(pid) + '" data-sec="' + sec + '"><span>' + t + '</span><b>' + esc(v === '' || v == null ? 'Agregar ›' : v + ' ›') + '</b></button>';
   modal('<div class="fx-dh">' + phInv(r, true) + '<div style="min-width:0"><h3 style="margin:0">' + esc(r.nombre) + '</h3><div class="rx-mu">Código: ' + esc(pid) + '</div></div></div>' +
     '<div class="fx-dq"><span class="fx-big lg">' + fmt(r3(r.stock)) + '<small>' + esc(r.uni) + '</small></span><span class="fx-es ' + e[0] + '">' + e[1] + '</span></div>' +
@@ -9355,8 +9419,29 @@ function editarProd(pid, sec){
         return '<div class="fx-er" style="cursor:default"><span>' + esc(l.nombre) + ' · lleva ' + fmt(r3(l.cantidad || 0)) + ' ' + esc(l.unidad || '') + '</span><b>' + (tiene == null ? 'sin registro' : (ok ? '✓ ' : '⚠ falta · ') + 'hay ' + fmt(r3(tiene)) + ' ' + esc(m.uni)) + '</b></div>'; }).join('');
       return '<div class="fx-subh">Para producir más (por batch)</div>' + filas + (falta.length ? '<button class="rx-b ac" data-fx="prod-falta" data-v="' + falta.join(',') + '">Pedir al proveedor lo que falta</button>' : '<div class="rx-mu">La materia prima registrada alcanza para un batch.</div>'); })() : '') +
     (catPor(pid) ? fichaBloque(pid, sec) : '') +
+    (() => { const est = estProd(pid); return '<div class="fx-subh">Visibilidad</div>' + (est ? '<div class="rx-mu">Este producto está ' + (est === 'oculto' ? 'oculto (de temporada)' : 'archivado') + '. No sale en Inventario ni en el conteo.</div><button class="rx-b ac big" data-fx="ed-est" data-id="' + esc(pid) + '" data-v="">↩ ' + (est === 'oculto' ? 'Mostrar de nuevo' : 'Restaurar') + '</button>' : '<div class="rx-mu">Oculta los de temporada y archiva los que ya no usas. Su historial se conserva.</div><div class="fx-vis"><button class="rx-b" data-fx="ed-est" data-id="' + esc(pid) + '" data-v="oculto">🙈 Ocultar (de temporada)</button><button class="rx-b er" data-fx="ed-est" data-id="' + esc(pid) + '" data-v="archivado">🗄 Archivar</button></div>') + (sec === 'terminado' ? '' : '<button class="rx-b er" style="margin-top:8px;width:100%" data-fx="ed-del" data-id="' + esc(pid) + '" data-sec="' + sec + '">🗑 Eliminar completamente</button>'); })() +
     (() => { const mv = F.movs.filter(x => x.producto_id === pid && ms(x.fecha)).sort((a, b) => ms(b.fecha) - ms(a.fecha)).slice(0, 5); if(!mv.length) return '<div class="fx-subh">Últimos movimientos</div><div class="rx-mu">Todavía no hay movimientos.</div>'; return '<div class="fx-subh">Últimos movimientos</div>' + mv.map(x => '<div class="fx-er" style="cursor:default"><span>' + esc(x.tipo || '') + ' · ' + new Date(ms(x.fecha)).toLocaleDateString() + '</span><b>' + fmt(r3(x.cantidad || 0)) + ' ' + esc(unidadDe({producto_id:pid, unidad:x.unidad})) + '</b></div>').join(''); })() +
     '');
+}
+function elimProd(pid, sec){
+  const r = filasInvTodo(sec).filter(x => x.id === pid)[0]; if(!r || sec === 'terminado') return;
+  modal('<h3>¿Eliminar «' + esc(r.nombre) + '»?</h3><div class="rx-mu">Se quita del inventario' + (sec === 'mp' ? ' y de la lista de materia prima' : '') + ', con su stock (' + fmt(r3(r.stock)) + ' ' + esc(r.uni) + '), su categoría y su ficha. El historial de movimientos se conserva. <b>No se puede deshacer.</b></div>' +
+    '<div class="fx-vis"><button class="rx-b" data-fx="m-x">Cancelar</button><button class="rx-b er" data-fx="ed-del-ok" data-id="' + esc(pid) + '" data-sec="' + sec + '">Sí, eliminar</button></div>');
+}
+async function elimProdOk(pid, sec){
+  if(F.busy) return; F.busy = true;
+  try {
+    const col = sec === 'mp' ? 'inventario_materia_prima' : 'inventario_bodega', b = db.batch(), docs = uniDocs().filter(d => d.a === pid);
+    b.delete(db.collection(col).doc(pid));
+    docs.forEach(d => b.delete(db.collection(d.col).doc(d.id)));
+    if(sec === 'mp' && F.mpn[pid]) b.delete(db.collection('catalogo_materia_prima').doc(pid));
+    b.delete(db.collection('inventario_fichas').doc(pid));
+    await b.commit();
+    const items = Object.assign({}, F.dat); if(items[pid]){ delete items[pid]; F.dat = items; db.collection('config_facility').doc('inventario_datos').set({items:items, actualizado:SV()}).catch(er => console.error(er)); }
+    if(F.asig && F.asig[pid]){ const asig = Object.assign({}, F.asig); delete asig[pid]; guardarCats(F.cats, asig); }
+    toast('Producto eliminado');
+  } catch(e){ console.error(e); toast(errTxt(e)); }
+  F.busy = false; modal(null); render();
 }
 function guardarCats(lista, asig){ return db.collection('config_facility').doc('categorias_inventario').set({lista:lista, asignadas:asig, actualizado:SV()}, {merge:true}).catch(er => { console.error(er); toast(errTxt(er)); }); }
 function catNueva(pid){
@@ -9444,7 +9529,7 @@ document.addEventListener('click', e => {
     case 'cat-nueva-p': catNueva(id); break;
     case 'cat-prod': F.catEd = false; catProducto(id, t.getAttribute('data-sec')); break;
     case 'ed': editarProd(id, t.getAttribute('data-sec')); break;
-    case 'ed-f': { const sec = t.getAttribute('data-sec'), r = conDatos(Object.assign(filasInv(sec).filter(x => x.id === id)[0] || {id:id}, {sec:sec}));
+    case 'ed-f': { const sec = t.getAttribute('data-sec'), r = conDatos(Object.assign(filasInvTodo(sec).filter(x => x.id === id)[0] || {id:id}, {sec:sec}));
       if(v === 'min' || v === 'ini'){ modal(null); num((v === 'min' ? 'Stock mínimo · ' : 'Inventario inicial · ') + (r.nombre || ''), r.uni, v === 'min' ? (r.min || '') : (r.ini != null ? r.ini : ''), x => { if(x == null) return; guardarDato(id, v, r3(x)); }); }
       else { const n = prompt(v === 'uni' ? 'Unidad de medida (ej: Cajas, Litros, Kilos)' : 'Presentación (ej: 12 litros, 500g)', v === 'uni' ? (r.uni || '') : (r.pres || '')); if(n != null){ guardarDato(id, v, n.trim()); modal(null); } }
       break; }
@@ -9453,9 +9538,13 @@ document.addEventListener('click', e => {
     case 'cat-ed': F.catEd = !F.catEd; if(F.catCtx) catProducto(F.catCtx.pid, F.catCtx.sec); break;
     case 'cat-ren': { const c = F.cats.filter(x => x.id === v)[0]; const n = c && prompt('Nuevo nombre', c.nombre); if(n && n.trim()){ guardarCats(F.cats.map(x => x.id === v ? {id:x.id, nombre:n.trim()} : x), F.asig); setTimeout(() => { if(F.catCtx) catProducto(F.catCtx.pid, F.catCtx.sec); else modal(null); }, 120); } break; }
     case 'cat-del': { if(!confirm('¿Eliminar esta categoría? Sus productos quedan sin categoría.')) break; const asig = {}; Object.keys(F.asig).forEach(k => { if(F.asig[k] !== v) asig[k] = F.asig[k]; }); if(F.cat === v) F.cat = 'todas'; guardarCats(F.cats.filter(x => x.id !== v), asig); setTimeout(() => { if(F.catCtx) catProducto(F.catCtx.pid, F.catCtx.sec); else modal(null); }, 120); break; }
+    case 'ed-del': elimProd(id, t.getAttribute('data-sec')); break;
+    case 'ed-del-ok': elimProdOk(id, t.getAttribute('data-sec')); break;
+    case 'ed-est': { guardarDato(id, 'est', t.getAttribute('data-v') || ''); modal(null); const v = t.getAttribute('data-v'); toast(v === 'oculto' ? 'Oculto. Lo ves en Filtros > Mostrar > Ocultos' : v === 'archivado' ? 'Archivado. Lo recuperas en Filtros > Mostrar > Archivados' : 'Listo, vuelve a verse'); break; }
     case 'fil-abrir': F.fo = true; render(); document.body.classList.add('fx-sh-on'); break;
     case 'fil-x': F.fo = false; render(); document.body.classList.remove('fx-sh-on'); break;
-    case 'fil-reset': F.loc = 'todas'; F.cat = 'todas'; F.rap = ''; render(); break;
+    case 'ver': F.ver = t.getAttribute('data-v'); render(); break;
+    case 'fil-reset': F.loc = 'todas'; F.cat = 'todas'; F.rap = ''; F.ver = 'activos'; render(); break;
     case 'imp-ver': impBodegaVer(); break;
     case 'imp-ok': impBodegaOk(); break;
     case 'uni-ver': uniVer(); break;
@@ -9473,9 +9562,16 @@ document.addEventListener('click', e => {
     case 'cf-n': { const s0 = cfSes(F.cf.id), p = s0 && (s0.productos || []).filter(x => x.id === id)[0]; if(!p) break; const e = (s0.lineas || {})[id];
       num('Contar · ' + p.nombre, p.uni, e && typeof e.c === 'number' ? e.c : '', val => cfGuardar(id, val == null ? null : Number(val))); break; }
     case 'cf-fin': { const s0 = cfSes(F.cf.id); if(!s0) break; const falta = (s0.productos || []).length - cfCont(s0);
-      modal('<h3>Terminar conteo</h3><div class="rx-mu">' + cfCont(s0) + ' de ' + (s0.productos || []).length + ' productos contados.' + (falta ? ' Los ' + falta + ' que faltan quedan como <b>pendientes</b> (no se toman como cero).' : '') + ' El inventario <b>no cambia</b> todavía: el administrador revisa las diferencias después.</div><button class="rx-b ac big" data-fx="cf-fin-ok">Terminar</button><button class="rx-b big" data-fx="cf-fin-no">Seguir contando</button>'); break; }
+      modal('<h3>Terminar conteo</h3><div class="rx-mu">' + cfCont(s0) + ' de ' + (s0.productos || []).length + ' productos contados.' + (falta ? ' Los ' + falta + ' que faltan quedan como <b>pendientes</b> (no se toman como cero).' : '') + ' El inventario <b>no cambia</b> todavía: ahora pones el motivo de cada diferencia y alguien lo aprueba con su PIN.</div><button class="rx-b ac big" data-fx="cf-fin-ok">Terminar</button><button class="rx-b big" data-fx="cf-fin-no">Seguir contando</button>'); break; }
     case 'cf-fin-no': modal(null); break;
-    case 'cf-fin-ok': { const s0 = cfSes(F.cf.id); if(!s0) break; s0.estado = 'contado'; db.collection('conteos_fisicos').doc(F.cf.id).set({estado:'contado', finalizado_ms:Date.now(), finalizado_por:respDe() || mail() || '', actualizado:SV()}, {merge:true}).catch(e => { console.error(e); toast(errTxt(e)); }); modal(null); F.cf = {vista:'home'}; toast('Conteo terminado'); render(); window.scrollTo(0, 0); break; }
+    case 'cf-dif': F.cf = {vista:'dif', id:id}; render(); window.scrollTo(0, 0); break;
+    case 'cf-mot': cfLinea(id, {mot:MOT_CF[+t.getAttribute('data-v')]}); break;
+    case 'cf-aj': { const s0 = cfSes(F.cf.id), e = ((s0 && s0.lineas) || {})[id] || {}; cfLinea(id, {aj:e.aj === false}); break; }
+    case 'cf-env': { const s0 = cfSes(F.cf.id); if(!s0) break; s0.estado = 'por_aprobar'; db.collection('conteos_fisicos').doc(s0.id).set({estado:'por_aprobar', enviado_ms:Date.now(), enviado_por:respDe() || mail() || '', actualizado:SV()}, {merge:true}).catch(e => { console.error(e); toast(errTxt(e)); }); toast('Enviado a aprobación'); render(); window.scrollTo(0, 0); break; }
+    case 'cf-apr': { F.cf.modo = t.getAttribute('data-v'); modal('<h3>¿Quién aprueba?</h3><div class="rx-mu">' + (F.cf.modo === 'ajustar' ? 'Al aprobar, el inventario se corrige con las diferencias marcadas "Se ajusta".' : 'No se cambia el inventario. El conteo queda cerrado.') + '</div>' + aprs().map((a, i) => '<button class="cf-ses" data-fx="cf-apq" data-v="' + i + '"><b>' + esc(a.nombre) + '</b>' + (a.pin ? '' : '<small class="rx-mu">Sin PIN: se pone en Settings</small>') + '</button>').join('')); break; }
+    case 'cf-apq': { const a = aprs()[+t.getAttribute('data-v')], s0 = cfSes(F.cf.id), modo = F.cf.modo; if(!a || !s0) break; if(!a.pin){ toast('Esa persona no tiene PIN. Ponlo en Settings.'); break; } modal(null);
+      setTimeout(() => abrirTeclado({titulo:'PIN de ' + a.nombre, subtitulo:'Para aprobar el conteo', unidad:'', inicial:'', decimales:false, permitirCero:false, onListo:v => { if(v == null) return; if(String(Math.round(v)) !== String(a.pin)){ toast('PIN incorrecto'); return; } cfAplicar(s0, a, modo); }}), 80); break; }
+    case 'cf-fin-ok': { const s0 = cfSes(F.cf.id); if(!s0) break; s0.estado = 'contado'; db.collection('conteos_fisicos').doc(F.cf.id).set({estado:'contado', finalizado_ms:Date.now(), finalizado_por:respDe() || mail() || '', actualizado:SV()}, {merge:true}).catch(e => { console.error(e); toast(errTxt(e)); }); modal(null); F.cf = {vista:'dif', id:F.cf.id}; toast('Conteo terminado'); render(); window.scrollTo(0, 0); break; }
     case 'dup-ver': { const l = dupDirectos(); modal('<h3>Repetidos ocultos en Bodega</h3><div class="rx-mu">Estos productos ya existen en <b>Procesado</b> (Producción) con otro código. Se ocultan de Bodega para que no se dupliquen. Su stock no se perdió: sigue guardado.</div>' + l.map(x => '<div class="fx-er" style="cursor:default"><span>' + esc(x.nombre) + '<small class="rx-mu"> · código ' + esc(x.id) + '</small></span><b>' + fmt(r3(x.stock)) + ' ' + esc(x.uni) + '</b></div>').join('') + '<div class="rx-mu">Producción maneja el stock del Procesado con el código <b>' + esc(l[0] ? l[0].pid : '') + '</b>.</div>'); break; }
     case 'ing-f': igInit(); F.rap = F.rap === 'ing' ? '' : 'ing'; render(); break;
     case 'ing-cal': igInit(); F.ing.cal = !F.ing.cal; F.ing.pick = null; render(); break;
