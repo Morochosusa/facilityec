@@ -2038,8 +2038,7 @@
   .st-bt{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
   .fx-top2{display:flex;gap:8px;align-items:center;margin:2px 0 8px} .fx-top2 .fx-fs{flex:1 1 auto;max-width:none;min-width:0}
   .fx-fbtn{position:relative;flex:0 0 46px;height:46px;border-radius:14px;border:1px solid #d6d9e0;background:#fff;display:flex;align-items:center;justify-content:center;color:#1f1f1d;cursor:pointer;padding:0} .fx-dot{position:absolute;top:-6px;right:-6px;background:#e24b4a;color:#fff;border-radius:10px;min-width:20px;height:20px;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
-  .fx-cats{display:flex;gap:2px;overflow-x:auto;margin:0 0 10px;border-bottom:1px solid #d6d9e0;-webkit-overflow-scrolling:touch;scrollbar-width:none} .fx-cats::-webkit-scrollbar{display:none}
-  .fx-ctab{flex:0 0 auto;font:inherit;font-size:15px;font-weight:700;color:#667085;background:none;border:0;border-bottom:3px solid transparent;padding:10px 14px;margin-bottom:-1px;cursor:pointer;white-space:nowrap} .fx-ctab.on{color:#1f1f1d;border-bottom-color:#1f1f1d}
+  select.fx-catsel{font-size:13px !important;font-weight:600 !important;height:34px !important;min-height:0 !important;width:auto !important;max-width:150px;padding:0 8px !important;border-radius:20px !important;margin:0 !important;background-color:#fff;border:1px solid #d6d9e0;color:#1f1f1d;cursor:pointer}
   .fx-q2{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px} .fx-qc{font:inherit;font-size:13px;font-weight:600;color:#1f1f1d;background:#fff;border:1px solid #d6d9e0;border-radius:20px;padding:7px 11px;cursor:pointer} body.fx-sh-on .rt-fab,body.fx-sh-on #rt-fab{display:none!important} .fx-qc b{font-size:15px} .fx-qc.wn{border-color:#e08a00;background:#fff8ec} .fx-qc.on{background:#1f1f1d;color:#fff;border-color:#1f1f1d}
   .fx-pie.fx-pe{justify-content:flex-start;padding-right:96px} .fx-pie.fx-pe .rx-b{flex:1 1 auto;max-width:none}
   .fx-sbg{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:70} .fx-sheet{position:fixed;left:0;right:0;bottom:0;max-height:88vh;overflow:auto;z-index:71;background:#fff;border-radius:20px 20px 0 0;padding:14px 18px calc(18px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 30px rgba(0,0,0,.2)} @media (min-width:700px){.fx-sheet{left:50%;right:auto;width:520px;transform:translateX(-50%)}}
@@ -9359,8 +9358,7 @@ function vInv(){
   const qc = (cls, a, v, n, lbl) => '<button class="fx-qc ' + cls + '" data-fx="' + a + '"' + (v ? ' data-v="' + v + '"' : '') + '><b>' + n + '</b> ' + lbl + '</button>';
   let h = '<div class="fx-top2"><div class="fx-fs"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="fx-q" data-focus type="search" placeholder="Buscar" autocomplete="off" value="' + esc(F.q) + '"></div>' +
     '<button class="fx-fbtn" data-fx="fil-abrir" aria-label="Filtros"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M7 12h10M10 17h4"/></svg>' + (nFil ? '<span class="fx-dot">' + nFil + '</span>' : '') + '</button></div>' +
-    '<div class="fx-q2"><button class="fx-qc" data-fx="cf-abrir">📋 Conteo</button></div>' +
-    '<div class="fx-cats">' + [['todas', 'Todas']].concat(F.cats.map(c => [c.id, c.nombre])).concat([['', 'Sin categoría']]).map(x => '<button class="fx-ctab' + (F.cat === x[0] ? ' on' : '') + '" data-fx="cat" data-v="' + esc(x[0]) + '">' + esc(x[1]) + '</button>').join('') + '</div>' +
+    '<div class="fx-q2">' + '<select id="fx-fcat" class="fx-catsel" aria-label="Categoría"><option value="todas"' + (F.cat === 'todas' ? ' selected' : '') + '>Categorías</option>' + F.cats.map(c => '<option value="' + esc(c.id) + '"' + (F.cat === c.id ? ' selected' : '') + '>' + esc(c.nombre) + '</option>').join('') + '<option value="__sin"' + (F.cat === '' ? ' selected' : '') + '>Sin categoría</option></select>' + '<button class="fx-qc" data-fx="cf-abrir" style="margin-left:auto">📋 Conteo</button></div>' +
     (F.rap === 'ing' ? '<div class="fx-rapido">Ingresó · ' + esc(igTitulo(F.ing)) + (F.ing.cargando ? ' · cargando…' : '') + ' <button class="rx-b sm" data-fx="rap-x">✕ Ver todo</button></div>' : '') +
     (F.rap === 'pedir' ? '<div class="fx-rapido">Por pedir o producir <button class="rx-b sm" data-fx="rap-x">✕ Ver todo</button></div>' : '');
   const ver = F.ver || 'activos'; let l = []; SECS.forEach(sc => { if(F.loc !== 'todas' && F.loc !== sc[0]) return; l = l.concat((ver === 'activos' ? filasInv(sc[0]) : filasInvTodo(sc[0]).filter(r => estProd(r.id) === ver)).map(conDatosS(sc[0]))); });
@@ -9671,7 +9669,7 @@ document.addEventListener('input', e => {
   else if(t.id === 'fx-mq'){ F.mq = t.value; F.focus = true; render(); }
   else if(t.id === 'fx-pq' && F.m){ F.m.q = t.value; F.focusM = true; pickDoc(); }
 });
-document.addEventListener('change', e => { const t = e.target; if(!t || !t.id) return; if(t.id === 'fx-loc'){ F.loc = t.value; render(); } else if(t.id === 'fx-cfcat' && F.cf){ F.cf.cat = t.value === 'todas' ? undefined : t.value; render(); } });
+document.addEventListener('change', e => { const t = e.target; if(!t || !t.id) return; if(t.id === 'fx-loc'){ F.loc = t.value; render(); } else if(t.id === 'fx-fcat'){ F.cat = t.value === '__sin' ? '' : t.value; render(); } else if(t.id === 'fx-cfcat' && F.cf){ F.cf.cat = t.value === 'todas' ? undefined : t.value; render(); } });
 window.fxView = function(n){ if(n === 'fx'){ escuchar(); render(); } };
 window.FXS = F;
 setTimeout(() => { if(window.firebase && typeof db !== 'undefined') escuchar(); }, 900);
