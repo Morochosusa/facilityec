@@ -1705,6 +1705,7 @@
   #rx-root .rx-mu.c,#fx-root .rx-mu.c{text-align:center;padding:14px 0}
   #rx-root h3,#fx-root h3,#rx-modal h3,#fx-modal h3{font-size:16px;margin:0 0 8px;font-weight:700}
   .rx-tabs{display:flex;gap:6px;margin-bottom:12px}
+  #rx-bghost .bg-open,#rx-bghost .bg-menu{display:none}
   .rx-tab{flex:1;min-height:46px;border-radius:12px;border:1px solid #e0ded6;background:#fff;font-size:14px;font-weight:600;color:#4a4a46;cursor:pointer}
   .rx-tab.on{background:#4285f4;color:#fff;border-color:#4285f4}
   .rx-tab i{font-style:normal;background:#e24b4a;color:#fff;border-radius:10px;padding:1px 7px;font-size:12px;margin-left:4px}
@@ -7368,10 +7369,6 @@ function vRecepcion(){
     return '<button class="iv-row" data-bg="abrir" data-id="' + esc(l.id) + '"><div class="iv-n"><div class="nm">' + esc(prov || NOM_LOCAL(l.local)) + '</div>' +
     '<div class="mu">' + (l.requerimiento ? 'Pedido a proveedor' : (l.pedido_numero ? 'Pedido #' + l.pedido_numero : 'Compra')) + ' · pedido el ' + esc(fechaTxt(l.fecha_compra_realizada)) + (l.fecha_necesaria ? ' · para el ' + esc(fechaCorta(l.fecha_necesaria)) : '') + ' · ' + (l.items || []).length + ' productos</div>' +
     (parc ? '<span class="bg-tag am">⏳ Parcial · faltan ' + falta + ' productos</span> ' : '') + (B.draft[l.id] ? '<span class="bg-tag az">recepción empezada</span>' : '') + '</div><div class="iv-s"><b>Recibir</b><span>›</span></div></button>' + (window.MODO_PRUEBA ? '<button class="mp-del" data-bg="mp-del-lista" data-id="' + esc(l.id) + '">🗑 Borrar este pedido (prueba)</button>' : ''); }).join('') + '</div>';
-  h += '<div class="bg-acts"><button class="ivb big" data-bg="libre-nueva">＋ Entrega sin compra previa' + (B.libre ? ' (empezada)' : '') + '</button></div>';
-  const rec = B.recs.slice(0, 8);
-  if(rec.length) h += '<div class="iv-card" style="margin-top:12px"><h3>Recibidas recientemente</h3>' + rec.map(r => '<div class="bg-line"><div><b>' + esc(r.proveedor || 'Entrega') + (r.documento ? ' · ' + esc(r.documento) : '') + '</b><div class="mu">' +
-    esc(fechaTxt(r.fecha)) + ' · ' + esc(r.responsable || '') + (r.sin_compra ? ' · sin compra' : '') + (r.foto ? ' · 📷' : '') + '</div></div>' + (r.parcial ? '<span class="bg-tag am">⏳ Parcial</span>' : r.estado === 'con_diferencias' ? '<span class="bg-tag am">⚠ Con diferencias</span>' : '<span class="bg-tag ok">✓ Completa</span>') + '</div>').join('') + '</div>';
   return h;
 }
 function draftDe(l){
@@ -7414,14 +7411,15 @@ function vRecDetalle(){
   const hechos = l.libre ? [] : (l.items || []).filter(it => it.comprado !== false && espDe(l, it) <= 0);
   const nRev = pend.filter(it => d.items[it.producto_id].st).length, foto = B.foto[key];
   const saldo = (!l.libre && pend.length && nRev === pend.length) ? saldoTras(l, buildItems(l, d)) : [];
-  let h = '<div class="iv-subbar"><button class="ivb" data-bg="cerrar">← Volver</button><div class="iv-st">' + (l.libre ? 'Entrega sin compra previa' : (l.requerimiento ? 'Requerimiento' : (l.pedido_numero ? 'Pedido #' + l.pedido_numero : 'Compra'))) + '</div><span></span></div>' +
-    '<div class="iv-card">' + (B.provs.length ? '<div class="bg-dmot" style="margin-bottom:8px">' + B.provs.slice(0, 10).map(p => '<button class="ivb ' + (String(d.prov || '').toLowerCase() === String(p.nombre).toLowerCase() ? 'on' : '') + '" data-bg="prov-pick" data-v="' + esc(p.nombre) + '">' + esc(p.nombre) + '</button>').join('') + '</div>' : '') + '<div class="bg-tr"><input class="bg-obs" id="bg-prov" list="bg-provs" placeholder="Proveedor" autocomplete="off" value="' + esc(d.prov || '') + '"><datalist id="bg-provs">' + B.provs.map(p => '<option value="' + esc(p.nombre) + '">').join('') + '</datalist><input class="bg-obs" id="bg-doc" placeholder="Factura / guía del proveedor (opcional)" autocomplete="off" value="' + esc(d.doc || '') + '"></div></div>';
+  let h = '<div class="iv-subbar"><button class="ivb" data-bg="cerrar">← Volver</button><div class="iv-st">' + (l.libre ? 'Entrega sin compra previa' : (l.requerimiento ? 'Requerimiento' : (l.pedido_numero ? 'Pedido #' + l.pedido_numero : 'Compra'))) + '</div><span></span></div>';
+  const hProv = '<div class="iv-card">' + (B.provs.length ? '<div class="bg-dmot" style="margin-bottom:8px">' + B.provs.slice(0, 10).map(p => '<button class="ivb ' + (String(d.prov || '').toLowerCase() === String(p.nombre).toLowerCase() ? 'on' : '') + '" data-bg="prov-pick" data-v="' + esc(p.nombre) + '">' + esc(p.nombre) + '</button>').join('') + '</div>' : '') + '<div class="bg-tr"><input class="bg-obs" id="bg-prov" list="bg-provs" placeholder="Proveedor" autocomplete="off" value="' + esc(d.prov || '') + '"><datalist id="bg-provs">' + B.provs.map(p => '<option value="' + esc(p.nombre) + '">').join('') + '</datalist><input class="bg-obs" id="bg-doc" placeholder="Factura / guía del proveedor (opcional)" autocomplete="off" value="' + esc(d.doc || '') + '"></div></div>';
   h += '<div class="cf-sh"><b>Productos recibidos</b><span>' + pend.length + ' producto' + (pend.length === 1 ? '' : 's') + '</span></div>';
   h += pend.map(it => cardItem(l, it, d)).join('');
   if(l.libre) h += '<div class="bg-acts"><button class="ivb on bg-addp" data-bg="pick-abrir">＋ Agregar producto</button></div>' + (pend.length ? '' : '<div class="iv-vacio">Agrega los productos que llegaron.</div>');
   if(hechos.length) h += '<div class="iv-card"><div class="mu">Ya recibidos antes: ' + hechos.map(it => esc(it.producto_nombre)).join(', ') + '</div></div>';
   if(saldo.length) h += '<div class="cf-card cf-saldo"><b>⏳ Queda pendiente</b><div class="mu">' + saldo.map(x => esc(x.nombre) + ' ' + fmt(x.falta) + ' ' + esc(x.unidad)).join(' · ') + '</div>' +
     '<div class="bg-dmot"><button class="ivb ' + ((B.cierre || 'esperar') === 'esperar' ? 'on' : '') + '" data-bg="sum-cierre" data-v="esperar">Esperar el saldo</button><button class="ivb ' + (B.cierre === 'cerrar' ? 'on' : '') + '" data-bg="sum-cierre" data-v="cerrar">Cerrar sin el saldo</button></div></div>';
+  h += hProv;
   h += '<div class="cf-card"><div class="cf-ch"><b>🧾 Comprobante</b>' + (foto ? '<span class="cf-tag ok">✔ Foto agregada</span>' : '<span class="cf-tag">opcional</span>') + '</div>' +
     '<div class="cf-foto">' + (foto ? '<img src="' + foto + '" alt="Recibo">' : '') + '<div class="cf-fb"><label class="cf-btn" for="bg-foto-img">📷 ' + (foto ? 'Cambiar foto' : 'Tomar o adjuntar foto') + '</label><input id="bg-foto-img" type="file" accept="image/*" class="bg-fin">' + (foto ? '<button class="cf-btn rj" data-bg="foto-quitar">🗑 Eliminar</button>' : '') + '</div></div></div>';
   h += '<div class="cf-card"><div class="cf-row"><span class="cf-av g">' + esc(iniciales(B.resp)) + '</span><div class="cf-g"><small>Responsable de la recepción</small><b>' + esc(B.resp || 'Elige quién recibe') + '</b></div><button class="cf-chg" data-bg="resp-cambiar">' + (B.resp && !B.respEd ? 'Cambiar' : 'Listo') + '</button></div>' + ((B.respEd || !B.resp) ? barraResp() : '') + '</div>';
@@ -8071,6 +8069,9 @@ function escuchar(){
   db.collection('bajas_bodega').orderBy('fecha', 'desc').limit(20).onSnapshot(snap => { B.bajas = []; snap.forEach(d => B.bajas.push(Object.assign({id:d.id}, d.data({serverTimestamps:'estimate'})))); refrescar(); }, e => console.error(e));
 }
 window.bgInit = function(){ if(B.ready) return; B.ready = true; escuchar(); };
+window.bgPorRecibirN = function(){ try { return porRecibir().length; } catch(e){ return 0; } };
+window.bgMostrar = function(host){ if(!host) return; const b = $('#bg-root'); if(!b) return; B.tab = 'recepcion'; host.appendChild(b); render(); };
+window.bgDevolver = function(){ const b = $('#bg-root'), v = $('#vista-bodega'); if(b && v && b.parentNode !== v) v.insertBefore(b, v.firstChild); };
 window.bgView = function(n){ B.coOn = false; B.coTab = null; if(n === 'bodega'){ bgInit(); render(); } };
 window.bgPend = pedidosPend; window.bgSalida = salida; window.bgAjuste = ajuste;
 window.bgIr = function(t){ B.tab = t; B.abierta = null; B.cont = null; B.reqEd = null; if(t !== 'prov' && t !== 'conteo') LSs('tab', t); render(); window.scrollTo(0, 0); if(window.navSync) navSync(t); };
@@ -8232,7 +8233,7 @@ const quien = () => R.resp || mail() || 'Sin responsable';
 const todas = () => { const m = {}; Object.keys(R.old).forEach(k => { m[k] = R.old[k]; }); Object.keys(R.nw).forEach(k => { m[k] = R.nw[k]; }); return Object.keys(m).map(k => m[k]); };
 const estadoDe = r => r.estado === 'borrador' || r.estado === 'confirmada' || r.estado === 'anulada' ? r.estado : 'confirmada';   // las anteriores cuentan como confirmadas
 const borradores = () => todas().filter(r => r.estado === 'borrador').sort((a, b) => ms(b.fecha_actividad) - ms(a.fecha_actividad));
-const historial = () => todas().filter(r => estadoDe(r) !== 'borrador' && r.requerimiento === true).sort((a, b) => (ms(b.fecha) || ms(b.fecha_actividad)) - (ms(a.fecha) || ms(a.fecha_actividad)));
+const historial = () => todas().filter(r => estadoDe(r) !== 'borrador').sort((a, b) => (ms(b.fecha) || ms(b.fecha_actividad)) - (ms(a.fecha) || ms(a.fecha_actividad)));
 function escuchar(){
   if(R.ready || typeof db === 'undefined') return; R.ready = true;
   db.collection('recepciones_bodega').orderBy('fecha_actividad', 'desc').limit(300).onSnapshot(snap => {
@@ -8244,7 +8245,8 @@ function escuchar(){
   db.collection('catalogo_materia_prima').onSnapshot(snap => { R.mpCat = {}; snap.forEach(d => { R.mpCat[d.id] = d.data(); }); refrescar(); }, e => console.error(e));
   db.collection('proveedores').onSnapshot(snap => { R.provs = []; snap.forEach(d => R.provs.push(Object.assign({id:d.id}, d.data()))); R.provs.sort((a, b) => String(a.nombre || '').localeCompare(String(b.nombre || ''))); refrescar(); }, e => console.error(e));
 }
-function badge(){ try { if(window.navBadge) navBadge('recepcion', borradores().length); } catch(e){} }
+const nPorRecibir = () => (window.bgPorRecibirN ? window.bgPorRecibirN() : 0);
+function badge(){ try { if(window.navBadge) navBadge('recepcion', nPorRecibir()); } catch(e){} }
 let rt = null;
 function refrescar(){
   badge();
@@ -8317,7 +8319,7 @@ function abrirBorrador(id){
 }
 function salir(){
   if(R.d && R.id){ clearTimeout(gt); guardar(true); }
-  R.d = null; R.id = null; R.tab = 'pend'; render(); window.scrollTo(0, 0); toast('Guardado en Pendientes');
+  R.d = null; R.id = null; R.tab = 'nueva'; render(); window.scrollTo(0, 0); toast('Guardado. Lo sigues desde Nueva.');
 }
 function descartar(id){
   db.collection('recepciones_bodega').doc(id).delete().catch(e => console.error(e));
@@ -8327,16 +8329,20 @@ function descartar(id){
 
 /* ---------- pantallas ---------- */
 function tabs(){
-  const n = borradores().length;
-  return '<div class="rx-tabs">' + [['nueva', '＋ Nueva'], ['pend', 'Pendientes' + (n ? ' <i>' + n + '</i>' : '')], ['hist', 'Historial']].map(t => '<button class="rx-tab ' + (R.tab === t[0] ? 'on' : '') + '" data-rx="tab" data-v="' + t[0] + '">' + t[1] + '</button>').join('') + '</div>';
+  const n = nPorRecibir();
+  return '<div class="rx-tabs">' + [['nueva', '＋ Nueva'], ['porrec', 'Por recibir' + (n ? ' <i>' + n + '</i>' : '')], ['hist', 'Historial']].map(t => '<button class="rx-tab ' + (R.tab === t[0] ? 'on' : '') + '" data-rx="tab" data-v="' + t[0] + '">' + t[1] + '</button>').join('') + '</div>';
 }
 function render(){
   const r = $('#rx-root'); if(!r) return;
+  const hosp = R.tab === 'porrec' && !R.d && !R.det;
+  if(hosp && r.querySelector('#bg-root')) return;   // Por recibir ya está abierta: no la repintes (se perdería lo que se está escribiendo)
+  if(window.bgDevolver) bgDevolver();
   let h;
   if(R.d) h = vFlujo();
   else if(R.det) h = vDetalle();
-  else h = tabs() + (R.tab === 'pend' ? vPend() : R.tab === 'hist' ? vHist() : vNueva());
+  else h = tabs() + (R.tab === 'porrec' ? '<div id="rx-bghost"></div>' : R.tab === 'hist' ? vHist() : vNueva());
   r.innerHTML = h;
+  if(hosp && window.bgMostrar) bgMostrar($('#rx-bghost'));
   const a = r.querySelector('[data-focus]'); if(a && !R.noFocus){ try { a.focus(); const v = a.value; a.setSelectionRange(v.length, v.length); } catch(e){} }
   R.noFocus = false;
 }
@@ -8359,7 +8365,7 @@ function vProveedor(){
 }
 function vNueva(){
   return '<div class="rx-card rx-hero"><h3>Recibir mercadería</h3><div class="rx-mu">Sin orden de compra. Elige quién entrega, fotografía la factura y anota lo que llegó.</div><button class="rx-b ac big" data-rx="nuevo">＋ Nueva recepción</button></div>' +
-    (borradores().length ? '<button class="rx-b" data-rx="tab" data-v="pend">Tienes ' + borradores().length + ' pendiente' + (borradores().length === 1 ? '' : 's') + ' por terminar ›</button>' : '');
+    (borradores().length ? '<div class="rx-mu" style="margin:12px 0 6px">Recepciones empezadas</div>' + vEmpezadas() : '');
 }
 
 /* ---- flujo (borrador abierto) ---- */
@@ -8422,9 +8428,9 @@ function vConfirmar(){
 }
 
 /* ---- Pendientes ---- */
-function vPend(){
+function vEmpezadas(){
   const l = borradores();
-  if(!l.length) return '<div class="rx-vacio">No hay recepciones pendientes 🎉</div>';
+  if(!l.length) return '';
   return '<div class="rx-list">' + l.map(r => '<div class="rx-row"><button class="rx-rb" data-rx="pend-open" data-id="' + esc(r.id) + '"><b>' + esc(r.proveedor || 'Sin proveedor') + '</b><div class="rx-mu">' + (r.items || []).length + ' producto' + ((r.items || []).length === 1 ? '' : 's') + ' · ' + esc(fechaDia(r.fecha_actividad)) + (r.responsable ? ' · ' + esc(r.responsable) : '') + '</div></button>' +
     '<button class="rx-del" data-rx="pend-del" data-id="' + esc(r.id) + '">' + (R.delOk === r.id ? '¿Borrar?' : '🗑') + '</button></div>').join('') + '</div>';
 }
