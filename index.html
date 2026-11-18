@@ -1705,7 +1705,6 @@
   #rx-root .rx-mu.c,#fx-root .rx-mu.c{text-align:center;padding:14px 0}
   #rx-root h3,#fx-root h3,#rx-modal h3,#fx-modal h3{font-size:16px;margin:0 0 8px;font-weight:700}
   .rx-tabs{display:flex;gap:6px;margin-bottom:12px}
-  #rx-bghost .bg-open,#rx-bghost .bg-menu{display:none}
   .rx-tab{flex:1;min-height:46px;border-radius:12px;border:1px solid #e0ded6;background:#fff;font-size:14px;font-weight:600;color:#4a4a46;cursor:pointer}
   .rx-tab.on{background:#4285f4;color:#fff;border-color:#4285f4}
   .rx-tab i{font-style:normal;background:#e24b4a;color:#fff;border-radius:10px;padding:1px 7px;font-size:12px;margin-left:4px}
@@ -3559,13 +3558,23 @@ async function marcarEnviadaContabilidad(id) {
   if (!confirm(mensaje)) return;
 
   try {
-    await db.collection("listas_compra").doc(id).update({
+    const SVt = firebase.firestore.FieldValue.serverTimestamp(), quien = auth.currentUser ? auth.currentUser.email : null, batch = db.batch();
+    batch.update(db.collection("listas_compra").doc(id), {
       enviada_contabilidad: true,
-      fecha_envio_contabilidad: firebase.firestore.FieldValue.serverTimestamp(),
-      enviada_por: auth.currentUser ? auth.currentUser.email : null
+      fecha_envio_contabilidad: SVt,
+      enviada_por: quien
     });
+    /* Copia para Manager EC (contabilidad): colección compartida manager_contabilidad, un documento por lista (mismo id). Contrato: contrato-manager-ec-contabilidad.md */
+    batch.set(db.collection("manager_contabilidad").doc(id), {
+      origen: "facility_ec", lista_id: id, estado: "enviada", fecha_envio: SVt, enviada_por: quien,
+      local: lista.local || null, pedido_numero: lista.pedido_numero || null, requerimiento: !!lista.requerimiento, creado_por: lista.creado_por || null,
+      fecha_creacion: lista.fecha_creacion || null, fecha_compra: lista.fecha_compra_realizada || null, comprobante: lista.comprobante || "",
+      monto_asignado: lista.monto_asignado != null ? lista.monto_asignado : null, carreta: lista.carreta || 0, flete: lista.flete || 0, total_costo: lista.total_costo != null ? lista.total_costo : null, saldo: lista.saldo != null ? lista.saldo : null,
+      items: (lista.items || []).map(it => ({producto_id: it.producto_id || null, producto_nombre: it.producto_nombre || "", seccion: it.seccion || null, unidad_medida: it.unidad_medida || "", cantidad_solicitada: it.cantidad_solicitada != null ? it.cantidad_solicitada : null, comprado: it.comprado !== false, costo: it.costo != null ? it.costo : null, vendedor: it.vendedor || null, nota: it.nota || ""}))
+    });
+    await batch.commit();
     cerrarListaCompraDetalle();
-    mostrarAviso("Lista marcada como enviada a contabilidad. La encuentras en Historial.", "ok");
+    mostrarAviso("Enviada a contabilidad (Manager EC). La encuentras en Historial.", "ok");
   } catch (err) {
     console.error(err);
     mostrarAviso("No se pudo marcar la lista. Verifica la conexion.", "error");
@@ -7901,13 +7910,13 @@ function vContaDetalle(){
   const recs = recsDe(l), tot = l.total_costo || 0;
   const filas = (l.items || []).map(it => '<div class="bg-line"><div><b>' + esc(it.producto_nombre) + '</b><div class="mu">Pidió ' + esc(etqU(it.cantidad_solicitada || 0, it.unidad_medida)) + (it.vendedor ? ' · ' + esc(it.vendedor) : '') + (it.comprado === false ? ' · no comprado' : '') + '</div></div><b>' + (it.costo != null ? money(it.costo) : '—') + '</b></div>').join('');
   let faltaVal = 0;
-  const bloques = recs.map(r => '<div class="bg-rb"><div class="mu"><b>Entrega ' + (r.secuencia || '') + '</b> · ' + esc(fechaTxt(r.fecha)) + ' · recibió ' + esc(r.responsable || '') + (r.proveedor ? ' · ' + esc(r.proveedor) : '') + (r.documento ? ' · doc. ' + esc(r.documento) : '') + ' · ' + (r.estado === 'con_diferencias' ? '<b>con diferencias</b>' : 'completa') + (r.parcial ? ' · <b>parcial</b>' : '') + '</div>' +
+  const bloques = recs.map(r => '<div class="bg-rb"><div class="mu"><b>Entrega ' + (r.secuencia || '') + '</b> · ' + esc(fechaTxt(r.fecha)) + ' · recibió ' + esc(r.responsable || '') + (r.proveedor ? ' · ' + esc(r.proveedor) : '') + (r.documento ? ' · doc. ' + esc(r.documento) : '') + ' · ' + ((r.estado === 'con_diferencias' || r.resultado === 'con_diferencias') ? '<b>con diferencias</b>' : 'completa') + (r.parcial ? ' · <b>parcial</b>' : '') + '</div>' +
     (r.foto ? '<button class="ivb" data-bg="foto-ver" data-id="' + esc(r.id) + '">📷 Ver foto del recibo</button>' : '') +
     (r.items || []).map(i => {
       const li = (l.items || []).filter(x => x.producto_id === i.producto_id)[0], costo = li && li.costo != null ? li.costo : 0, sol = li ? (li.cantidad_solicitada || 0) : 0;
-      const esp = i.esperado != null ? i.esperado : (i.solicitado || 0); const noEntra = Math.max(0, esp - (i.entra || 0)); const val = sol > 0 ? costo * noEntra / sol : 0; faltaVal += val;
+      const esp = i.esperado != null ? i.esperado : (i.facturado != null ? i.facturado : (i.solicitado || 0)); const noEntra = Math.max(0, esp - (i.entra || 0)); const val = sol > 0 ? costo * noEntra / sol : 0; faltaVal += val;
       const marca = (i.diferencia || 0) !== 0 || (i.rechazado || 0) > 0 || i.estado_item === 'no_llego';
-      return '<div class="bg-line ' + (marca ? 'dif' : '') + '"><div><b>' + esc(i.nombre) + '</b><div class="mu">' + (i.estado_item === 'no_llego' ? '<b>No llegó</b>' : 'Esperaba ' + fmt(esp) + ' · recibió ' + fmt(i.recibido) + (i.rechazado ? ' · rechazó ' + fmt(i.rechazado) : '') + ' · aceptó ' + fmt(i.entra) + ' ' + esc(i.unidad || '') + ' → ' + (i.destino === 'procesamiento' ? 'procesar' : 'bodega')) + '</div>' + ((i.motivo || i.observacion) ? '<div class="mu">“' + esc(i.motivo || i.observacion) + '”</div>' : '') + '</div>' +
+      return '<div class="bg-line ' + (marca ? 'dif' : '') + '"><div><b>' + esc(i.nombre) + '</b><div class="mu">' + (i.estado_item === 'no_llego' ? '<b>No llegó</b>' : 'Esperaba ' + fmt(esp) + ' · recibió ' + fmt(i.recibido) + (i.rechazado ? ' · rechazó ' + fmt(i.rechazado) : '') + ' · aceptó ' + fmt(i.entra) + ' ' + esc(i.unidad || '') + ' → ' + (i.destino === 'procesamiento' ? 'procesar' : 'bodega')) + '</div>' + ((i.motivo || i.observacion || i.motivo_texto) ? '<div class="mu">“' + esc(i.motivo || i.observacion || i.motivo_texto) + '”</div>' : '') + '</div>' +
         '<div class="bg-baja">' + (marca ? '<b>' + (i.diferencia > 0 ? '+' : '') + fmt(i.diferencia) + '</b><span>' + (val > 0.005 ? '≈ ' + money(val) : 'diferencia') + '</span>' : '<b class="okc">✓</b>') + '</div></div>'; }).join('') + '</div>').join('');
   const pend = saldoItems(l);
   return '<div class="iv-subbar"><button class="ivb" data-bg="conta-volver">← Volver</button><div class="iv-st">' + (l.requerimiento ? 'Requerimiento' : (l.pedido_numero ? 'Pedido #' + l.pedido_numero : 'Compra')) + ' · ' + esc(NOM_LOCAL(l.local)) + '</div><span></span></div>' +
@@ -8070,14 +8079,14 @@ function escuchar(){
 }
 window.bgInit = function(){ if(B.ready) return; B.ready = true; escuchar(); };
 window.bgPorRecibirN = function(){ try { return porRecibir().length; } catch(e){ return 0; } };
-window.bgMostrar = function(host){ if(!host) return; const b = $('#bg-root'); if(!b) return; B.tab = 'recepcion'; host.appendChild(b); render(); };
-window.bgDevolver = function(){ const b = $('#bg-root'), v = $('#vista-bodega'); if(b && v && b.parentNode !== v) v.insertBefore(b, v.firstChild); };
+window.bgPedidos = function(){ try { return porRecibir().sort((a, b) => ms(b.fecha_compra_realizada) - ms(a.fecha_compra_realizada)).map(l => ({id:l.id, prov:provDe(l) || NOM_LOCAL(l.local), fecha:l.fecha_compra_realizada, para:l.fecha_necesaria, num:l.pedido_numero || null, origen:l.origen_estacion || null,
+  items:pendItems(l).map(it => ({producto_id:it.producto_id, nombre:it.producto_nombre, unidad:it.unidad_medida || '', esperado:espDe(l, it), dest:destDe(it.producto_id)}))})); } catch(e){ return []; } };
 window.bgView = function(n){ B.coOn = false; B.coTab = null; if(n === 'bodega'){ bgInit(); render(); } };
 window.bgPend = pedidosPend; window.bgSalida = salida; window.bgAjuste = ajuste;
 window.bgIr = function(t){ B.tab = t; B.abierta = null; B.cont = null; B.reqEd = null; if(t !== 'prov' && t !== 'conteo') LSs('tab', t); render(); window.scrollTo(0, 0); if(window.navSync) navSync(t); };
 window.bgRefresh = refrescar;
 window.bgDestDe = destDe;
-function navCounts(){}   // el distintivo de Recepción lo pone el módulo rx (borradores pendientes)
+function navCounts(){}   // el distintivo de Recepción lo pone el módulo rx (pedidos por recibir)
 setInterval(navCounts, 2500); setTimeout(navCounts, 800);
 window.bgConta = function(){ cambiarVista('bodega'); setTimeout(() => bgIr('conta'), 80); };
 window.BGS = B;
@@ -8219,10 +8228,13 @@ const MANUAL = ['mal_estado', 'rechazado', 'otro'];
 const DESTINOS = [['bodega', '📦 Bodega'], ['cocina', '🍳 Cocina'], ['facility', '🏭 Facility']];
 const MOT_SIN_COMP = ['Proveedor sin factura', 'Factura llega después', 'Factura en otro papel', 'Otro'];
 const MOT_ANUL = ['Error de captura', 'Duplicada', 'Mercadería devuelta', 'Otro'];
-const PASOS = ['Proveedor', 'Comprobante', 'Productos', 'Confirmar'];
+const PASO_NOM = {prov:'Proveedor', comp:'Comprobante', prod:'Productos', conf:'Confirmar'};
+const ordenPasos = d => (d && d.orden_compra_id) ? ['prod', 'prov', 'comp', 'conf'] : ['prov', 'comp', 'prod', 'conf'];   // un pedido por recibir empieza por los productos
+const kPaso = () => ordenPasos(R.d)[R.step - 1];
+const nPaso = k => ordenPasos(R.d).indexOf(k) + 1;
 const COLD = {refrigerado:{max:5, txt:'Refrigerado: hasta 5 °C'}, congelado:{max:-12, txt:'Congelado: −12 °C o menos'}};
 
-const R = {mpCat:{}, tab:'nueva', nw:{}, old:{}, provs:[], d:null, id:null, step:1, q:'', fq:'', filtro:'todas', det:null, m:null, busy:false, ready:false, foto:{}, resp:LSg('resp', ''), respOtro:false, pend:null, delOk:null, t:null};
+const R = {mpCat:{}, tab:'nueva', nw:{}, old:{}, provs:[], d:null, id:null, step:1, q:'', fq:'', filtro:'todas', det:null, m:null, busy:false, ready:false, foto:{}, resp:LSg('resp', ''), respOtro:false, pend:null, t:null};
 const cat = () => (window.ivItems ? window.ivItems() : []);
 const catPor = id => cat().filter(x => x.id === id)[0] || null;
 const mail = () => (typeof auth !== 'undefined' && auth.currentUser) ? auth.currentUser.email : null;
@@ -8232,7 +8244,6 @@ const quien = () => R.resp || mail() || 'Sin responsable';
 /* ---------- datos ---------- */
 const todas = () => { const m = {}; Object.keys(R.old).forEach(k => { m[k] = R.old[k]; }); Object.keys(R.nw).forEach(k => { m[k] = R.nw[k]; }); return Object.keys(m).map(k => m[k]); };
 const estadoDe = r => r.estado === 'borrador' || r.estado === 'confirmada' || r.estado === 'anulada' ? r.estado : 'confirmada';   // las anteriores cuentan como confirmadas
-const borradores = () => todas().filter(r => r.estado === 'borrador').sort((a, b) => ms(b.fecha_actividad) - ms(a.fecha_actividad));
 const historial = () => todas().filter(r => estadoDe(r) !== 'borrador').sort((a, b) => (ms(b.fecha) || ms(b.fecha_actividad)) - (ms(a.fecha) || ms(a.fecha_actividad)));
 function escuchar(){
   if(R.ready || typeof db === 'undefined') return; R.ready = true;
@@ -8311,20 +8322,16 @@ function guardar(ya){
   };
   if(ya) go(); else gt = setTimeout(go, 450);
 }
-function abrirBorrador(id){
-  const r = R.nw[id]; if(!r) return;
-  R.id = id; R.d = JSON.parse(JSON.stringify(r)); delete R.d.id; delete R.d.fecha_actividad; delete R.d.fecha_creacion; delete R.d.paso;
-  R.d.fecha_creacion = true; R.step = Math.max(1, Math.min(4, r.paso || (r.items && r.items.length ? 3 : 1))); R.tab = 'nueva'; R.q = '';
-  render(); window.scrollTo(0, 0);
-}
 function salir(){
-  if(R.d && R.id){ clearTimeout(gt); guardar(true); }
-  R.d = null; R.id = null; R.tab = 'nueva'; render(); window.scrollTo(0, 0); toast('Guardado. Lo sigues desde Nueva.');
+  clearTimeout(gt); const delPed = !!(R.d && R.d.orden_compra_id), id = R.id;
+  R.d = null; R.id = null; R.tab = delPed ? 'porrec' : 'nueva';
+  if(id) descartar(id);
+  render(); window.scrollTo(0, 0);
 }
 function descartar(id){
   db.collection('recepciones_bodega').doc(id).delete().catch(e => console.error(e));
   db.collection('recepcion_fotos').doc(id).delete().catch(() => {});
-  delete R.nw[id]; delete R.foto[id]; R.delOk = null; badge(); render(); toast('Borrador eliminado');
+  delete R.nw[id]; delete R.foto[id]; badge();
 }
 
 /* ---------- pantallas ---------- */
@@ -8334,15 +8341,11 @@ function tabs(){
 }
 function render(){
   const r = $('#rx-root'); if(!r) return;
-  const hosp = R.tab === 'porrec' && !R.d && !R.det;
-  if(hosp && r.querySelector('#bg-root')) return;   // Por recibir ya está abierta: no la repintes (se perdería lo que se está escribiendo)
-  if(window.bgDevolver) bgDevolver();
   let h;
   if(R.d) h = vFlujo();
   else if(R.det) h = vDetalle();
-  else h = tabs() + (R.tab === 'porrec' ? '<div id="rx-bghost"></div>' : R.tab === 'hist' ? vHist() : vNueva());
+  else h = tabs() + (R.tab === 'porrec' ? vPorRecibir() : R.tab === 'hist' ? vHist() : vNueva());
   r.innerHTML = h;
-  if(hosp && window.bgMostrar) bgMostrar($('#rx-bghost'));
   const a = r.querySelector('[data-focus]'); if(a && !R.noFocus){ try { a.focus(); const v = a.value; a.setSelectionRange(v.length, v.length); } catch(e){} }
   R.noFocus = false;
 }
@@ -8364,21 +8367,21 @@ function vProveedor(){
     (!todos.length && !q ? '<div class="rx-mu">Todavía no hay proveedores. Escribe el nombre y agrégalo.</div>' : '') + '</div>';
 }
 function vNueva(){
-  return '<div class="rx-card rx-hero"><h3>Recibir mercadería</h3><div class="rx-mu">Sin orden de compra. Elige quién entrega, fotografía la factura y anota lo que llegó.</div><button class="rx-b ac big" data-rx="nuevo">＋ Nueva recepción</button></div>' +
-    (borradores().length ? '<div class="rx-mu" style="margin:12px 0 6px">Recepciones empezadas</div>' + vEmpezadas() : '');
+  return '<div class="rx-card rx-hero"><h3>Recibir mercadería</h3><div class="rx-mu">Sin orden de compra. Elige quién entrega, fotografía la factura y anota lo que llegó.</div><button class="rx-b ac big" data-rx="nuevo">＋ Nueva recepción</button></div>';
 }
 
 /* ---- flujo (borrador abierto) ---- */
 function vFlujo(){
   const d = R.d, st = R.step;
-  let h = '<div class="rx-top"><button class="rx-b sm" data-rx="salir">← Salir</button><div class="rx-tt">Nueva recepción</div><span></span></div>' +
-    '<div class="rx-steps">' + PASOS.map((p, i) => '<button class="rx-st ' + (st === i + 1 ? 'on' : (st > i + 1 ? 'ok' : '')) + '" data-rx="step" data-n="' + (i + 1) + '"><b>' + (st > i + 1 ? '✓' : i + 1) + '</b><span>' + p + '</span></button>').join('') + '</div>';
-  if(st === 1) h += vProveedor();
-  else if(st === 2) h += vComprobante();
-  else if(st === 3) h += vProductos();
+  let h = '<div class="rx-top"><button class="rx-b sm" data-rx="salir">← Salir</button><div class="rx-tt">' + (d.orden_compra_id ? 'Recibir pedido' : 'Nueva recepción') + '</div><span></span></div>' +
+    '<div class="rx-steps">' + ordenPasos(d).map(k => PASO_NOM[k]).map((p, i) => '<button class="rx-st ' + (st === i + 1 ? 'on' : (st > i + 1 ? 'ok' : '')) + '" data-rx="step" data-n="' + (i + 1) + '"><b>' + (st > i + 1 ? '✓' : i + 1) + '</b><span>' + p + '</span></button>').join('') + '</div>';
+  const kp = ordenPasos(d)[st - 1];
+  if(kp === 'prov') h += vProveedor();
+  else if(kp === 'comp') h += vComprobante();
+  else if(kp === 'prod') h += vProductos();
   else h += vConfirmar();
   h += '<div class="rx-foot">' + (st > 1 ? '<button class="rx-b" data-rx="atras">← Atrás</button>' : '') +
-    (st < 4 ? '<button class="rx-b ok big" data-rx="sig"' + (st === 1 && !d.proveedor ? ' disabled' : '') + '>Siguiente →</button>' : '<button class="rx-b ok big" data-rx="confirmar">✓ Confirmar recepción</button>') + '</div>';
+    (st < 4 ? '<button class="rx-b ok big" data-rx="sig"' + (kp === 'prov' && !d.proveedor ? ' disabled' : '') + '>Siguiente →</button>' : '<button class="rx-b ok big" data-rx="confirmar">✓ Confirmar recepción</button>') + '</div>';
   return h;
 }
 function vComprobante(){
@@ -8400,7 +8403,7 @@ function itemCard(it, i){
   const difs = c.estado === 'pend' ? '' : '<div class="rx-dif">' + (c.falt > 0 ? '− Faltan ' + fmt(c.falt) + ' ' + esc(u) + ' ' : '') + (c.sob > 0 ? '+ Sobran ' + fmt(c.sob) + ' ' + esc(u) + ' ' : '') + (c.rech > 0 ? '✖ Rechazado ' + fmt(c.rech) + ' ' + esc(u) : '') + '</div>';
   const extra = [it.peso_valor > 0 ? '⚖ ' + fmt(it.peso_valor) + ' ' + (it.peso_unidad || 'kg') : '', it.temperatura_c != null ? '🌡 ' + fmt(it.temperatura_c) + ' °C' : '', it.lote_proveedor ? '🏷 ' + esc(it.lote_proveedor) : '', it.vence ? 'Vence ' + esc(it.vence) : ''].filter(Boolean).join(' · ');
   return '<div class="rx-it st-' + c.estado + '" id="rxit-' + i + '"><div class="rx-ih"><div class="rx-in1"><span class="rx-no">' + (i + 1) + '</span><b>' + esc(it.nombre) + '</b>' + (it.presentacion ? '<span class="rx-mu"> · ' + esc(it.presentacion) + '</span>' : '') + (it.provisional ? '<span class="rx-tag prov">nuevo</span>' : '') + '</div><button class="rx-del" data-rx="it-del" data-i="' + i + '" aria-label="Quitar">🗑</button></div>' +
-    '<div class="rx-qs"><button class="rx-q" data-rx="it-fac" data-i="' + i + '"><small>Facturado</small><b>' + (it.facturado != null ? fmt(it.facturado) : '—') + '</b><em>' + esc(u) + '</em></button>' +
+    '<div class="rx-qs"><button class="rx-q" data-rx="it-fac" data-i="' + i + '"><small>' + (R.d && R.d.orden_compra_id ? 'Pedido' : 'Facturado') + '</small><b>' + (it.facturado != null ? fmt(it.facturado) : '—') + '</b><em>' + esc(u) + '</em></button>' +
     '<button class="rx-q big" data-rx="it-rec" data-i="' + i + '"><small>Recibido</small><b>' + (it.revisado ? fmt(c.rec) : '—') + '</b><em>' + esc(u) + '</em></button></div>' +
     '<div class="rx-ac">' + (ent ? '<button class="rx-b" data-rx="it-menos" data-i="' + i + '">−</button><button class="rx-b" data-rx="it-mas" data-i="' + i + '">＋</button>' : '') +
     '<button class="rx-b ' + (c.estado === 'ok' ? 'okon' : '') + '" data-rx="it-ok" data-i="' + i + '"' + (it.facturado > 0 ? '' : ' disabled') + '>✔ Todo correcto</button><button class="rx-b" data-rx="it-det" data-i="' + i + '">✎ Detalle</button></div>' +
@@ -8427,13 +8430,26 @@ function vConfirmar(){
     '<div class="rx-card"><h3>Observaciones <span class="rx-mu">(opcional)</span></h3><input class="rx-in" id="rx-obs" placeholder="Ej. entrega completa, buen estado" autocomplete="off" value="' + esc(d.observaciones) + '"></div>';
 }
 
-/* ---- Pendientes ---- */
-function vEmpezadas(){
-  const l = borradores();
-  if(!l.length) return '';
-  return '<div class="rx-list">' + l.map(r => '<div class="rx-row"><button class="rx-rb" data-rx="pend-open" data-id="' + esc(r.id) + '"><b>' + esc(r.proveedor || 'Sin proveedor') + '</b><div class="rx-mu">' + (r.items || []).length + ' producto' + ((r.items || []).length === 1 ? '' : 's') + ' · ' + esc(fechaDia(r.fecha_actividad)) + (r.responsable ? ' · ' + esc(r.responsable) : '') + '</div></button>' +
-    '<button class="rx-del" data-rx="pend-del" data-id="' + esc(r.id) + '">' + (R.delOk === r.id ? '¿Borrar?' : '🗑') + '</button></div>').join('') + '</div>';
+/* ---- Por recibir: pedidos a proveedor y lista interna ---- */
+function vPorRecibir(){
+  const l = window.bgPedidos ? bgPedidos() : [];
+  if(!l.length) return '<div class="rx-vacio">No hay pedidos por recibir.<br><span class="rx-mu">Aquí llegan los pedidos a proveedor y la lista interna (Proveedores).</span></div>';
+  return '<div class="rx-list">' + l.map(x => '<div class="rx-row"><button class="rx-rb" data-rx="pr-open" data-id="' + esc(x.id) + '"><b>' + esc(x.prov) + '</b><div class="rx-mu">' + x.items.length + ' producto' + (x.items.length === 1 ? '' : 's') + ' · pedido el ' + esc(fechaDia(x.fecha)) + (x.para ? ' · para el ' + esc(String(x.para).slice(0, 10)) : '') + (x.origen ? ' · lista interna' : '') + '</div>' +
+    '<div class="rx-mu">' + x.items.slice(0, 4).map(i => esc(i.nombre)).join(', ') + (x.items.length > 4 ? '…' : '') + '</div>' + '</button></div>').join('') + '</div>';
 }
+function abrirPedido(id){
+  const ped = (window.bgPedidos ? bgPedidos() : []).filter(x => x.id === id)[0]; if(!ped){ toast('Ese pedido ya no está por recibir'); return; }
+  const rid = 'rec_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  R.id = rid; R.q = ''; R.tab = 'porrec';
+  R.d = {empresa:EMPRESA, bodega:BODEGA, establecimiento:BODEGA, modulo:'rx1', estado:'borrador', proveedor:ped.prov || '', proveedor_id:ped.prov ? 'prov_' + slug(ped.prov) : null, documento:'', destino:'bodega', comprobante:{foto:false, excepcion:null},
+    items:ped.items.map(i => { const mp = i.dest === 'procesamiento', vinc = !!(catPor(i.producto_id) || R.mpCat[i.producto_id]);
+      return {producto_id:i.producto_id, nombre:i.nombre, presentacion:'', unidad:i.unidad || 'unidades', facturado:i.esperado, recibido:null, rechazado:0, motivos:[], motivo_texto:'', destino:mp ? 'procesamiento' : 'directo', provisional:false, vinculado:vinc, revisado:false,
+        conservacion:vinc ? consDe(i.producto_id) : 'ambiente', temperatura_c:null, peso_valor:0, peso_unidad:'kg', lote_proveedor:'', vence:'', nota_item:''}; }),
+    observaciones:'', responsable:R.resp || '', creado_por_email:mail(), orden_compra_id:id, historial:[hist('borrador creado', 'desde pedido por recibir')]};
+  R.step = 1; guardar(true); render(); window.scrollTo(0, 0);
+}
+
+/* ---- Pendientes ---- */
 
 /* ---- Historial ---- */
 function vHist(){
@@ -8550,11 +8566,11 @@ function setRec(i, v){
 /* ---------- confirmar ---------- */
 function validar(){
   const d = R.d;
-  if(!d.proveedor){ toast('Falta el proveedor'); R.step = 1; render(); return false; }
-  if(!(d.comprobante.foto || d.comprobante.excepcion)){ toast('Falta el comprobante (o la excepción)'); R.step = 2; render(); return false; }
-  if(!d.items.length){ toast('Agrega al menos un producto'); R.step = 3; render(); return false; }
+  if(!d.proveedor){ toast('Falta el proveedor'); R.step = nPaso('prov'); render(); return false; }
+  if(!(d.comprobante.foto || d.comprobante.excepcion)){ toast('Falta el comprobante (o la excepción)'); R.step = nPaso('comp'); render(); return false; }
+  if(!d.items.length){ toast('Agrega al menos un producto'); R.step = nPaso('prod'); render(); return false; }
   const sin = d.items.findIndex(i => !i.revisado);
-  if(sin >= 0){ toast('Falta anotar lo recibido en ' + d.items[sin].nombre); R.step = 3; render(); setTimeout(() => { const el = $('#rxit-' + sin); if(el){ el.scrollIntoView({block:'center', behavior:'smooth'}); el.classList.add('flash'); } }, 60); return false; }
+  if(sin >= 0){ toast('Falta anotar lo recibido en ' + d.items[sin].nombre); R.step = nPaso('prod'); render(); setTimeout(() => { const el = $('#rxit-' + sin); if(el){ el.scrollIntoView({block:'center', behavior:'smooth'}); el.classList.add('flash'); } }, 60); return false; }
   if(!R.resp){ toast('Elige quién recibe'); window.scrollTo(0, 0); return false; }
   return true;
 }
@@ -8581,11 +8597,14 @@ async function confirmar(){
   try {
     await db.runTransaction(async t => {
       const rr = db.collection('recepciones_bodega').doc(id), s = await t.get(rr), cur = s.exists ? s.data() : null;
+      const lr = d.orden_compra_id ? db.collection('listas_compra').doc(d.orden_compra_id) : null, sl = lr ? await t.get(lr) : null;
       if(cur && (cur.estado !== 'borrador' || cur.entradas_generadas)) throw new Error('DUP');
+      if(lr && (!sl.exists || (sl.data() || {}).recepcion_id)) throw new Error('DUP');
       const ts = SV();
       items.forEach(i => { if(i.entrada_generada) aInv(t, id, i, d, ts); });
       t.set(rr, Object.assign({}, d, {estado:'confirmada', items:items, responsable:R.resp, entradas_generadas:true, pendiente_vinculacion:sinVinc, resultado:hayDif ? 'con_diferencias' : 'completa', proveedor_id:d.proveedor_id || null,
-        fecha:ts, fecha_iso:hoyIso(), fecha_actividad:ts, fecha_creacion:ts, paso:4, sin_compra:true, historial:(d.historial || []).concat([hist('confirmada', hayDif ? 'con diferencias' : 'completa')])}));
+        fecha:ts, fecha_iso:hoyIso(), fecha_actividad:ts, fecha_creacion:ts, paso:4, sin_compra:!lr, compra_id:lr ? d.orden_compra_id : null, requerimiento:lr ? true : false, secuencia:1, parcial:false, foto:!!(d.comprobante && d.comprobante.foto), historial:(d.historial || []).concat([hist('confirmada', hayDif ? 'con diferencias' : 'completa')])}));
+      if(lr){ const acum = {}; items.forEach(i => { acum[i.producto_id] = i.recibido; }); t.update(lr, {recepciones_n:1, recibido_acum:acum, recepcion_ids:[id], recepcion_id:id, recepcion_parcial:false, recepcion_estado:hayDif ? 'con_diferencias' : 'completa', fecha_recepcion:ts, recibido_por:R.resp}); }
     });
   } catch(e){
     R.busy = false; if(String(e && e.message) !== 'DUP') console.error(e);
@@ -8671,13 +8690,14 @@ function onClick(e){
   const a = t.getAttribute('data-rx'), v = t.getAttribute('data-v'), id = t.getAttribute('data-id'), i = parseInt(t.getAttribute('data-i'), 10), n = parseInt(t.getAttribute('data-n'), 10);
   const d = R.d;
   switch(a){
-    case 'tab': R.tab = v; R.det = null; R.delOk = null; render(); break;
+    case 'tab': R.tab = v; R.det = null; render(); break;
     case 'nuevo': nuevoBorrador(); render(); window.scrollTo(0, 0); break;
+    case 'pr-open': abrirPedido(id); break;
     case 'salir': salir(); break;
     case 'step': if(d){ if(n > R.step && !paso1ok(n)) break; R.step = n; guardar(); render(); window.scrollTo(0, 0); } break;
     case 'atras': R.step = Math.max(1, R.step - 1); guardar(); render(); window.scrollTo(0, 0); break;
     case 'sig': if(!siguiente()) break; render(); window.scrollTo(0, 0); break;
-    case 'prov-pick': d.proveedor = v; d.proveedor_id = 'prov_' + slug(v); R.q = ''; R.step = 2; guardar(); render(); window.scrollTo(0, 0); break;
+    case 'prov-pick': d.proveedor = v; d.proveedor_id = 'prov_' + slug(v); R.q = ''; R.step = nPaso('comp'); guardar(); render(); window.scrollTo(0, 0); break;
     case 'prov-add': { const nom = R.q.trim(); if(!nom) break; if(!R.provs.some(p => norm(p.nombre) === norm(nom))) db.collection('proveedores').doc('prov_' + slug(nom)).set({nombre:nom, telefono:'', productos:'', creado:SV()}, {merge:true}).catch(er => console.error(er)); d.proveedor = nom; d.proveedor_id = 'prov_' + slug(nom); R.q = ''; R.step = 2; guardar(); render(); window.scrollTo(0, 0); break; }
     case 'foto-ver': verFoto(id); break;
     case 'foto-quitar': d.comprobante.foto = false; delete R.foto[R.id]; db.collection('recepcion_fotos').doc(R.id).delete().catch(() => {}); guardar(); render(); break;
@@ -8714,8 +8734,6 @@ function onClick(e){
     case 'resp': R.resp = v; R.respOtro = false; d.responsable = v; LSs('resp', v); guardar(); render(); break;
     case 'resp-otro': R.respOtro = true; R.resp = ''; render(); break;
     case 'confirmar': confirmar(); break;
-    case 'pend-open': abrirBorrador(id); break;
-    case 'pend-del': if(R.delOk === id) descartar(id); else { R.delOk = id; render(); setTimeout(() => { if(R.delOk === id){ R.delOk = null; if(!R.d && !R.det) render(); } }, 4000); } break;
     case 'filtro': R.filtro = v; render(); break;
     case 'hist-open': R.det = id; render(); window.scrollTo(0, 0); break;
     case 'det-volver': R.det = null; render(); break;
@@ -8725,16 +8743,20 @@ function onClick(e){
     case 'anul-ok': anular(R.m.id, v); break;
   }
 }
-const paso1ok = n => { const d = R.d; if(n >= 2 && !d.proveedor){ toast('Primero elige el proveedor'); return false; } if(n >= 3 && !(d.comprobante.foto || d.comprobante.excepcion)){ toast('Falta la foto del comprobante'); return false; } if(n >= 4 && !d.items.length){ toast('Agrega al menos un producto'); return false; } if(n >= 4){ const k = d.items.findIndex(i => !i.revisado); if(k >= 0){ toast('Falta anotar lo recibido en ' + d.items[k].nombre); return false; } } return true; };
+const paso1ok = n => { const d = R.d, ord = ordenPasos(d), antes = ord.slice(0, n - 1), dest = ord[n - 1];
+  if(dest === 'prov' || antes.indexOf('prov') >= 0){ if(!d.proveedor && dest !== 'prov'){ toast('Primero elige el proveedor'); return false; } }
+  if(antes.indexOf('comp') >= 0 && !(d.comprobante.foto || d.comprobante.excepcion)){ toast('Falta la foto del comprobante'); return false; }
+  if(dest === 'conf'){ if(!d.items.length){ toast('Agrega al menos un producto'); return false; } const k = d.items.findIndex(i => !i.revisado); if(k >= 0){ toast('Falta anotar lo recibido en ' + d.items[k].nombre); return false; } }
+  return true; };
 function siguiente(){
   const d = R.d; if(!paso1ok(R.step + 1)) return false;
-  if(R.step === 2){ const e = $('#rx-doc'); if(e) d.documento = e.value.trim(); }
+  if(kPaso() === 'comp'){ const e = $('#rx-doc'); if(e) d.documento = e.value.trim(); }
   R.step = Math.min(4, R.step + 1); guardar(); return true;
 }
 document.addEventListener('click', onClick);
 document.addEventListener('input', e => {
   const t = e.target; if(!t || !t.id) return;
-  if(t.id === 'rx-q'){ R.q = t.value; if(R.d && R.step === 1){ const ps = $('#rx-root .rx-card'); R.noFocus = false; render(); } }
+  if(t.id === 'rx-q'){ R.q = t.value; if(R.d && kPaso() === 'prov'){ const ps = $('#rx-root .rx-card'); R.noFocus = false; render(); } }
   else if(t.id === 'rx-hq'){ R.fq = t.value; render(); }
   else if(t.id === 'rx-doc' && R.d){ R.d.documento = t.value.trim(); guardar(); }
   else if(t.id === 'rx-obs' && R.d){ R.d.observaciones = t.value.trim(); guardar(); }
