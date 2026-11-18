@@ -8229,14 +8229,17 @@ const empleados = () => { try { return Object.keys(EMPLEADOS_CLOCK).map(k => EMP
 const quien = () => R.resp || mail() || 'Sin responsable';
 
 /* ---------- datos ---------- */
-const todas = () => { const m = {}; Object.keys(R.nw).forEach(k => { m[k] = R.nw[k]; }); return Object.keys(m).map(k => m[k]); };
+const todas = () => { const m = {}; Object.keys(R.old).forEach(k => { m[k] = R.old[k]; }); Object.keys(R.nw).forEach(k => { m[k] = R.nw[k]; }); return Object.keys(m).map(k => m[k]); };
 const estadoDe = r => r.estado === 'borrador' || r.estado === 'confirmada' || r.estado === 'anulada' ? r.estado : 'confirmada';   // las anteriores cuentan como confirmadas
 const borradores = () => todas().filter(r => r.estado === 'borrador').sort((a, b) => ms(b.fecha_actividad) - ms(a.fecha_actividad));
-const historial = () => todas().filter(r => estadoDe(r) !== 'borrador').sort((a, b) => (ms(b.fecha) || ms(b.fecha_actividad)) - (ms(a.fecha) || ms(a.fecha_actividad)));
+const historial = () => todas().filter(r => estadoDe(r) !== 'borrador' && r.requerimiento === true).sort((a, b) => (ms(b.fecha) || ms(b.fecha_actividad)) - (ms(a.fecha) || ms(a.fecha_actividad)));
 function escuchar(){
   if(R.ready || typeof db === 'undefined') return; R.ready = true;
   db.collection('recepciones_bodega').orderBy('fecha_actividad', 'desc').limit(300).onSnapshot(snap => {
     R.nw = {}; snap.forEach(d => { const x = d.data({serverTimestamps:'estimate'}); if(x.modulo) R.nw[d.id] = Object.assign({}, x, {id:d.id}); }); refrescar();
+  }, e => console.error(e));
+  db.collection('recepciones_bodega').orderBy('fecha', 'desc').limit(60).onSnapshot(snap => {
+    R.old = {}; snap.forEach(d => { const x = d.data({serverTimestamps:'estimate'}); if(!x.modulo && x.requerimiento === true) R.old[d.id] = Object.assign({}, x, {id:d.id, anterior:true}); }); refrescar();
   }, e => console.error(e));
   db.collection('catalogo_materia_prima').onSnapshot(snap => { R.mpCat = {}; snap.forEach(d => { R.mpCat[d.id] = d.data(); }); refrescar(); }, e => console.error(e));
   db.collection('proveedores').onSnapshot(snap => { R.provs = []; snap.forEach(d => R.provs.push(Object.assign({id:d.id}, d.data()))); R.provs.sort((a, b) => String(a.nombre || '').localeCompare(String(b.nombre || ''))); refrescar(); }, e => console.error(e));
@@ -8440,7 +8443,7 @@ function vHist(){
         '<div class="rx-bd">' + (dif ? '<span class="rx-tag diferencia">⚠ ' + dif + ' con diferencia</span>' : (anu ? '' : '<span class="rx-tag ok">✔ Completa</span>')) + (r.pendiente_vinculacion ? '<span class="rx-tag prov">⏳ por vincular</span>' : '') + (r.comprobante && r.comprobante.foto || r.foto ? '<span class="rx-tag">📷</span>' : '') + (r.anterior ? '<span class="rx-tag">anterior</span>' : '') + '</div></button>'; }).join('') + '</div>' : '<div class="rx-vacio">No hay recepciones con ese filtro.</div>');
 }
 function vDetalle(){
-  const r = R.nw[R.det]; if(!r){ R.det = null; return tabs() + vHist(); }
+  const r = R.nw[R.det] || R.old[R.det]; if(!r){ R.det = null; return tabs() + vHist(); }
   const est = estadoDe(r), anu = est === 'anulada', its = (r.items || []);
   return '<div class="rx-top"><button class="rx-b sm" data-rx="det-volver">← Volver</button><div class="rx-tt">' + esc(r.proveedor || 'Entrega') + '</div><span></span></div>' +
     '<div class="rx-card"><div class="rx-ph"><b>' + (anu ? 'Anulada' : 'Confirmada') + '</b><span class="rx-mu">' + esc(fechaDia(r.fecha || r.fecha_actividad)) + '</span></div>' +
