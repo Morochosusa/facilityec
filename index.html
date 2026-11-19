@@ -1786,8 +1786,6 @@
   .lc-selbar .lc-sb-n{flex:1;text-align:center;font-size:15px}
   .lc-selbar .lc-sb-go{width:auto;min-height:54px;margin:0;padding:0 18px;font-size:16px;background:#4285f4}
   .lc-selbar .lc-sb-go[disabled]{opacity:.45}
-  .lc-area-h{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:16px 0 6px;padding:2px 2px 6px;border-bottom:2px solid #d3d1c7;font-size:17px;font-weight:800;color:#2c2c2a}
-  .lc-area-h i{font-style:normal;font-size:13px;background:#e8e6df;border-radius:10px;padding:2px 9px;margin-left:6px;font-weight:700}
   .lc-all{min-height:40px;padding:0 14px;font-size:14px}
   .guia-card-top{gap:10px}
   .lc-gl{flex:1;min-width:0}
@@ -1799,14 +1797,10 @@
   @media print{ body #lista-compra-detalle .btn-cerrar{display:none !important} .lc-selbar{display:none !important} }
   @media (min-width:700px){
     #lc-listas{max-width:1000px;margin:0 auto;padding:0 18px}
-    #listas-compra-pendientes{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
-    #listas-compra-pendientes > :not(.guia-card){grid-column:1/-1}
-    #listas-compra-pendientes .guia-card{margin:0}
     body #lista-compra-detalle .detalle-panel{max-width:780px;padding:16px 18px}
     body #lista-compra-detalle .detalle-header h2{font-size:24px}
     body #lista-compra-detalle .lcr{min-height:72px}
     body #lista-compra-detalle .lcr .check-doble-tap{width:42px;height:42px;min-width:42px;font-size:24px}
-    .lc-area-h{font-size:19px}
     .uni{max-width:900px;margin:0 auto}
   }
 
@@ -3358,7 +3352,8 @@ function renderListasCompraPendientes() {
   const cont = document.getElementById("listas-compra-pendientes");
   const esHistorial = modoListasCompra === "historial";
   const lcLocal = window.LCS ? window.LCS.local : '';
-  const listas = listasCompraCache.filter(esHistorial ? esListaCompraHistorial : esListaCompraPendiente).filter(l => !l.requerimiento).filter(l => !lcLocal || l.local === lcLocal || l.unificada);
+  const msL = t => t && t.toMillis ? t.toMillis() : (t && typeof t.seconds === 'number' ? t.seconds * 1000 : (typeof t === 'number' ? t : 9e15));
+  const listas = listasCompraCache.filter(esHistorial ? esListaCompraHistorial : esListaCompraPendiente).filter(l => !l.requerimiento).filter(l => !lcLocal || l.local === lcLocal || l.unificada).sort((a, b) => msL(b.fecha_creacion) - msL(a.fecha_creacion));
 
   const nUni = (!esHistorial && window.lcUniN) ? lcUniN() : 0, selN = lcSel.size;
   if (esHistorial) lcSelModo = false;
@@ -3408,24 +3403,12 @@ function renderListasCompraPendientes() {
       </div>
     `;
   };
-  let cuerpo;
-  if (lcLocal === 'facility' && !esHistorial) {
-    const GR = [['cocina_produccion', '🍳 Cocina Producción'], ['cuarto_frio', '🧊 Cuarto frío'], ['unificada', '🧺 Unificadas'], ['otras', 'Otras listas']];
-    const gk = l => l.origen_estacion === 'cocina_produccion' || l.origen_estacion === 'cuarto_frio' ? l.origen_estacion : (l.unificada ? 'unificada' : 'otras');
-    cuerpo = GR.map(g => { const ls = listas.filter(l => gk(l) === g[0]); if (!ls.length) return '';
-      const el = ls.filter(lcElig).length;
-      return `<div class="lc-area-h"><span>${g[1]} <i>${ls.length}</i></span>${el > 1 ? `<button class="btn-chico lc-all" onclick="lcSelArea('${g[0]}')">${ls.filter(lcElig).every(l => lcSel.has(l.id)) ? 'Quitar todas' : 'Todas'}</button>` : ''}</div>` + ls.map(tarjeta).join(''); }).join('');
-  } else cuerpo = listas.map(tarjeta).join("");
+  const cuerpo = listas.map(tarjeta).join("");   // una sola columna, la más reciente arriba
   cont.innerHTML = btnConta + btnConta0 + cuerpo;
 }
 var lcSel = new Set(), lcSelModo = false;
 function lcSelModoSet(on) { lcSelModo = !!on; lcSel.clear(); renderListasCompraPendientes(); }
 function lcSelTog(id) { if (lcSel.has(id)) lcSel.delete(id); else lcSel.add(id); renderListasCompraPendientes(); }
-function lcSelArea(k) {
-  const lc = window.LCS ? window.LCS.local : '';
-  const ids = listasCompraCache.filter(l => !l.requerimiento && l.local === lc && esListaCompraPendiente(l) && window.lcUniOk && lcUniOk(l) && (k === 'otras' ? !l.origen_estacion && !l.unificada : k === 'unificada' ? l.unificada : l.origen_estacion === k)).map(l => l.id);
-  const todas = ids.every(id => lcSel.has(id)); ids.forEach(id => todas ? lcSel.delete(id) : lcSel.add(id)); renderListasCompraPendientes();
-}
 function lcSelUnir() {
   if (lcSel.size < 1) { mostrarAviso("Elige al menos una lista.", "error"); return; }
   const ids = Array.from(lcSel); lcSelModo = false; lcSel.clear(); if (window.lcUnificar) lcUnificar(ids);
@@ -6569,7 +6552,7 @@ const prod = id => PRODUCTOS.filter(p => p.id === id)[0] || null;
 const esProv = it => { const p = prod(it.producto_id), n = v => String(v == null ? '' : v).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); return /proveedor/.test(n(p ? p.subcategoria : it.subcategoria)) || /proveedor/.test(n(it.subcategoria)) || /proveedor/.test(n(it.categoria || (p && p.categoria))); };
 const tipo = it => { if(esProv(it)) return 'proveedores'; const p = prod(it.producto_id); const sc = p ? p.subcategoria : it.subcategoria; return !sc ? 'revisar' : (sc === 'mercado' ? 'mercado' : 'bodega'); };
 const qty = (ped, it) => { const a = ped.ajustes || {}; return a[it.producto_id] !== undefined ? a[it.producto_id] : it.cantidad; };
-const efectivos = (ped, t) => (ped.items || []).filter(it => (tipo(it) === t || (t === 'mercado' && tipo(it) === 'proveedores')) && qty(ped, it) > 0);
+const efectivos = (ped, t) => (ped.items || []).filter(it => tipo(it) === t && qty(ped, it) > 0);
 /* Las 4 estaciones del pedido: Mercado, Proveedores, Facility y Bodega (por revisar = producto no reconocido) */
 const NOM_EST = {mercado:'Mercado', proveedores:'Proveedores', facility:'Facility', bodega:'Bodega', revisar:'Por revisar'};
 const ORD_EST = ['mercado', 'facility', 'bodega', 'proveedores', 'revisar'];
@@ -6816,18 +6799,19 @@ function crearGuia(ped, its, secc){
   return ref;
 }
 /* Aceptar: de una vez el mercado va a Guardadas (Lista de compras) y la bodega a Guías (por despachar). Sin seleccionar nada a mano. */
-const sinProv = ped => (ped.items || []).filter(it => tipo3(it) === 'proveedores' && qty(ped, it) > 0 && !provDe(it));
+const sinProv = ped => [];   // Proveedores ya no genera lista: no se exige proveedor para aceptar
 function aceptar(ped){
-  const fp = sinProv(ped); if(fp.length){ toast('Falta elegir proveedor en ' + fp.length + ' producto' + (fp.length > 1 ? 's' : '')); return; }
   if(P.busy) return; P.busy = true; setTimeout(() => { P.busy = false; }, 1500);
   const upd = {}, u = {ped:ped, listas:[], guias:[]}, listas = Object.assign({}, ped.compra_listas || {}), guias = Object.assign({}, ped.despachos || {});
   let nm = 0, nb = 0;
   estaciones(ped).forEach(g => {
     const k = g.k, its = g.items.filter(it => qty(ped, it) > 0); if(!its.length) return;
-    if((k === 'mercado' || k === 'proveedores') && !ped.compra_lista_id){ const r = crearLista(ped, its, g.est); listas[k] = r.id; u.listas.push(r); nm += its.length; }
+    if(k === 'mercado' && !ped.compra_lista_id){ const r = crearLista(ped, its, g.est); listas[k] = r.id; u.listas.push(r); nm += its.length; }
     if((k === 'facility' || k === 'bodega') && !ped.despacho_id){ const r = crearGuia(ped, its, g.est); guias[k] = r.id; u.guias.push(r); nb += its.length; }
   });
-  if(!u.listas.length && !u.guias.length){ toast('No hay nada nuevo que aceptar'); return; }
+  if(!u.listas.length && !u.guias.length){
+    if((ped.items || []).some(it => tipo3(it) === 'proveedores' && qty(ped, it) > 0) && ped.estado !== 'procesado'){ actualizarEstado(ped, {}); P.open = ped.id; render(); toast('Pedido aceptado (Proveedores no genera lista)'); return; }
+    toast('No hay nada nuevo que aceptar'); return; }
   if(u.listas.length){ upd.compra_lista_id = u.listas[0].id; upd.compra_listas = listas; }
   if(u.guias.length){ upd.despacho_id = u.guias[0].id; upd.despachos = guias; }
   actualizarEstado(ped, upd);
