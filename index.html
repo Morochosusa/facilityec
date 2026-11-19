@@ -882,7 +882,6 @@
     cursor: pointer;
   }
 
-  .gd-borrar{padding:10px 0 0}.gd-borrar button{width:100%;min-height:44px;border:1.5px solid #c0392b;background:#fff;color:#c0392b;border-radius:10px;font-weight:700;font-size:14px}
   .guia-card {
     background: #fff;
     margin: 10px 14px;
@@ -3047,8 +3046,7 @@ function guiaCardHtml(g) {
 function renderListaGuias() {
   const por = guiasCache.filter(g => g.estado === "por_despachar"), ya = guiasCache.filter(g => g.estado !== "por_despachar");
   const c1 = document.getElementById("guias-lista"), c2 = document.getElementById("dsp-lista");
-  const gbar = guiasCache.length ? `<div class="gd-borrar"><button id="gd-borrar-btn" onclick="gdBorrarTodas()">🗑 Borrar todas las guías (${guiasCache.length})</button></div>` : "";
-  if (c1) c1.innerHTML = gbar + (ya.length ? ya.map(guiaCardHtml).join("") : `<div class="panel">Todavía no hay guías despachadas para imprimir.</div>`);
+  if (c1) c1.innerHTML = ya.length ? ya.map(guiaCardHtml).join("") : `<div class="panel">Todavía no hay guías despachadas para imprimir.</div>`;
   if (c2) c2.innerHTML = por.length ? por.map(guiaCardHtml).join("") : `<div class="panel">No hay guías por despachar. Aparecen aquí cuando aceptas un pedido en Pedidos de locales.</div>`;
   const n = document.getElementById("dsp-n"); if (n) n.textContent = por.length ? por.length : "";
 }
@@ -3196,21 +3194,6 @@ async function gdDespachar(id) {
   gdBusy = false;
 }
 let gdBusy = false;
-let gdBorrarAntes = 0;
-async function gdBorrarTodas() {
-  const btn = document.getElementById("gd-borrar-btn"); const n = guiasCache.length; if (!n || gdBusy) return;
-  if (Date.now() > gdBorrarAntes) { gdBorrarAntes = Date.now() + 6000; if (btn) btn.textContent = "⚠ Toca otra vez para borrar las " + n + " guías (no se puede deshacer)"; return; }
-  gdBorrarAntes = 0; gdBusy = true;
-  try {
-    const todas = await db.collection("pedidos").get(), ids = todas.docs.map(d => d.id), set = {}; ids.forEach(i => set[i] = 1);
-    for (let i = 0; i < ids.length; i += 400) { const b = db.batch(); ids.slice(i, i + 400).forEach(id => b.delete(db.collection("pedidos").doc(id))); await b.commit(); }
-    try { const q = await db.collection("pedidos_locales").get(); const b = db.batch(); let k = 0;
-      q.forEach(d => { const x = d.data(); const ds = x.despachos || []; if ((x.despacho_id && set[x.despacho_id]) || ds.some(i => set[i])) { b.update(d.ref, { despacho_id: null, despachos: null }); k++; } });
-      if (k) await b.commit(); } catch (e) { console.error(e); }
-    cerrarDetalleGuia(); gdToast("Guías borradas: " + ids.length);
-  } catch (e) { console.error(e); gdToast("No se pudo borrar. Revisa la conexión."); }
-  gdBusy = false;
-}
 function gdEliminar(id) {
   const g = guiasCache.find(x => x.id === id); if (!g || g.estado !== "por_despachar") return;
   const copia = JSON.parse(JSON.stringify(g)); delete copia.id;
