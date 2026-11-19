@@ -2034,7 +2034,7 @@
   .st-bt{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
   .fx-top2{display:flex;gap:8px;align-items:center;margin:2px 0 8px} .fx-top2 .fx-fs{flex:1 1 auto;max-width:none;min-width:0}
   .fx-fbtn{position:relative;flex:0 0 46px;height:46px;border-radius:14px;border:1px solid #d6d9e0;background:#fff;display:flex;align-items:center;justify-content:center;color:#1f1f1d;cursor:pointer;padding:0} .fx-dot{position:absolute;top:-6px;right:-6px;background:#e24b4a;color:#fff;border-radius:10px;min-width:20px;height:20px;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
-  select.fx-catsel{font-size:13px !important;font-weight:600 !important;height:34px !important;min-height:0 !important;width:auto !important;max-width:150px;padding:0 8px !important;border-radius:20px !important;margin:0 !important;background-color:#fff;border:1px solid #d6d9e0;color:#1f1f1d;cursor:pointer}
+  select.fx-catsel{font-size:13px !important;font-weight:600 !important;height:34px !important;min-height:0 !important;width:auto !important;max-width:112px;padding:0 8px !important;border-radius:20px !important;margin:0 !important;background-color:#fff;border:1px solid #d6d9e0;color:#1f1f1d;cursor:pointer}
   .fx-q2{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px} .fx-qc{font:inherit;font-size:13px;font-weight:600;color:#1f1f1d;background:#fff;border:1px solid #d6d9e0;border-radius:20px;padding:7px 11px;cursor:pointer} body.fx-sh-on .rt-fab,body.fx-sh-on #rt-fab{display:none!important} .fx-qc b{font-size:15px} .fx-qc.wn{border-color:#e08a00;background:#fff8ec} .fx-qc.on{background:#1f1f1d;color:#fff;border-color:#1f1f1d}
   .fx-pie.fx-pe{justify-content:flex-start;padding-right:96px} .fx-pie.fx-pe .rx-b{flex:1 1 auto;max-width:none}
   .fx-sbg{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:70} .fx-sheet{position:fixed;left:0;right:0;bottom:0;max-height:88vh;overflow:auto;z-index:71;background:#fff;border-radius:20px 20px 0 0;padding:14px 18px calc(18px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 30px rgba(0,0,0,.2)} @media (min-width:700px){.fx-sheet{left:50%;right:auto;width:520px;transform:translateX(-50%)}}
@@ -2042,6 +2042,11 @@
   .fx-pre{font-size:13px;color:#667085;font-weight:500;line-height:1.25;margin-top:1px}
   .fx-vis{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 4px} .fx-vis .rx-b{flex:1 1 150px}
   .cf-d{background:#fff;border:1px solid #d6d9e0;border-radius:14px;padding:10px;margin:8px 0} .cf-d.off{opacity:.55} .cf-dh{display:flex;gap:10px;align-items:center} .cf-dd{margin-left:auto;font-size:19px;font-weight:800} .cf-dd.mas{color:#1d7a4d} .cf-dd.menos{color:#c0392b} .cf-mots{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .fx-arw{position:relative}button.fx-arb{font-size:13px;font-weight:600;height:34px;padding:0 12px;border-radius:20px;white-space:nowrap}.fx-arb{display:inline-flex;align-items:center;cursor:pointer;color:#2c2c2a;border:1px solid #cfcdc4;background:#fff}.fx-arb.on{border-color:#2563eb;color:#1d4ed8;background:#eef4ff}
+  .fx-arbg{position:fixed;inset:0;z-index:60}.fx-arp{position:absolute;top:40px;left:0;z-index:61;min-width:200px;background:#fff;border:1px solid #d3d1c7;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.18);padding:6px}
+  .fx-arr{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:0 10px;border:0;background:none;border-radius:10px;font-size:15px;font-weight:600;text-align:left;cursor:pointer}.fx-arr.on{background:#eef4ff}.fx-arl{color:#6b6a63;font-weight:600;border-top:1px solid #eceae2;border-radius:0 0 10px 10px;margin-top:2px}
+  .fx-arc{width:22px;height:22px;border:2px solid #9aa7c7;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:#fff}.fx-arr.on .fx-arc{background:#2563eb;border-color:#2563eb}
+  .fx-arsel{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 2px}.fx-arch{border:1px solid #2563eb;background:#eef4ff;color:#1d4ed8;border-radius:99px;padding:5px 12px;font-size:13px;font-weight:700;cursor:pointer}
 </style>
 </head>
 <body>
@@ -4488,6 +4493,7 @@ function escuchar(){
     if(S.pid && !enEstacion(S.pid, S.op)) S.pid = null;
     if(S.screen === 'main') renderGrid(); else if(S.screen === 'fichas') render();
     if(S.pid) renderPanel();
+    try { if(window.fxRefresh) window.fxRefresh(); } catch(er){}
   }, e => console.error(e));
   db.collection('productos_produccion').onSnapshot(snap => {
     snap.forEach(d => { const r = d.data() || {}; if(r.nombre) agregarProducto(Object.assign({}, r, {id:d.id})); });
@@ -5596,7 +5602,8 @@ window.prView = nombre => { if(nombre === 'produccion') onEnter(); else if(docum
 window.prInit = init;
 window.prActualizarStock = actualizarStock;
 usbIniciar();
-window.PR = {receta:id => { try { const f = fichaDe(id); return (f && f.receta) || []; } catch(e){ return []; } }, foto:id => { try { const f = S.fichas[id]; return (f && f.foto) || ''; } catch(e){ return ''; } }, productos:() => PROD_ALL.map(p => ({id:p.id, nombre:p.nombre, presentacion:p.unidad, unidad:p.uni || unidadPalabra(p.unidad)})), refresh:() => { try { render(); renderTop(); } catch(er){} }, presDe:pid => { const f = pid ? fichaDe(pid) : null; return f ? String(f.presentacion || '').trim() : ''; }, S:S, fichaDe:fichaDe, PROD_ALL:PROD_ALL, go:go, U:U, lbConstruir:lbConstruir};
+window.PR = {receta:id => { try { const f = fichaDe(id); return (f && f.receta) || []; } catch(e){ return []; } }, foto:id => { try { const f = S.fichas[id]; return (f && f.foto) || ''; } catch(e){ return ''; } }, productos:() => PROD_ALL.map(p => { let pr = p.unidad; try { const f = fichaDe(p.id); if(f && f.presentacion != null) pr = f.presentacion; } catch(er){} return {id:p.id, nombre:p.nombre, presentacion:pr, unidad:p.uni || unidadPalabra(p.unidad)}; }),
+  setPres:(pid, txt) => { const t = String(txt || '').trim(); const prev = S.fichas[pid] || {}; S.fichas[pid] = Object.assign({}, prev, {producto_id:pid, presentacion:t}); db.collection('fichas_produccion').doc(pid).set({producto_id:pid, presentacion:t, actualizado:SV()}, {merge:true}).catch(er => { console.error(er); toast('No se pudo guardar la presentación'); }); try { if(S.screen === 'main') renderGrid(); else if(S.screen === 'fichas') render(); if(S.pid) renderPanel(); } catch(er){} }, refresh:() => { try { render(); renderTop(); } catch(er){} }, presDe:pid => { const f = pid ? fichaDe(pid) : null; return f ? String(f.presentacion || '').trim() : ''; }, S:S, fichaDe:fichaDe, PROD_ALL:PROD_ALL, go:go, U:U, lbConstruir:lbConstruir};
 })();
 
 /* ============================================================
@@ -8795,7 +8802,7 @@ const TIPOS = {recepcion:'Recepción', anulacion_recepcion:'Anulación de recepc
   anulacion_baja:'Anulación de baja', procesamiento:'Procesado', baja:'Baja', salida:'Salida', despacho:'Despacho', ajuste_conteo:'Ajuste por conteo', traslado_sale:'Traslado (sale)', traslado_entra:'Traslado (entra)', reinicio:'Inicio desde cero'};
 const MOT_BAJA = ['Caducado', 'Mal estado', 'Derrame / daño', 'Merma', 'Otro'];
 
-const F = {prod:{}, stock:{}, mpn:{}, movs:[], extra:[], cats:[], asig:{}, dat:{}, abierto:{terminado:true, mp:true, directo:true}, sel:{}, ped:null, rap:'', loc:'todas', sec:'terminado', cat:'todas', tab:'inv', est:'todas', estado:'todos', q:'', mq:'', mf:'todos', m:null, busy:false, ready:false};
+const F = {prod:{}, stock:{}, mpn:{}, movs:[], extra:[], cats:[], asig:{}, dat:{}, abierto:{terminado:true, mp:true, directo:true}, sel:{}, ped:null, rap:'', loc:[], locAb:false, sec:'terminado', cat:'todas', tab:'inv', est:'todas', estado:'todos', q:'', mq:'', mf:'todos', m:null, busy:false, ready:false};
 const estaciones = () => ESTS0.concat(F.extra.filter(e => !ESTS0.some(x => x.id === e.id)));
 const estNom = id => (estaciones().filter(e => e.id === id)[0] || {nombre:id}).nombre;
 const estIc = id => (estaciones().filter(e => e.id === id)[0] || {ic:'📍'}).ic;
@@ -9340,14 +9347,15 @@ function vInv(){
   const pend = pendDe(), nSel = Object.keys(F.sel).length;
   const bajoN = idsParaPedir().length, prodN = idsParaProducir().length;
   igInit(); const dups = dupDirectos(), impN = impBodegaPend().nuevos.length, uniN = uniCand().reduce((a, x) => a + x.unir.length, 0), uniY = uniDocs().length;
-  const nFil = (F.loc !== 'todas' ? 1 : 0) + (F.cat !== 'todas' ? 1 : 0) + ((F.ver || 'activos') !== 'activos' ? 1 : 0) + (F.rap ? 1 : 0), G = F.ing, nIng = Object.keys(igMapa()).length;
+  const nFil = ((F.ver || 'activos') !== 'activos' ? 1 : 0) + (F.rap ? 1 : 0), G = F.ing, nIng = Object.keys(igMapa()).length;
   const qc = (cls, a, v, n, lbl) => '<button class="fx-qc ' + cls + '" data-fx="' + a + '"' + (v ? ' data-v="' + v + '"' : '') + '><b>' + n + '</b> ' + lbl + '</button>';
   let h = '<div class="fx-top2"><div class="fx-fs"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="fx-q" data-focus type="search" placeholder="Buscar" autocomplete="off" value="' + esc(F.q) + '"></div>' +
     '<button class="fx-fbtn" data-fx="fil-abrir" aria-label="Filtros"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M7 12h10M10 17h4"/></svg>' + (nFil ? '<span class="fx-dot">' + nFil + '</span>' : '') + '</button></div>' +
-    '<div class="fx-q2">' + '<select id="fx-fcat" class="fx-catsel" aria-label="Categoría"><option value="todas"' + (F.cat === 'todas' ? ' selected' : '') + '>Categorías</option>' + F.cats.map(c => '<option value="' + esc(c.id) + '"' + (F.cat === c.id ? ' selected' : '') + '>' + esc(c.nombre) + '</option>').join('') + '<option value="__sin"' + (F.cat === '' ? ' selected' : '') + '>Sin categoría</option></select>' + '<button class="fx-qc" data-fx="cf-abrir" style="margin-left:auto">📋 Conteo</button></div>' +
+    '<div class="fx-q2">' + '<div class="fx-arw"><button class="fx-catsel fx-arb' + (F.loc.length ? ' on' : '') + '" data-fx="area-ab" aria-label="Áreas">Áreas' + (F.loc.length ? ' (' + F.loc.length + ')' : '') + ' ▾</button>' + (F.locAb ? '<div class="fx-arbg" data-fx="area-x"></div><div class="fx-arp">' + SECS.map(x => '<button class="fx-arr' + (F.loc.indexOf(x[0]) >= 0 ? ' on' : '') + '" data-fx="area-t" data-v="' + x[0] + '"><span class="fx-arc">' + (F.loc.indexOf(x[0]) >= 0 ? '✓' : '') + '</span>' + esc(x[1]) + '</button>').join('') + '<button class="fx-arr fx-arl" data-fx="area-todas">Ver todas</button></div>' : '') + '</div>' + '<select id="fx-fcat" class="fx-catsel" aria-label="Categoría"><option value="todas"' + (F.cat === 'todas' ? ' selected' : '') + '>Categorías</option>' + F.cats.map(c => '<option value="' + esc(c.id) + '"' + (F.cat === c.id ? ' selected' : '') + '>' + esc(c.nombre) + '</option>').join('') + '<option value="__sin"' + (F.cat === '' ? ' selected' : '') + '>Sin categoría</option></select>' + '<button class="fx-qc" data-fx="cf-abrir" style="margin-left:auto">📋 Conteo</button></div>' +
+    (F.loc.length ? '<div class="fx-arsel">' + F.loc.map(k => { const x = SECS.filter(y => y[0] === k)[0]; return x ? '<button class="fx-arch" data-fx="area-t" data-v="' + k + '">' + esc(x[1]) + ' ✕</button>' : ''; }).join('') + '</div>' : '') +
     (F.rap === 'ing' ? '<div class="fx-rapido">Ingresó · ' + esc(igTitulo(F.ing)) + (F.ing.cargando ? ' · cargando…' : '') + ' <button class="rx-b sm" data-fx="rap-x">✕ Ver todo</button></div>' : '') +
     ((F.rap === 'pedir' || F.rap === 'producir') ? '<div class="fx-rapido">' + (F.rap === 'pedir' ? 'Por pedir' : 'Por producir') + ' <button class="rx-b sm" data-fx="rap-x">✕ Ver todo</button></div>' : '');
-  const ver = F.ver || 'activos'; let l = []; SECS.forEach(sc => { if(F.loc !== 'todas' && F.loc !== sc[0]) return; l = l.concat((ver === 'activos' ? filasInv(sc[0]) : filasInvTodo(sc[0]).filter(r => estProd(r.id) === ver)).map(conDatosS(sc[0]))); });
+  const ver = F.ver || 'activos'; let l = []; SECS.forEach(sc => { if(F.loc.length && F.loc.indexOf(sc[0]) < 0) return; l = l.concat((ver === 'activos' ? filasInv(sc[0]) : filasInvTodo(sc[0]).filter(r => estProd(r.id) === ver)).map(conDatosS(sc[0]))); });
   if(q) l = l.filter(r => norm(r.nombre).indexOf(q) >= 0);
   if(F.cat !== 'todas') l = l.filter(r => F.cat === '' ? !catDe(r.id) : catDe(r.id) === F.cat);
   if(F.rap === 'pedir' || F.rap === 'producir'){ const ids = F.rap === 'pedir' ? idsParaPedir() : idsParaProducir(); l = l.filter(r => ids.indexOf(r.id) >= 0); }
@@ -9366,7 +9374,6 @@ function vInv(){
     const fr = (t, extra) => '<div class="fx-fr">' + t + (extra || '') + '</div>';
     h += '<div class="fx-sbg" data-fx="fil-x"></div><div class="fx-sheet" role="dialog" aria-label="Filtros"><div class="fx-sh-top"><button class="rx-b sm" data-fx="fil-x" aria-label="Cerrar">✕</button><button class="rx-b sm" data-fx="fil-reset"' + (nFil || F.rap ? '' : ' disabled') + '>Reiniciar</button></div><h3>Filtros</h3>' +
       '<div class="fx-subh2">Rápido</div><div class="fx-chips2">' + qc(F.rap === 'pedir' ? 'on' : '', 'kp', 'pedir', bajoN, 'por pedir') + qc(F.rap === 'producir' ? 'on' : '', 'kp', 'producir', prodN, 'por producir') + qc(F.rap === 'ing' ? 'on' : '', 'ing-f', '', G.cargando ? '…' : nIng, 'ingresados' + (G.preset === 'hoy' ? ' hoy' : '')) + '</div>' +
-      '<div class="fx-subh2">Área</div><div class="fx-chips2">' + [['todas','Todas']].concat(SECS.map(x => [x[0], x[1]])).map(x => '<button class="fx-chip' + (F.loc === x[0] ? ' on' : '') + '" data-fx="area" data-v="' + x[0] + '">' + x[1] + '</button>').join('') + '</div>' +
       '' + (() => { const c = {oculto:0, archivado:0}; Object.keys(F.dat || {}).forEach(k => { const e = estProd(k); if(c[e] != null) c[e]++; }); return ['<div class="fx-subh2">Mostrar</div><div class="fx-chips2">' + [['activos', 'Activos'], ['oculto', 'Ocultos' + (c.oculto ? ' (' + c.oculto + ')' : '')], ['archivado', 'Archivados' + (c.archivado ? ' (' + c.archivado + ')' : '')]].map(x => '<button class="fx-chip' + ((F.ver || 'activos') === x[0] ? ' on' : '') + '" data-fx="ver" data-v="' + x[0] + '">' + x[1] + '</button>').join('') + '</div>'][0]; })() +
             '<div class="fx-subh2">Fecha de ingresos</div><button class="fx-er" data-fx="ing-cal"><span>📅 ' + esc(igTitulo(G)) + '</span><b>' + (G.cal ? '▴' : '▾') + '</b></button>' + (G.cal ? igCal(G) : '') +
       ((impN || uniN || uniY || dups.length) ? '<div class="fx-subh2">Revisar</div>' : '') +
@@ -9552,7 +9559,7 @@ document.addEventListener('click', e => {
       if(v === 'maximo'){ modal(null); num('Stock máximo', (filaPorId(id) || {}).uni || '', f.maximo || '', x => { if(x == null) return; fichaSet(id, {maximo:r3(x)}); setTimeout(() => editarProd(id, sec), 250); }); }
       else { const n = prompt({zona:'Zona (ej: Bodega, Cuarto frío)', estante:'Estante (ej: Estante B)', nivel:'Nivel (ej: Nivel 2)', proveedor:'Proveedor principal'}[v], f[v] || ''); if(n != null){ const o = {}; o[v] = n.trim(); fichaSet(id, o); setTimeout(() => editarProd(id, sec), 250); } }
       break; }
-    case 'kp': if(v === 'total'){ F.rap = ''; F.loc = 'todas'; F.cat = 'todas'; F.q = ''; render(); } else if(v === 'pedir' || v === 'producir'){ F.rap = F.rap === v ? '' : v; render(); } else detalleTile(v); break;
+    case 'kp': if(v === 'total'){ F.rap = ''; F.loc = []; F.cat = 'todas'; F.q = ''; render(); } else if(v === 'pedir' || v === 'producir'){ F.rap = F.rap === v ? '' : v; render(); } else detalleTile(v); break;
     case 'rap-x': F.rap = ''; render(); break;
     case 'sel-p': if(F.sel[id]) delete F.sel[id]; else F.sel[id] = true; render(); break;
     case 'ed-pedir': if(F.sel[id]) delete F.sel[id]; else F.sel[id] = true; modal(null); render(); break;
@@ -9566,16 +9573,20 @@ document.addEventListener('click', e => {
     case 'ped-cant': { const i = F.ped && F.ped.items.filter(x => x.id === id)[0]; if(!i) break; num('Cantidad a pedir · ' + i.nombre, i.unidad, i.cant, x => { if(x == null || !(x > 0)){ pedidoModal(); return; } i.cant = r3(x); pedidoModal(); }); break; }
     case 'ped-quitar': if(F.ped){ F.ped.items = F.ped.items.filter(x => x.id !== id); delete F.sel[id]; if(!F.ped.items.length){ F.ped = null; modal(null); render(); } else pedidoModal(); } break;
     case 'ped-enviar': enviarPedido(); break;
-    case 'area': F.loc = v; render(); break;
     case 'sec': F.sec = v; F.cat = 'todas'; render(); break;
     case 'cat': F.cat = v; render(); break;
+    case 'area-ab': F.locAb = !F.locAb; render(); break;
+    case 'area-x': F.locAb = false; render(); break;
+    case 'area-t': { const k = F.loc.indexOf(v); if(k >= 0) F.loc.splice(k, 1); else F.loc.push(v); render(); break; }
+    case 'area-todas': F.loc = []; F.locAb = false; render(); break;
     case 'cat-nueva': catNueva(null); break;
     case 'cat-nueva-p': catNueva(id); break;
     case 'cat-prod': F.catEd = false; catProducto(id, t.getAttribute('data-sec')); break;
     case 'ed': editarProd(id, t.getAttribute('data-sec')); break;
     case 'ed-f': { const sec = t.getAttribute('data-sec'), r = conDatos(Object.assign(filasInvTodo(sec).filter(x => x.id === id)[0] || {id:id}, {sec:sec}));
       if(v === 'min' || v === 'ini'){ modal(null); num((v === 'min' ? 'Stock mínimo · ' : 'Inventario inicial · ') + (r.nombre || ''), r.uni, v === 'min' ? (r.min || '') : (r.ini != null ? r.ini : ''), x => { if(x == null) return; guardarDato(id, v, r3(x)); }); }
-      else { const n = prompt(v === 'uni' ? 'Unidad de medida (ej: Cajas, Litros, Kilos)' : 'Presentación (ej: 12 litros, 500g)', v === 'uni' ? (r.uni || '') : (r.pres || '')); if(n != null){ guardarDato(id, v, n.trim()); modal(null); } }
+      else { const n = prompt(v === 'uni' ? 'Unidad de medida (ej: Cajas, Litros, Kilos)' : 'Presentación (ej: 12 litros, 500g)', v === 'uni' ? (r.uni || '') : (r.pres || ''));
+        if(n != null){ if(v === 'pres' && sec === 'terminado' && window.PR && window.PR.setPres){ window.PR.setPres(id, n.trim()); guardarDato(id, 'pres', ''); toast('Presentación actualizada también en Producción'); } else guardarDato(id, v, n.trim()); modal(null); render(); } }
       break; }
     case 'cat-set': { const asig = Object.assign({}, F.asig); if(v) asig[id] = v; else delete asig[id]; guardarCats(F.cats, asig); modal(null); break; }
     case 'cat-gest': catGestion(); break;
@@ -9588,7 +9599,7 @@ document.addEventListener('click', e => {
     case 'fil-abrir': F.fo = true; render(); document.body.classList.add('fx-sh-on'); break;
     case 'fil-x': F.fo = false; render(); document.body.classList.remove('fx-sh-on'); break;
     case 'ver': F.ver = t.getAttribute('data-v'); render(); break;
-    case 'fil-reset': F.loc = 'todas'; F.cat = 'todas'; F.rap = ''; F.ver = 'activos'; render(); break;
+    case 'fil-reset': F.loc = []; F.cat = 'todas'; F.rap = ''; F.ver = 'activos'; render(); break;
     case 'imp-ver': impBodegaVer(); break;
     case 'imp-ok': impBodegaOk(); break;
     case 'uni-ver': uniVer(); break;
@@ -9655,7 +9666,8 @@ document.addEventListener('input', e => {
   else if(t.id === 'fx-mq'){ F.mq = t.value; F.focus = true; render(); }
   else if(t.id === 'fx-pq' && F.m){ F.m.q = t.value; F.focusM = true; pickDoc(); }
 });
-document.addEventListener('change', e => { const t = e.target; if(!t || !t.id) return; if(t.id === 'fx-loc'){ F.loc = t.value; render(); } else if(t.id === 'fx-fcat'){ F.cat = t.value === '__sin' ? '' : t.value; render(); } else if(t.id === 'fx-cfcat' && F.cf){ F.cf.cat = t.value === 'todas' ? undefined : t.value; render(); } });
+document.addEventListener('change', e => { const t = e.target; if(!t || !t.id) return; if(t.id === 'fx-fcat'){ F.cat = t.value === '__sin' ? '' : t.value; render(); } else if(t.id === 'fx-cfcat' && F.cf){ F.cf.cat = t.value === 'todas' ? undefined : t.value; render(); } });
+window.fxRefresh = () => { try { if(document.getElementById('fx-root') && document.getElementById('vista-fx') && document.getElementById('vista-fx').classList.contains('activa')) render(); } catch(e){} };
 window.fxView = function(n){ if(n === 'fx'){ escuchar(); render(); } };
 window.FXS = F;
 setTimeout(() => { if(window.firebase && typeof db !== 'undefined') escuchar(); }, 900);
@@ -9724,3 +9736,4 @@ setTimeout(() => { if(window.firebase && typeof db !== 'undefined') escuchar(); 
 
 </body>
 </html>
+  
