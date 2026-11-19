@@ -882,6 +882,7 @@
     cursor: pointer;
   }
 
+  .gd-borrar{padding:10px 0 0}.gd-borrar button{width:100%;min-height:44px;border:1.5px solid #c0392b;background:#fff;color:#c0392b;border-radius:10px;font-weight:700;font-size:14px}
   .guia-card {
     background: #fff;
     margin: 10px 14px;
@@ -1828,9 +1829,11 @@
   .fx-lista{background:#fff;border:1px solid #e4e7ec;border-radius:14px;overflow:hidden}
   .fx-r{display:grid;grid-template-columns:48px minmax(0,1fr) auto;gap:12px;align-items:center;width:100%;padding:9px 12px;background:none;border:0;border-bottom:1px solid #e4e7ec;text-align:left;cursor:pointer;font-family:inherit;color:#1f1f1d} .fx-r:last-child{border-bottom:0} .fx-r:active{background:#f1f5ff}
   .fx-ph{width:48px;height:48px;border-radius:10px;background:#e9ecf2 center/cover no-repeat;color:#8a93a6;display:grid;place-items:center;overflow:hidden;flex:0 0 auto} .fx-ph.big{width:64px;height:64px;border-radius:12px}
-  .fx-rn{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .fx-rs{display:flex;align-items:center;gap:6px;margin-top:2px;min-width:0;color:#6b6a64;font-size:12.5px} .fx-rs span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .fx-rn{font-weight:700;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.2} .fx-rs{display:flex;align-items:center;gap:6px;margin-top:2px;min-width:0;color:#6b6a64;font-size:12.5px} .fx-rs span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .fx-tag{flex:0 0 auto;padding:1px 8px;border-radius:9px;background:#e9ecf2;color:#1f1f1d;font-weight:600;font-size:11.5px;white-space:nowrap} .fx-tag.fx-sc{opacity:.6;font-weight:500}
   .fx-rq{display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+  .fx-tpr{color:#667085;font-size:14px;white-space:nowrap}
+  .fx-rb2{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:nowrap} .fx-rq .fx-rb2 .fx-pk{margin-top:0;font-size:13px;padding:8px 10px;min-height:0;height:auto} .fx-rb2 .fx-es{font-size:11px;padding:3px 7px}
   .fx-big{background:none;color:#1f1f1d;border-radius:9px;padding:2px 4px;font-weight:800;font-size:18px;white-space:nowrap;font-variant-numeric:tabular-nums} .fx-big small{font-size:12px;font-weight:600;margin-left:3px} .fx-big.lg{font-size:30px;padding:4px 14px}
   .fx-dh{display:flex;gap:12px;align-items:center;margin-bottom:6px;padding-right:40px} .fx-dq{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0 4px}
   .fx-es{font-size:11.5px;font-weight:700;border-radius:9px;padding:1px 8px;white-space:nowrap}
@@ -3044,7 +3047,8 @@ function guiaCardHtml(g) {
 function renderListaGuias() {
   const por = guiasCache.filter(g => g.estado === "por_despachar"), ya = guiasCache.filter(g => g.estado !== "por_despachar");
   const c1 = document.getElementById("guias-lista"), c2 = document.getElementById("dsp-lista");
-  if (c1) c1.innerHTML = ya.length ? ya.map(guiaCardHtml).join("") : `<div class="panel">Todavía no hay guías despachadas para imprimir.</div>`;
+  const gbar = guiasCache.length ? `<div class="gd-borrar"><button id="gd-borrar-btn" onclick="gdBorrarTodas()">🗑 Borrar todas las guías (${guiasCache.length})</button></div>` : "";
+  if (c1) c1.innerHTML = gbar + (ya.length ? ya.map(guiaCardHtml).join("") : `<div class="panel">Todavía no hay guías despachadas para imprimir.</div>`);
   if (c2) c2.innerHTML = por.length ? por.map(guiaCardHtml).join("") : `<div class="panel">No hay guías por despachar. Aparecen aquí cuando aceptas un pedido en Pedidos de locales.</div>`;
   const n = document.getElementById("dsp-n"); if (n) n.textContent = por.length ? por.length : "";
 }
@@ -3192,6 +3196,21 @@ async function gdDespachar(id) {
   gdBusy = false;
 }
 let gdBusy = false;
+let gdBorrarAntes = 0;
+async function gdBorrarTodas() {
+  const btn = document.getElementById("gd-borrar-btn"); const n = guiasCache.length; if (!n || gdBusy) return;
+  if (Date.now() > gdBorrarAntes) { gdBorrarAntes = Date.now() + 6000; if (btn) btn.textContent = "⚠ Toca otra vez para borrar las " + n + " guías (no se puede deshacer)"; return; }
+  gdBorrarAntes = 0; gdBusy = true;
+  try {
+    const todas = await db.collection("pedidos").get(), ids = todas.docs.map(d => d.id), set = {}; ids.forEach(i => set[i] = 1);
+    for (let i = 0; i < ids.length; i += 400) { const b = db.batch(); ids.slice(i, i + 400).forEach(id => b.delete(db.collection("pedidos").doc(id))); await b.commit(); }
+    try { const q = await db.collection("pedidos_locales").get(); const b = db.batch(); let k = 0;
+      q.forEach(d => { const x = d.data(); const ds = x.despachos || []; if ((x.despacho_id && set[x.despacho_id]) || ds.some(i => set[i])) { b.update(d.ref, { despacho_id: null, despachos: null }); k++; } });
+      if (k) await b.commit(); } catch (e) { console.error(e); }
+    cerrarDetalleGuia(); gdToast("Guías borradas: " + ids.length);
+  } catch (e) { console.error(e); gdToast("No se pudo borrar. Revisa la conexión."); }
+  gdBusy = false;
+}
 function gdEliminar(id) {
   const g = guiasCache.find(x => x.id === id); if (!g || g.estado !== "por_despachar") return;
   const copia = JSON.parse(JSON.stringify(g)); delete copia.id;
@@ -9348,11 +9367,11 @@ function vInv(){
   const aTag = r => '<span class="fx-ar ' + r.sec + '">' + esc((SECS.find(x => x[0] === r.sec) || [0,''])[1]) + '</span>';
   const fila = r => { const e = estadoInv(r);
     return '<div class="fx-r' + (r.sec === 'terminado' ? ' sp' : '') + (F.sel[r.id] ? ' sel' : '') + '" role="button" tabindex="0" data-fx="ed" data-id="' + esc(r.id) + '" data-sec="' + r.sec + '">' + phInv(r) + '<div class="fx-rm"><div class="fx-rn">' + esc(r.nombre) + '</div>' + (r.pres ? '<div class="fx-pre">' + esc(r.pres) + '</div>' : '') + '<div class="fx-rs">' + (F.prod[r.id] && bajo(r) ? '<span class="fx-pd">Por producir</span>' : '') + (pend[r.id] ? '<span class="fx-pd">Pedido pendiente</span>' : '') + '</div></div>' +
-      '<div class="fx-rq">' + ingTag(r) + '<span class="fx-big">' + fmt(r3(r.stock)) + '<small>' + esc(r.uni) + '</small></span><span class="fx-es ' + e[0] + '">' + e[1] + '</span>' + btnPedir(r) + '</div></div>'; };
+      '<div class="fx-rq">' + ingTag(r) + '<span class="fx-big">' + fmt(r3(r.stock)) + '<small>' + esc(r.uni) + '</small></span><div class="fx-rb2"><span class="fx-es ' + e[0] + '">' + e[1] + '</span>' + btnPedir(r) + '</div></div></div>'; };
   const trow = r => { const e = estadoInv(r);
-    return '<tr' + (F.sel[r.id] ? ' class="sel"' : '') + ' data-fx="ed" data-id="' + esc(r.id) + '" data-sec="' + r.sec + '"><td class="fx-tp">' + phInv(r) + '</td><td class="fx-tn">' + esc(r.nombre) + (r.pres ? ' <span class="fx-pre">· ' + esc(r.pres) + '</span>' : '') + ingTag(r) + (pend[r.id] ? ' <span class="fx-pd">Pedido pendiente</span>' : '') + (F.prod[r.id] && bajo(r) ? ' <span class="fx-pd">Por producir</span>' : '') + '</td><td class="fx-tc"><span class="fx-big">' + fmt(r3(r.stock)) + '</span> <small>' + esc(r.uni) + '</small></td><td><span class="fx-es ' + e[0] + '">' + e[1] + '</span></td><td class="fx-tc">' + btnPedir(r) + '</td><td class="fx-tc">›</td></tr>'; };
+    return '<tr' + (F.sel[r.id] ? ' class="sel"' : '') + ' data-fx="ed" data-id="' + esc(r.id) + '" data-sec="' + r.sec + '"><td class="fx-tp">' + phInv(r) + '</td><td class="fx-tn">' + esc(r.nombre) + ingTag(r) + (pend[r.id] ? ' <span class="fx-pd">Pedido pendiente</span>' : '') + (F.prod[r.id] && bajo(r) ? ' <span class="fx-pd">Por producir</span>' : '') + '</td><td class="fx-tpr">' + esc(r.pres || '') + '</td><td class="fx-tc"><span class="fx-big">' + fmt(r3(r.stock)) + '</span> <small>' + esc(r.uni) + '</small></td><td><span class="fx-es ' + e[0] + '">' + e[1] + '</span></td><td class="fx-tc">' + btnPedir(r) + '</td><td class="fx-tc">›</td></tr>'; };
   const pend = pendDe(), nSel = Object.keys(F.sel).length;
-  const bajoN = idsParaPedir().length, atenN = idsAtencion().length;
+  const bajoN = idsParaPedir().length, prodN = idsParaProducir().length;
   igInit(); const dups = dupDirectos(), impN = impBodegaPend().nuevos.length, uniN = uniCand().reduce((a, x) => a + x.unir.length, 0), uniY = uniDocs().length;
   const nFil = (F.loc !== 'todas' ? 1 : 0) + (F.cat !== 'todas' ? 1 : 0) + ((F.ver || 'activos') !== 'activos' ? 1 : 0) + (F.rap ? 1 : 0), G = F.ing, nIng = Object.keys(igMapa()).length;
   const qc = (cls, a, v, n, lbl) => '<button class="fx-qc ' + cls + '" data-fx="' + a + '"' + (v ? ' data-v="' + v + '"' : '') + '><b>' + n + '</b> ' + lbl + '</button>';
@@ -9360,11 +9379,11 @@ function vInv(){
     '<button class="fx-fbtn" data-fx="fil-abrir" aria-label="Filtros"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M7 12h10M10 17h4"/></svg>' + (nFil ? '<span class="fx-dot">' + nFil + '</span>' : '') + '</button></div>' +
     '<div class="fx-q2">' + '<select id="fx-fcat" class="fx-catsel" aria-label="Categoría"><option value="todas"' + (F.cat === 'todas' ? ' selected' : '') + '>Categorías</option>' + F.cats.map(c => '<option value="' + esc(c.id) + '"' + (F.cat === c.id ? ' selected' : '') + '>' + esc(c.nombre) + '</option>').join('') + '<option value="__sin"' + (F.cat === '' ? ' selected' : '') + '>Sin categoría</option></select>' + '<button class="fx-qc" data-fx="cf-abrir" style="margin-left:auto">📋 Conteo</button></div>' +
     (F.rap === 'ing' ? '<div class="fx-rapido">Ingresó · ' + esc(igTitulo(F.ing)) + (F.ing.cargando ? ' · cargando…' : '') + ' <button class="rx-b sm" data-fx="rap-x">✕ Ver todo</button></div>' : '') +
-    (F.rap === 'pedir' ? '<div class="fx-rapido">Por pedir o producir <button class="rx-b sm" data-fx="rap-x">✕ Ver todo</button></div>' : '');
+    ((F.rap === 'pedir' || F.rap === 'producir') ? '<div class="fx-rapido">' + (F.rap === 'pedir' ? 'Por pedir' : 'Por producir') + ' <button class="rx-b sm" data-fx="rap-x">✕ Ver todo</button></div>' : '');
   const ver = F.ver || 'activos'; let l = []; SECS.forEach(sc => { if(F.loc !== 'todas' && F.loc !== sc[0]) return; l = l.concat((ver === 'activos' ? filasInv(sc[0]) : filasInvTodo(sc[0]).filter(r => estProd(r.id) === ver)).map(conDatosS(sc[0]))); });
   if(q) l = l.filter(r => norm(r.nombre).indexOf(q) >= 0);
   if(F.cat !== 'todas') l = l.filter(r => F.cat === '' ? !catDe(r.id) : catDe(r.id) === F.cat);
-  if(F.rap === 'pedir'){ const ids = idsAtencion(); l = l.filter(r => ids.indexOf(r.id) >= 0); }
+  if(F.rap === 'pedir' || F.rap === 'producir'){ const ids = F.rap === 'pedir' ? idsParaPedir() : idsParaProducir(); l = l.filter(r => ids.indexOf(r.id) >= 0); }
   const igM = F.rap === 'ing' ? igMapa() : null; if(igM) l = l.filter(r => igM[r.id]);
   const ingTag = r => igM && igM[r.id] ? '<span class="ig-in">+' + fmt(r3(igM[r.id].c)) + ' ingresó</span>' : '';
   const ordCat = r => { const k = F.cats.findIndex(c => c.id === catDe(r.id)); return k < 0 ? 999 : k; };
@@ -9372,14 +9391,14 @@ function vInv(){
   l.sort((a, b) => ordAr(a) - ordAr(b) || ordCat(a) - ordCat(b) || String(a.nombre).localeCompare(String(b.nombre)));
   h += '<div class="fx-cnt rx-mu">' + l.length + ' producto' + (l.length === 1 ? '' : 's') + '</div>';
   if(!l.length) h += '<div class="rx-mu" style="padding:4px 4px 10px">' + (F.rap === 'ing' ? (F.ing.cargando ? 'Cargando…' : 'No entró nada en estas fechas.') : q ? 'Sin resultados' : 'Aquí aparecen los productos de Producción y lo que entra por Recepción.') + '</div>';
-  else h += '<div class="fx-lista">' + l.map(fila).join('') + '</div><div class="fx-tw"><table class="fx-tb"><thead><tr><th></th><th>Producto</th><th>Stock actual</th><th>Estado</th><th>Pedir</th><th></th></tr></thead><tbody>' + l.map(trow).join('') + '</tbody></table></div>';
+  else h += '<div class="fx-lista">' + l.map(fila).join('') + '</div><div class="fx-tw"><table class="fx-tb"><thead><tr><th></th><th>Producto</th><th>Presentación</th><th>Stock actual</th><th>Estado</th><th>Pedir / Producir</th><th></th></tr></thead><tbody>' + l.map(trow).join('') + '</tbody></table></div>';
   if(nSel) h += '<div class="fx-pie"><button class="rx-b" data-fx="ped-limpiar">Cancelar</button><button class="rx-b ac" data-fx="ped-abrir">Pedir a proveedor (' + nSel + ')</button></div>';
-  else if(bajoN) h += '<div class="fx-pie fx-pe"><button class="rx-b ac big" data-fx="ped-bajos">Pedir (' + bajoN + ')</button></div>';
+  else if(bajoN && F.rap === 'pedir') h += '<div class="fx-pie fx-pe"><button class="rx-b ac big" data-fx="ped-bajos">Pedir (' + bajoN + ')</button></div>';
   h += '<div style="height:84px"></div>';
   if(F.fo){
     const fr = (t, extra) => '<div class="fx-fr">' + t + (extra || '') + '</div>';
     h += '<div class="fx-sbg" data-fx="fil-x"></div><div class="fx-sheet" role="dialog" aria-label="Filtros"><div class="fx-sh-top"><button class="rx-b sm" data-fx="fil-x" aria-label="Cerrar">✕</button><button class="rx-b sm" data-fx="fil-reset"' + (nFil || F.rap ? '' : ' disabled') + '>Reiniciar</button></div><h3>Filtros</h3>' +
-      '<div class="fx-subh2">Rápido</div><div class="fx-chips2">' + qc(F.rap === 'pedir' ? 'on' : '', 'kp', 'pedir', atenN, 'por pedir o producir') + qc(F.rap === 'ing' ? 'on' : '', 'ing-f', '', G.cargando ? '…' : nIng, 'ingresados' + (G.preset === 'hoy' ? ' hoy' : '')) + '</div>' +
+      '<div class="fx-subh2">Rápido</div><div class="fx-chips2">' + qc(F.rap === 'pedir' ? 'on' : '', 'kp', 'pedir', bajoN, 'por pedir') + qc(F.rap === 'producir' ? 'on' : '', 'kp', 'producir', prodN, 'por producir') + qc(F.rap === 'ing' ? 'on' : '', 'ing-f', '', G.cargando ? '…' : nIng, 'ingresados' + (G.preset === 'hoy' ? ' hoy' : '')) + '</div>' +
       '<div class="fx-subh2">Área</div><div class="fx-chips2">' + [['todas','Todas']].concat(SECS.map(x => [x[0], x[1]])).map(x => '<button class="fx-chip' + (F.loc === x[0] ? ' on' : '') + '" data-fx="area" data-v="' + x[0] + '">' + x[1] + '</button>').join('') + '</div>' +
       '' + (() => { const c = {oculto:0, archivado:0}; Object.keys(F.dat || {}).forEach(k => { const e = estProd(k); if(c[e] != null) c[e]++; }); return ['<div class="fx-subh2">Mostrar</div><div class="fx-chips2">' + [['activos', 'Activos'], ['oculto', 'Ocultos' + (c.oculto ? ' (' + c.oculto + ')' : '')], ['archivado', 'Archivados' + (c.archivado ? ' (' + c.archivado + ')' : '')]].map(x => '<button class="fx-chip' + ((F.ver || 'activos') === x[0] ? ' on' : '') + '" data-fx="ver" data-v="' + x[0] + '">' + x[1] + '</button>').join('') + '</div>'][0]; })() +
             '<div class="fx-subh2">Fecha de ingresos</div><button class="fx-er" data-fx="ing-cal"><span>📅 ' + esc(igTitulo(G)) + '</span><b>' + (G.cal ? '▴' : '▾') + '</b></button>' + (G.cal ? igCal(G) : '') +
@@ -9418,8 +9437,8 @@ function idsParaPedir(){   // Materia prima y Bodega: agotados o bajo el mínimo
   SECS.forEach(sc => { if(sc[0] === 'terminado') return; filasInv(sc[0]).map(conDatosS(sc[0])).forEach(r => { if((r.stock <= 0.0001 || (r.min > 0 && r.stock < r.min)) && !pend[r.id]) ids.push(r.id); }); });
   return ids;
 }
-function idsAtencion(){   // pedir (MP/Bodega) + producir (Procesado agotado o bajo mínimo)
-  const ids = idsParaPedir();
+function idsParaProducir(){   // Procesado (terminado): agotado o bajo el mínimo
+  const ids = [];
   filasInv('terminado').map(conDatosS('terminado')).forEach(r => { if(r.stock <= 0.0001 || (r.min > 0 && r.stock < r.min)) ids.push(r.id); });
   return ids;
 }
@@ -9566,7 +9585,7 @@ document.addEventListener('click', e => {
       if(v === 'maximo'){ modal(null); num('Stock máximo', (filaPorId(id) || {}).uni || '', f.maximo || '', x => { if(x == null) return; fichaSet(id, {maximo:r3(x)}); setTimeout(() => editarProd(id, sec), 250); }); }
       else { const n = prompt({zona:'Zona (ej: Bodega, Cuarto frío)', estante:'Estante (ej: Estante B)', nivel:'Nivel (ej: Nivel 2)', proveedor:'Proveedor principal'}[v], f[v] || ''); if(n != null){ const o = {}; o[v] = n.trim(); fichaSet(id, o); setTimeout(() => editarProd(id, sec), 250); } }
       break; }
-    case 'kp': if(v === 'total'){ F.rap = ''; F.loc = 'todas'; F.cat = 'todas'; F.q = ''; render(); } else if(v === 'pedir'){ F.rap = F.rap === 'pedir' ? '' : 'pedir'; render(); } else detalleTile(v); break;
+    case 'kp': if(v === 'total'){ F.rap = ''; F.loc = 'todas'; F.cat = 'todas'; F.q = ''; render(); } else if(v === 'pedir' || v === 'producir'){ F.rap = F.rap === v ? '' : v; render(); } else detalleTile(v); break;
     case 'rap-x': F.rap = ''; render(); break;
     case 'sel-p': if(F.sel[id]) delete F.sel[id]; else F.sel[id] = true; render(); break;
     case 'ed-pedir': if(F.sel[id]) delete F.sel[id]; else F.sel[id] = true; modal(null); render(); break;
