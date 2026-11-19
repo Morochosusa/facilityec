@@ -2928,7 +2928,12 @@ const TITULOS_VISTA = {
 };
 
 /* Nombre del producto con su presentación justo después (ej. "Pure de zapallo 600 g"). Sirve en Producción y en Bodega. */
+function nomFicha(id, nombre){
+  try { const f = window.PR && window.PR.ficha ? window.PR.ficha(id) : null; if(f && f.nombre_propio && f.nombre) return f.nombre; } catch(er){}
+  return nombre;
+}
 function presHtml(id, nombre){
+  nombre = nomFicha(id, nombre);
   const e = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let pres = ''; try { pres = (window.PR && window.PR.presDe) ? window.PR.presDe(id) : ''; } catch(er){}
   if(!pres || String(nombre || '').toLowerCase().indexOf(pres.toLowerCase()) >= 0) return e(nombre);
@@ -3174,7 +3179,7 @@ function verGuia(id) {
   let arPrev2 = null;
   const filasItems = guia.items.map((it, idx) => (((it.area_nombre && it.area_nombre !== arPrev2) ? `<div class="gd-ar">${(arPrev2 = it.area_nombre)}</div>` : "") + `
     <div class="detalle-fila guia-fila-check">
-      <span class="guia-fila-nombre"><span style="color:#888780;">${idx + 1}.</span> ${it.producto_nombre} <span style="color:#888780;">(${it.cantidad_despachada} ${it.unidad_medida})</span>${frioLinea(guia, it)}</span>
+      <span class="guia-fila-nombre"><span style="color:#888780;">${idx + 1}.</span> ${nomFicha(it.producto_id, it.producto_nombre)} <span style="color:#888780;">(${it.cantidad_despachada} ${it.unidad_medida})</span>${frioLinea(guia, it)}</span>
       <span class="check-box-vacio" title="Envia"></span>
       <span class="check-box-vacio" title="Recibe"></span>
       <span class="guia-obs-columna">${it.cantidad_recibida != null ? `<b style="color:${(it.diferencia || 0) !== 0 ? '#c0392b' : '#1d7a4d'};">Recibido: ${it.cantidad_recibida}${(it.diferencia || 0) !== 0 ? ` (${it.diferencia > 0 ? '+' : ''}${it.diferencia})` : ' ✓'}</b>${it.nota_diferencia ? `<br><small>${it.nota_diferencia}</small>` : ''}` : ''}</span>
@@ -3304,7 +3309,7 @@ function gdImpresion(guia, orden) {
   let secPrev = -1;
   const filas = vis.map((i, k) => { const it = guia.items[i], sc = secDe(it);
     const hd = sc !== secPrev ? `<div class="gd-sec">${SECN[sc]}</div>` : ""; secPrev = sc;
-    return hd + `<div class="gd-pr"><div class="gd-pn"><b>${k + 1}.</b> ${it.producto_nombre}${esFrio(consItem(it)) ? " <small>(" + (consItem(it) === "congelado" ? "congelado" : "refrigerado") + ")</small>" : ""}</div><div class="gd-pq"><span class="gd-qn">${gdFmt(it.cantidad_despachada)}</span><small class="gd-qu">${it.unidad_medida || ""}</small></div><div class="gd-pc"><span class="gd-cb"></span><span class="gd-ln"></span></div><div class="gd-pc"><span class="gd-cb"></span><span class="gd-ln"></span></div></div>`; }).join("");
+    return hd + `<div class="gd-pr"><div class="gd-pn"><b>${k + 1}.</b> ${nomFicha(it.producto_id, it.producto_nombre)}${esFrio(consItem(it)) ? " <small>(" + (consItem(it) === "congelado" ? "congelado" : "refrigerado") + ")</small>" : ""}</div><div class="gd-pq"><span class="gd-qn">${gdFmt(it.cantidad_despachada)}</span><small class="gd-qu">${it.unidad_medida || ""}</small></div><div class="gd-pc"><span class="gd-cb"></span><span class="gd-ln"></span></div><div class="gd-pc"><span class="gd-cb"></span><span class="gd-ln"></span></div></div>`; }).join("");
   return `<div class="gd-print">
     <div class="gd-pr gd-ph"><div class="gd-pn">Producto</div><div class="gd-pq gd-pqh">Cantidad</div><div class="gd-pc">ENVÍA</div><div class="gd-pc">RECIBE</div></div>
     ${filas}
@@ -3324,7 +3329,7 @@ function verGuiaPorDespachar(guia) {
     const arHd = (it.area_nombre && it.area_nombre !== arPrev) ? `<div class="gd-ar">${it.area_nombre}</div>` : ""; if(it.area_nombre) arPrev = it.area_nombre;
     const q = it.cantidad_despachada, off = !(q > 0), hay = gdStock(it), falta = !off && gdSaca(it) && q > hay, cs = consItem(it), frio = esFrio(cs);
     return arHd + `<div class="gd-row ${off ? "off" : ""} ${falta ? "falta" : ""} ${it.verificado_salida && !off ? "rev" : ""}">
-      <div class="gd-nm">${off ? "" : `<button class="gd-chk ${it.verificado_salida ? "on" : ""}" onclick="gdRev('${id}', ${idx})" aria-label="Revisado">${it.verificado_salida ? "✓" : ""}</button>`}<div class="gd-nt"><span class="gd-n">${pos}.</span> ${it.producto_nombre}${frio ? ` <span class="frio-tag ${cs}">${CONS_TXT[cs]}</span>` : ""}
+      <div class="gd-nm">${off ? "" : `<button class="gd-chk ${it.verificado_salida ? "on" : ""}" onclick="gdRev('${id}', ${idx})" aria-label="Revisado">${it.verificado_salida ? "✓" : ""}</button>`}<div class="gd-nt"><span class="gd-n">${pos}.</span> ${nomFicha(it.producto_id, it.producto_nombre)}${frio ? ` <span class="frio-tag ${cs}">${CONS_TXT[cs]}</span>` : ""}
         <div class="gd-sub">${gdSaca(it) ? "En bodega hay " + gdFmt(hay) : "Compra directa: no baja del inventario"}${falta ? ` · <b class="gd-falta">faltan ${gdFmt(q - hay)}</b>` : ""}${it.cantidad_pedida != null && it.cantidad_pedida !== q && !off ? " · pidieron " + gdFmt(it.cantidad_pedida) : ""}</div></div></div>
       <button class="lcb gd-q" onclick="gdCant('${id}', ${idx})">${off ? "Quitado" : gdFmt(q) + " " + (it.unidad_medida || "")}</button>
       <div class="gd-or"><button class="lcb ${gdSaca(it) ? "on" : ""}" onclick="gdOrigen('${id}', ${idx}, 'stock')">De stock</button><button class="lcb ${gdSaca(it) ? "" : "on"}" onclick="gdOrigen('${id}', ${idx}, 'compra_directa')">Compra directa</button></div>
@@ -5162,14 +5167,11 @@ function renderFichasList(){
     })() + '</div></div>';
 }
 function renderFichaEdit(){
-  const d = S.fd, p = d.draft, foto = !!p.foto;
+  const d = S.fd, p = d.draft;
   const row = (lbl, f, val, unit) => '<div class="row"><div>' + lbl + '</div><button class="btn val" data-act="fnum" data-f="' + f + '">' + val + (unit ? ' ' + unit : '') + '</button></div>';
   const dm = m => p.vida[m] > 0 ? p.vida[m] + ' días' : 'No aplica';
   return '<div class="subbar"><button class="btn" data-act="ficha-cancel">Cancelar</button><div class="subt">' + esc(p.nombre) + '</div><button class="btn okb" data-act="ficha-save">Guardar</button></div><div class="screen">' +
-    '<div class="sec"><h3>Foto</h3><div class="fotorow">' + phHTML(p, 'big') + '<div class="col"><label class="btn pri" for="pr-ficha-foto">' + ic('camera', 24) + ' Tomar o elegir foto</label><input id="pr-ficha-foto" type="file" accept="image/*" style="position:absolute;opacity:0;width:1px;height:1px">' + (foto ? '<button class="btn" data-act="foto-del">Quitar foto</button>' : '') + '</div></div></div>' +
-    '<div class="sec"><h3>Nombre y peso</h3><div class="mu small">Los productos se cambian y se agregan aquí, en Facility. Escribe el nombre y el peso o presentación como quieres verlos en la lista y en la etiqueta.</div>' +
-      '<div class="lbl">Nombre</div><input type="text" id="pr-f-nombre" value="' + esc(p.nombre) + '" autocomplete="off" style="width:100%;min-height:60px;font-size:20px;padding:0 14px;border:2px solid #d3d1c7;border-radius:14px;box-sizing:border-box">' +
-      '<div class="lbl" style="margin-top:10px">Peso / presentación</div><input type="text" id="pr-f-pres" value="' + esc(p.presentacion || '') + '" placeholder="Ej. 2 kg, Funda 250 g" autocomplete="off" style="width:100%;min-height:60px;font-size:20px;padding:0 14px;border:2px solid #d3d1c7;border-radius:14px;box-sizing:border-box">' +
+    '<div class="sec"><h3>Producto</h3><div class="fotorow">' + phHTML(p, 'big') + '<div class="col"><b>' + esc(p.nombre) + '</b><div class="mu small">' + esc(p.presentacion || 'Sin presentación') + '</div><div class="mu small">La foto, el nombre y la presentación se cambian en Inventario.</div></div></div>' +
       '<div class="lbl" style="margin-top:10px">Unidad (así se cuenta y sale en la etiqueta)</div><div class="modos">' +
       ['unidades', 'paquetes', 'fundas', 'libras', 'kg', 'galones', 'litros', 'cajas'].concat(['unidades', 'paquetes', 'fundas', 'libras', 'kg', 'galones', 'litros', 'cajas'].indexOf(p.unidad) < 0 ? [p.unidad] : []).map(u => '<button class="btn ' + (p.unidad === u ? 'on' : '') + '" data-act="funi" data-v="' + esc(u) + '">' + esc(u) + '</button>').join('') + '</div></div>' +
     '<div class="sec"><h3>Estación</h3><div class="mu small">Para pasar este producto a otra lista, elige dónde va. Aparecerá en la lista de esa estación.</div><div class="modos">' +
@@ -5189,14 +5191,13 @@ function renderFichaEdit(){
 }
 const getField = (o, f) => f.indexOf('.') >= 0 ? o[f.split('.')[0]][f.split('.')[1]] : o[f];
 const setField = (o, f, v) => { if(f.indexOf('.') >= 0) o[f.split('.')[0]][f.split('.')[1]] = v; else o[f] = v; };
-function onPhoto(file){
+function fotoComprimir(file, cb){
   const img = new Image(), url = URL.createObjectURL(file);
   img.onload = () => {
     const sc = Math.min(1, 520 / Math.max(img.width, img.height));
     const c = document.createElement('canvas'); c.width = Math.round(img.width * sc); c.height = Math.round(img.height * sc);
     c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-    S.fd.draft.foto = c.toDataURL('image/jpeg', 0.72);
-    URL.revokeObjectURL(url); toast('Foto lista. Toca Guardar para conservarla.'); render();
+    URL.revokeObjectURL(url); cb(c.toDataURL('image/jpeg', 0.72));
   };
   img.onerror = () => toast('No se pudo leer esa foto');
   img.src = url;
@@ -5204,15 +5205,12 @@ function onPhoto(file){
 function guardarFicha(){
   const d = S.fd; if(!d) return;
   const p = d.draft;
-  p.nombre = String(p.nombre || '').trim(); p.presentacion = String(p.presentacion || '').trim();
-  if(!p.nombre){ toast('El nombre no puede quedar vacío'); return; }
-  const orig = fichaDe(p.id), cambioNombre = !orig || orig.nombre !== p.nombre;
-  const doc = {producto_id:p.id, nombre_propio:(cambioNombre || (S.fichas[p.id] && S.fichas[p.id].nombre_propio)) ? 1 : 0, nombre:p.nombre, presentacion:p.presentacion, unidad:p.unidad, codigo:p.codigo, decimales:p.decimales ? 1 : 0, batch:p.batch, solo_batch:p.solo_batch ? 1 : 0,
-               por_etiqueta:p.por_etiqueta || 0, max:p.max || 0, modo_defecto:p.modo_defecto, vida:p.vida, receta:p.receta, foto:p.foto || null,
+  const doc = {producto_id:p.id, unidad:p.unidad, codigo:p.codigo, decimales:p.decimales ? 1 : 0, batch:p.batch, solo_batch:p.solo_batch ? 1 : 0,
+               por_etiqueta:p.por_etiqueta || 0, max:p.max || 0, modo_defecto:p.modo_defecto, vida:p.vida, receta:p.receta,
                actualizado:SV(), actualizado_por:(typeof auth !== 'undefined' && auth.currentUser) ? auth.currentUser.email : null};
   if(p.seccion && SECCION_NOMBRE[p.seccion]){ doc.seccion = p.seccion; const pp = prodDe(p.id); if(pp) pp.seccion = p.seccion; }
-  db.collection('fichas_produccion').doc(p.id).set(doc).catch(e => { console.error(e); toast('No se pudo guardar la ficha'); });
-  S.fichas[p.id] = doc;
+  db.collection('fichas_produccion').doc(p.id).set(doc, {merge:true}).catch(e => { console.error(e); toast('No se pudo guardar la ficha'); });
+  S.fichas[p.id] = Object.assign({}, S.fichas[p.id] || {}, doc);
   S.fd = null; S.screen = 'fichas'; render(); toast('Ficha guardada');
 }
 
@@ -5635,7 +5633,6 @@ function onClick(e){
     case 'ffalta': S.filtroFalta = !S.filtroFalta; render(); break;
     case 'ficha-cancel': S.fd = null; S.screen = 'fichas'; render(); break;
     case 'ficha-save': guardarFicha(); break;
-    case 'foto-del': S.fd.draft.foto = null; render(); break;
     case 'ftog': { const dr = S.fd.draft; dr[d.f] = dr[d.f] ? 0 : 1; render(); break; }
     case 'fdef': S.fd.draft.modo_defecto = d.v; render(); break;
     case 'fsec': S.fd.draft.seccion = d.v; render(); break;
@@ -5689,10 +5686,7 @@ function init(){
     if(t.id === 'pr-q'){ S.q = t.value; renderGrid(); }
     else if(t.id === 'pr-np-nombre' && S.np) S.np.nombre = t.value;
     else if(t.id === 'pr-np-pres' && S.np) S.np.pres = t.value;
-    else if(t.id === 'pr-f-nombre' && S.fd) S.fd.draft.nombre = t.value;
-    else if(t.id === 'pr-f-pres' && S.fd) S.fd.draft.presentacion = t.value;
   });
-  document.addEventListener('change', e => { if(e.target && e.target.id === 'pr-ficha-foto' && e.target.files && e.target.files[0] && S.fd) onPhoto(e.target.files[0]); });
   window.addEventListener('resize', layout);
   if(window.ResizeObserver) new ResizeObserver(() => layout()).observe(r);
   escuchar();
@@ -5703,7 +5697,9 @@ window.prInit = init;
 window.prActualizarStock = actualizarStock;
 usbIniciar();
 window.PR = {receta:id => { try { const f = fichaDe(id); return (f && f.receta) || []; } catch(e){ return []; } }, foto:id => { try { const f = S.fichas[id]; return (f && f.foto) || ''; } catch(e){ return ''; } }, productos:() => PROD_ALL.map(p => { let pr = p.unidad; try { const f = fichaDe(p.id); if(f && f.presentacion != null) pr = f.presentacion; } catch(er){} return {id:p.id, nombre:p.nombre, presentacion:pr, unidad:p.uni || unidadPalabra(p.unidad)}; }),
-  setPres:(pid, txt) => { const t = String(txt || '').trim(); const prev = S.fichas[pid] || {}; S.fichas[pid] = Object.assign({}, prev, {producto_id:pid, presentacion:t}); db.collection('fichas_produccion').doc(pid).set({producto_id:pid, presentacion:t, actualizado:SV()}, {merge:true}).catch(er => { console.error(er); toast('No se pudo guardar la presentación'); }); try { if(S.screen === 'main') renderGrid(); else if(S.screen === 'fichas') render(); if(S.pid) renderPanel(); } catch(er){} }, refresh:() => { try { render(); renderTop(); } catch(er){} }, presDe:pid => { const f = pid ? fichaDe(pid) : null; return f ? String(f.presentacion || '').trim() : ''; }, S:S, fichaDe:fichaDe, PROD_ALL:PROD_ALL, go:go, U:U, lbConstruir:lbConstruir};
+  ficha:pid => S.fichas[pid] || {},
+  setFicha:(pid, patch) => { const up = Object.assign({producto_id:pid}, patch); if(patch.nombre != null) up.nombre_propio = 1; S.fichas[pid] = Object.assign({}, S.fichas[pid] || {}, up); db.collection('fichas_produccion').doc(pid).set(Object.assign({}, up, {actualizado:SV()}), {merge:true}).catch(er => { console.error(er); toast('No se pudo guardar'); }); try { if(S.screen === 'main') renderGrid(); else if(S.screen === 'fichas') render(); if(S.pid) renderPanel(); } catch(er){} try { if(window.fxRefresh) window.fxRefresh(); } catch(er){} },
+  fotoSet:(pid, file, cb) => fotoComprimir(file, d => { window.PR.setFicha(pid, {foto:d}); if(cb) cb(); }), refresh:() => { try { render(); renderTop(); } catch(er){} }, presDe:pid => { const f = pid ? fichaDe(pid) : null; return f ? String(f.presentacion || '').trim() : ''; }, S:S, fichaDe:fichaDe, PROD_ALL:PROD_ALL, go:go, U:U, lbConstruir:lbConstruir};
 })();
 
 /* ============================================================
@@ -8331,7 +8327,7 @@ const kPaso = () => ordenPasos(R.d)[R.step - 1];
 const nPaso = k => ordenPasos(R.d).indexOf(k) + 1;
 const COLD = {refrigerado:{max:5, txt:'Refrigerado: hasta 5 °C'}, congelado:{max:-12, txt:'Congelado: −12 °C o menos'}};
 
-const R = {mpCat:{}, tab:'nueva', nw:{}, old:{}, provs:[], d:null, id:null, step:1, q:'', fq:'', filtro:'todas', det:null, m:null, busy:false, ready:false, foto:{}, resp:LSg('resp', ''), respOtro:false, pend:null, t:null};
+const R = {mpCat:{}, tab:'nueva', nw:{}, provs:[], d:null, id:null, step:1, q:'', fq:'', filtro:'todas', det:null, m:null, busy:false, ready:false, foto:{}, resp:LSg('resp', ''), respOtro:false, pend:null, t:null};
 const cat = () => (window.ivItems ? window.ivItems() : []);
 const catPor = id => cat().filter(x => x.id === id)[0] || null;
 const mail = () => (typeof auth !== 'undefined' && auth.currentUser) ? auth.currentUser.email : null;
@@ -8339,16 +8335,13 @@ const empleados = () => { try { return Object.keys(EMPLEADOS_CLOCK).map(k => EMP
 const quien = () => R.resp || mail() || 'Sin responsable';
 
 /* ---------- datos ---------- */
-const todas = () => { const m = {}; Object.keys(R.old).forEach(k => { m[k] = R.old[k]; }); Object.keys(R.nw).forEach(k => { m[k] = R.nw[k]; }); return Object.keys(m).map(k => m[k]); };
-const estadoDe = r => r.estado === 'borrador' || r.estado === 'confirmada' || r.estado === 'anulada' ? r.estado : 'confirmada';   // las anteriores cuentan como confirmadas
+const todas = () => Object.keys(R.nw).map(k => R.nw[k]);
+const estadoDe = r => r.estado === 'borrador' || r.estado === 'confirmada' || r.estado === 'anulada' ? r.estado : 'confirmada';   // sin estado = confirmada
 const historial = () => todas().filter(r => estadoDe(r) !== 'borrador').sort((a, b) => (ms(b.fecha) || ms(b.fecha_actividad)) - (ms(a.fecha) || ms(a.fecha_actividad)));
 function escuchar(){
   if(R.ready || typeof db === 'undefined') return; R.ready = true;
   db.collection('recepciones_bodega').orderBy('fecha_actividad', 'desc').limit(300).onSnapshot(snap => {
     R.nw = {}; snap.forEach(d => { const x = d.data({serverTimestamps:'estimate'}); if(x.modulo) R.nw[d.id] = Object.assign({}, x, {id:d.id}); }); refrescar();
-  }, e => console.error(e));
-  db.collection('recepciones_bodega').orderBy('fecha', 'desc').limit(60).onSnapshot(snap => {
-    R.old = {}; snap.forEach(d => { const x = d.data({serverTimestamps:'estimate'}); if(!x.modulo && x.requerimiento === true) R.old[d.id] = Object.assign({}, x, {id:d.id, anterior:true}); }); refrescar();
   }, e => console.error(e));
   db.collection('catalogo_materia_prima').onSnapshot(snap => { R.mpCat = {}; snap.forEach(d => { R.mpCat[d.id] = d.data(); }); refrescar(); }, e => console.error(e));
   db.collection('proveedores').onSnapshot(snap => { R.provs = []; snap.forEach(d => R.provs.push(Object.assign({id:d.id}, d.data()))); R.provs.sort((a, b) => String(a.nombre || '').localeCompare(String(b.nombre || ''))); refrescar(); }, e => console.error(e));
@@ -8559,10 +8552,10 @@ function vHist(){
     '<div class="rx-chips sm">' + [['todas', 'Todas'], ['conf', 'Confirmadas'], ['dif', '⚠ Diferencias'], ['vinc', '⏳ Por vincular'], ['anul', 'Anuladas']].map(x => '<button class="rx-chip ' + (f === x[0] ? 'on' : '') + '" data-rx="filtro" data-v="' + x[0] + '">' + x[1] + '</button>').join('') + '</div>' +
     (l.length ? '<div class="rx-list">' + l.slice(0, 80).map(r => { const dif = (r.items || []).filter(i => i.estado_item && i.estado_item !== 'ok').length, anu = estadoDe(r) === 'anulada';
       return '<button class="rx-hr ' + (anu ? 'anul' : '') + '" data-rx="hist-open" data-id="' + esc(r.id) + '"><div class="rx-hh"><b>' + esc(r.proveedor || 'Entrega') + (r.documento ? ' · ' + esc(r.documento) : '') + '</b>' + (anu ? '<span class="rx-tag no_llego">Anulada</span>' : '') + '</div><div class="rx-mu">' + esc(fechaDia(r.fecha || r.fecha_actividad)) + ' · ' + (r.items || []).length + ' producto' + ((r.items || []).length === 1 ? '' : 's') + (r.responsable ? ' · ' + esc(r.responsable) : '') + '</div>' +
-        '<div class="rx-bd">' + (dif ? '<span class="rx-tag diferencia">⚠ ' + dif + ' con diferencia</span>' : (anu ? '' : '<span class="rx-tag ok">✔ Completa</span>')) + (r.pendiente_vinculacion ? '<span class="rx-tag prov">⏳ por vincular</span>' : '') + (r.comprobante && r.comprobante.foto || r.foto ? '<span class="rx-tag">📷</span>' : '') + (r.anterior ? '<span class="rx-tag">anterior</span>' : '') + '</div></button>'; }).join('') + '</div>' : '<div class="rx-vacio">No hay recepciones con ese filtro.</div>');
+        '<div class="rx-bd">' + (dif ? '<span class="rx-tag diferencia">⚠ ' + dif + ' con diferencia</span>' : (anu ? '' : '<span class="rx-tag ok">✔ Completa</span>')) + (r.pendiente_vinculacion ? '<span class="rx-tag prov">⏳ por vincular</span>' : '') + (r.comprobante && r.comprobante.foto || r.foto ? '<span class="rx-tag">📷</span>' : '') + '</div></button>'; }).join('') + '</div>' : '<div class="rx-vacio">No hay recepciones con ese filtro.</div>');
 }
 function vDetalle(){
-  const r = R.nw[R.det] || R.old[R.det]; if(!r){ R.det = null; return tabs() + vHist(); }
+  const r = R.nw[R.det]; if(!r){ R.det = null; return tabs() + vHist(); }
   const est = estadoDe(r), anu = est === 'anulada', its = (r.items || []);
   return '<div class="rx-top"><button class="rx-b sm" data-rx="det-volver">← Volver</button><div class="rx-tt">' + esc(r.proveedor || 'Entrega') + '</div><span></span></div>' +
     '<div class="rx-card"><div class="rx-ph"><b>' + (anu ? 'Anulada' : 'Confirmada') + '</b><span class="rx-mu">' + esc(fechaDia(r.fecha || r.fecha_actividad)) + '</span></div>' +
@@ -8575,7 +8568,7 @@ function vDetalle(){
         (it.peso_valor > 0 || it.temperatura_c != null || it.lote_proveedor || it.vence ? '<div class="rx-mu">' + [it.peso_valor > 0 ? '⚖ ' + fmt(it.peso_valor) + ' ' + (it.peso_unidad || 'kg') : '', it.temperatura_c != null ? '🌡 ' + fmt(it.temperatura_c) + ' °C' : '', it.lote_proveedor ? '🏷 ' + esc(it.lote_proveedor) : '', it.vence ? 'Vence ' + esc(it.vence) : ''].filter(Boolean).join(' · ') + '</div>' : '') +
         (it.vinculado === false && !anu ? '<button class="rx-b sm ac" data-rx="vincular" data-i="' + i + '">⏳ Vincular a un producto</button>' : '') + (it.vinculado === false && anu ? '<div class="rx-mu">Nunca sumó a inventario</div>' : '') + '</div><div class="rx-sa"><b>' + fmt(ac || 0) + '</b><small>' + esc(it.unidad || it.unidad_medida || '') + '</small></div></div>'; }).join('') + '</div>' +
     ((r.historial || []).length ? '<div class="rx-card"><h3>Historial de cambios</h3>' + r.historial.map(h => '<div class="rx-mu">' + esc(fechaDia(Date.parse(h.ts))) + ' · <b>' + esc(h.accion) + '</b> · ' + esc(h.por) + (h.detalle ? ' · ' + esc(h.detalle) : '') + '</div>').join('') + '</div>' : '') +
-    (est === 'confirmada' && !r.anterior ? '<div class="rx-two"><button class="rx-b er" data-rx="anular" data-id="' + esc(r.id) + '">Anular (requiere código)</button></div>' : '');
+    (est === 'confirmada' ? '<div class="rx-two"><button class="rx-b er" data-rx="anular" data-id="' + esc(r.id) + '">Anular (requiere código)</button></div>' : '');
 }
 
 /* ---------- productos: buscar, frecuentes, nuevo provisional ---------- */
@@ -8968,7 +8961,7 @@ function escuchar(){
   db.collection('movimientos_estacion').orderBy('fecha', 'desc').limit(250).onSnapshot(snap => { F.movs = []; snap.forEach(d => F.movs.push(Object.assign({}, d.data({serverTimestamps:'estimate'}), {id:d.id}))); refrescar(); if(F.ing && F.ing.h >= igIso(new Date())) igCargar(); }, e => console.error(e));
   db.collection('config_facility').doc('categorias_inventario').onSnapshot(s => { const x = s.exists ? s.data() : {}; F.cats = x.lista || []; F.asig = x.asignadas || {}; refrescar(); }, e => console.error(e));
   db.collection('config_facility').doc('inventario_producir').onSnapshot(s => { F.prod = s.exists ? (s.data().items || {}) : {}; refrescar(); }, e => console.error(e));
-  db.collection('config_facility').doc('inventario_datos').onSnapshot(s => { F.dat = s.exists ? (s.data().items || {}) : {}; migrarPres(); refrescar(); }, e => console.error(e));
+  db.collection('config_facility').doc('inventario_datos').onSnapshot(s => { F.dat = s.exists ? (s.data().items || {}) : {}; refrescar(); }, e => console.error(e));
   db.collection('config_facility').doc('estaciones').onSnapshot(s => { F.extra = s.exists ? (s.data().lista || []) : []; refrescar(); }, e => console.error(e));
 }
 let rt = null;
@@ -9375,7 +9368,8 @@ const catNom = id => (F.cats.filter(x => x.id === id)[0] || {nombre:'Sin categor
 const PILL = [['#1e6b45','#fff'], ['#fbe8a6','#6b4e00'], ['#cfe3fb','#1b4f8f'], ['#f6d0e0','#8a1f50'], ['#e0d4f7','#4b2a8a'], ['#ffd9c2','#8a3a0a'], ['#d3ede4','#0f5c45']];
 const pillDe = id => { const k = F.cats.findIndex(c => c.id === id); return PILL[(k < 0 ? 0 : k) % PILL.length]; };
 const conDatosS = sec => r => conDatos(Object.assign(r, {sec:sec}));
-const conDatos = r => { const d = F.dat[r.id] || {}; return Object.assign({}, r, {pres:d.pres != null ? d.pres : r.pres, uni:d.uni != null ? d.uni : r.uni, min:d.min != null ? d.min : r.min, ini:d.ini != null ? d.ini : null}); };
+const fichaU = id => { try { return (window.PR && PR.ficha(id)) || {}; } catch(e){ return {}; } };
+const conDatos = r => { const d = F.dat[r.id] || {}, fu = fichaU(r.id), fp = fu.presentacion != null && String(fu.presentacion).trim() !== ''; return Object.assign({}, r, {nombre:(fu.nombre_propio && fu.nombre) ? fu.nombre : r.nombre, pres:fp ? fu.presentacion : (d.pres != null ? d.pres : r.pres), uni:d.uni != null ? d.uni : r.uni, min:d.min != null ? d.min : r.min, ini:d.ini != null ? d.ini : null}); };
 const ICO_SEC = {terminado:'<path d="M20 7 12 3 4 7v10l8 4 8-4z"/><path d="m4 7 8 4 8-4M12 11v10"/>', mp:'<path d="M6 8h12l-1 12H7z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>', directo:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M3 11h18M9 7V4h6v3"/>'};
 function fotoDe(id){
   let f = ''; try { f = (window.PR && PR.foto(id)) || ''; } catch(e){}
@@ -9548,14 +9542,6 @@ async function enviarPedido(){
   } catch(e){ console.error(e); toast(errTxt(e)); }
   F.busy = false;
 }
-/* Presentaciones de procesados que se editaron en Inventario antes de que se guardaran en Producción: se pasan a la ficha de Producción y se limpian aquí */
-function migrarPres(){
-  try {
-    const P = prodIds(), items = Object.assign({}, F.dat); let n = 0;
-    Object.keys(items).forEach(id => { const d = items[id]; if(P[id] && d && d.pres != null && String(d.pres).trim() !== '' && window.PR && window.PR.setPres){ window.PR.setPres(id, d.pres); const c = Object.assign({}, d); delete c.pres; items[id] = c; n++; } });
-    if(n){ F.dat = items; db.collection('config_facility').doc('inventario_datos').set({items:items, actualizado:SV()}).catch(er => console.error(er)); }
-  } catch(er){ console.error(er); }
-}
 function guardarDato(pid, campo, val){
   const d = Object.assign({}, F.dat[pid] || {}); if(val == null || val === '') delete d[campo]; else d[campo] = val;
   const items = Object.assign({}, F.dat); items[pid] = d; F.dat = items;
@@ -9570,6 +9556,8 @@ function editarProd(pid, sec){
   const r0 = filasInvTodo(sec).filter(x => x.id === pid)[0]; if(!r0) return; const r = conDatos(Object.assign(r0, {sec:sec})), e = estadoInv(r);
   const cid = catDe(pid), b = (k, t, v) => '<button class="fx-er" data-fx="ed-f" data-v="' + k + '" data-id="' + esc(pid) + '" data-sec="' + sec + '"><span>' + t + '</span><b>' + esc(v === '' || v == null ? 'Agregar ›' : v + ' ›') + '</b></button>';
   modal('<div class="fx-dh">' + phInv(r, true) + '<div style="min-width:0"><h3 style="margin:0">' + esc(r.nombre) + '</h3><div class="rx-mu">Código: ' + esc(pid) + '</div></div></div>' +
+    '<label class="fx-er" for="fx-foto-in" style="cursor:pointer"><span>Foto</span><b>' + (fotoDe(pid) ? 'Cambiar ›' : 'Agregar ›') + '</b></label><input type="file" id="fx-foto-in" accept="image/*" data-id="' + esc(pid) + '" data-sec="' + sec + '" style="position:absolute;opacity:0;width:1px;height:1px">' +
+    (fotoDe(pid) ? '<button class="fx-er" data-fx="ed-foto-del" data-id="' + esc(pid) + '" data-sec="' + sec + '"><span>Quitar foto</span><b>›</b></button>' : '') + b('nombre', 'Nombre', r.nombre) +
     '<div class="fx-dq"><span class="fx-big lg">' + fmt(r3(r.stock)) + '<small>' + esc(r.uni) + '</small></span><span class="fx-es ' + e[0] + '">' + e[1] + '</span></div>' +
     '<div class="rx-mu">El stock lo mueven Producción, Recepción y Despacho. Aquí no se edita.</div>' +
     '<div class="fx-er" style="cursor:default"><span>Área</span><b>' + esc((SECS.filter(x => x[0] === sec)[0] || [0, ''])[1]) + '</b></div>' +
@@ -9696,9 +9684,14 @@ document.addEventListener('click', e => {
     case 'ed': editarProd(id, t.getAttribute('data-sec')); break;
     case 'ed-f': { const sec = t.getAttribute('data-sec'), r = conDatos(Object.assign(filasInvTodo(sec).filter(x => x.id === id)[0] || {id:id}, {sec:sec}));
       if(v === 'min' || v === 'ini'){ modal(null); num((v === 'min' ? 'Stock mínimo · ' : 'Inventario inicial · ') + (r.nombre || ''), r.uni, v === 'min' ? (r.min || '') : (r.ini != null ? r.ini : ''), x => { if(x == null) return; guardarDato(id, v, r3(x)); }); }
-      else { const n = prompt(v === 'uni' ? 'Unidad de medida (ej: Cajas, Litros, Kilos)' : 'Presentación (ej: 12 litros, 500g)', v === 'uni' ? (r.uni || '') : (r.pres || ''));
-        if(n != null){ if(v === 'pres' && sec === 'terminado' && window.PR && window.PR.setPres){ window.PR.setPres(id, n.trim()); guardarDato(id, 'pres', ''); toast('Presentación actualizada también en Producción'); } else guardarDato(id, v, n.trim()); modal(null); render(); } }
+      else { const n = prompt(v === 'uni' ? 'Unidad de medida (ej: Cajas, Litros, Kilos)' : v === 'nombre' ? 'Nombre del producto' : 'Presentación (ej: 12 litros, 500g)', v === 'uni' ? (r.uni || '') : v === 'nombre' ? (r.nombre || '') : (r.pres || ''));
+        if(n != null){ const t2 = n.trim();
+          if(v === 'nombre'){ if(t2) window.PR.setFicha(id, {nombre:t2}); }
+          else if(v === 'pres'){ window.PR.setFicha(id, {presentacion:t2}); if((F.dat[id] || {}).pres != null) guardarDato(id, 'pres', ''); }
+          else guardarDato(id, v, t2);
+          modal(null); render(); } }
       break; }
+    case 'ed-foto-del': window.PR.setFicha(id, {foto:null}); editarProd(id, t.getAttribute('data-sec')); break;
     case 'cat-set': { const asig = Object.assign({}, F.asig); if(v) asig[id] = v; else delete asig[id]; guardarCats(F.cats, asig); modal(null); break; }
     case 'cat-gest': catGestion(); break;
     case 'cat-ed': F.catEd = !F.catEd; if(F.catCtx) catProducto(F.catCtx.pid, F.catCtx.sec); break;
@@ -9777,7 +9770,7 @@ document.addEventListener('input', e => {
   else if(t.id === 'fx-mq'){ F.mq = t.value; F.focus = true; render(); }
   else if(t.id === 'fx-pq' && F.m){ F.m.q = t.value; F.focusM = true; pickDoc(); }
 });
-document.addEventListener('change', e => { const t = e.target; if(!t || !t.id) return; if(t.id === 'fx-fcat'){ F.cat = t.value === '__sin' ? '' : t.value; render(); } else if(t.id === 'fx-cfcat' && F.cf){ F.cf.cat = t.value === 'todas' ? undefined : t.value; render(); } });
+document.addEventListener('change', e => { const t = e.target; if(!t || !t.id) return; if(t.id === 'fx-fcat'){ F.cat = t.value === '__sin' ? '' : t.value; render(); } else if(t.id === 'fx-cfcat' && F.cf){ F.cf.cat = t.value === 'todas' ? undefined : t.value; render(); } else if(t.id === 'fx-foto-in' && t.files && t.files[0]){ const pid = t.getAttribute('data-id'), sec = t.getAttribute('data-sec'); window.PR.fotoSet(pid, t.files[0], () => editarProd(pid, sec)); } });
 window.fxRefresh = () => { try { if(document.getElementById('fx-root') && document.getElementById('vista-fx') && document.getElementById('vista-fx').classList.contains('activa')) render(); } catch(e){} };
 window.fxView = function(n){ if(n === 'fx'){ escuchar(); render(); } };
 window.FXS = F;
