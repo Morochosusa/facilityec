@@ -6636,7 +6636,7 @@ function render(){
   r.innerHTML = ped ? detalle(ped) : lista();
 }
 function lista(){
-  const nuevos = pend(), hechos = P.lista.filter(p => p.estado === 'procesado').sort((a, b) => (fechaPed(a) - fechaPed(b)) || ((a.numero || 0) - (b.numero || 0)));   // en el orden en que llegaron
+  const nuevos = pend(), hechos = P.lista.filter(p => p.estado === 'procesado').sort((a, b) => ((msDe(b.fecha_proceso) || fechaPed(b)) - (msDe(a.fecha_proceso) || fechaPed(a))) || ((b.numero || 0) - (a.numero || 0)));   // el último aceptado primero
   const show = P.tab === 'nuevos' ? nuevos : hechos;
   let h = '<div class="pd-tabs"><button class="lcb ' + (P.tab === 'nuevos' ? 'on' : '') + '" data-pd="tab" data-v="nuevos">Por revisar' + (nuevos.length ? ' (' + nuevos.length + ')' : '') + '</button>' +
     '<button class="lcb ' + (P.tab === 'hechos' ? 'on' : '') + '" data-pd="tab" data-v="hechos">Procesados</button></div>';
