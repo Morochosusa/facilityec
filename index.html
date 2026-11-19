@@ -2059,6 +2059,8 @@
   .bv-ayuda{max-width:380px;margin-top:14px;font-size:14px;font-weight:600;color:#fff;text-align:center;text-shadow:0 1px 6px rgba(0,0,0,.6)}
   .bv-reloj{position:absolute !important;left:50%;bottom:calc(32px + env(safe-area-inset-bottom));transform:translateX(-50%);width:58px;height:58px;border-radius:14px;border:none;background:rgba(255,255,255,.95);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,.45);cursor:pointer}
   .bv-reloj:active{transform:translateX(-50%) scale(.94)}
+  .gd-ar{margin:14px 2px 6px;padding:0 0 4px;font-size:13px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#3c3489;border-bottom:2px solid #3c3489}
+  .gd-ar:first-child{margin-top:4px}
 </style>
 </head>
 <body>
@@ -3034,7 +3036,7 @@ const NOMBRES_ESTADO = {
 
 let guiasCache = [];
 const guiaArea = g => { let a = (g && g.area) || ""; if(!a){ try { const P = window.PDS, ped = P && P.lista ? P.lista.filter(p => p.id === g.pedido_local_id)[0] : null; a = ped && window.pdAreaDe ? (window.pdAreaDe(ped) || "") : ""; } catch(e){} } a = String(a || "").trim(); return a ? a.charAt(0).toUpperCase() + a.slice(1) : ""; };
-const guiaTitulo = g => (NOMBRES_LOCAL[g.local] || g.local) + (guiaArea(g) ? ' · <span class="est-nom">' + guiaArea(g) + '</span>' : "") + (g.origen_area ? ' <span class="ar-tag">' + g.origen_area + '</span>' : "");
+const guiaTitulo = g => (NOMBRES_LOCAL[g.local] || g.local) + (guiaArea(g) ? ' · <span class="est-nom">' + guiaArea(g) + '</span>' : "") + (() => { const ars = []; (g.items || []).forEach(it => { if(it.area_nombre && ars.indexOf(it.area_nombre) < 0) ars.push(it.area_nombre); }); if(!ars.length && g.origen_area) ars.push(g.origen_area); return ars.map(x => ' <span class="ar-tag">' + x + '</span>').join(""); })();
 let guiaAbiertaId = null;
 
 function escucharGuias() {
@@ -3105,14 +3107,15 @@ function verGuia(id) {
 
   const fecha = gdFecha(guia.fecha_despacho);
 
-  const filasItems = guia.items.map((it, idx) => `
+  let arPrev2 = null;
+  const filasItems = guia.items.map((it, idx) => (((it.area_nombre && it.area_nombre !== arPrev2) ? `<div class="gd-ar">${(arPrev2 = it.area_nombre)}</div>` : "") + `
     <div class="detalle-fila guia-fila-check">
-      <span class="guia-fila-nombre"><span style="color:#888780;">${idx + 1}.</span> ${it.producto_nombre} ${it.area_nombre ? '<span class="ar-tag">' + it.area_nombre + '</span> ' : ''}<span style="color:#888780;">(${it.cantidad_despachada} ${it.unidad_medida})</span>${frioLinea(guia, it)}</span>
+      <span class="guia-fila-nombre"><span style="color:#888780;">${idx + 1}.</span> ${it.producto_nombre} <span style="color:#888780;">(${it.cantidad_despachada} ${it.unidad_medida})</span>${frioLinea(guia, it)}</span>
       <span class="check-box-vacio" title="Envia"></span>
       <span class="check-box-vacio" title="Recibe"></span>
       <span class="guia-obs-columna">${it.cantidad_recibida != null ? `<b style="color:${(it.diferencia || 0) !== 0 ? '#c0392b' : '#1d7a4d'};">Recibido: ${it.cantidad_recibida}${(it.diferencia || 0) !== 0 ? ` (${it.diferencia > 0 ? '+' : ''}${it.diferencia})` : ' ✓'}</b>${it.nota_diferencia ? `<br><small>${it.nota_diferencia}</small>` : ''}` : ''}</span>
     </div>
-  `).join("");
+  `)).join("");
   const fechaRec = gdFecha(guia.fecha_recepcion);
   const lineaRecepcion = guia.estado === "despachado" ? "" : `<div class="guia-fecha">${guia.estado === "recibido_diferencias" ? "Recibida con diferencias" : "Recibida OK"}${guia.recibido_por ? " por " + guia.recibido_por : ""}${fechaRec ? " - " + fechaRec : ""}</div>`;
 
@@ -3252,11 +3255,12 @@ function verGuiaPorDespachar(guia) {
   const falt = guia.items.filter(it => it.cantidad_despachada > 0 && gdSaca(it) && it.cantidad_despachada > gdStock(it));
   const sinRev = guia.items.filter(it => it.cantidad_despachada > 0 && !it.verificado_salida), totN = guia.items.filter(it => it.cantidad_despachada > 0).length;
   const orden = guia.items.map((it, i) => i).sort((a, b) => (esFrio(consItem(guia.items[a])) ? 1 : 0) - (esFrio(consItem(guia.items[b])) ? 1 : 0) || a - b);   // lo frío sale al final
-  let pos = 0;
+  let pos = 0, arPrev = null;
   const filas = orden.map(idx => { const it = guia.items[idx]; pos++;
+    const arHd = (it.area_nombre && it.area_nombre !== arPrev) ? `<div class="gd-ar">${it.area_nombre}</div>` : ""; if(it.area_nombre) arPrev = it.area_nombre;
     const q = it.cantidad_despachada, off = !(q > 0), hay = gdStock(it), falta = !off && gdSaca(it) && q > hay, cs = consItem(it), frio = esFrio(cs);
-    return `<div class="gd-row ${off ? "off" : ""} ${falta ? "falta" : ""} ${it.verificado_salida && !off ? "rev" : ""}">
-      <div class="gd-nm">${off ? "" : `<button class="gd-chk ${it.verificado_salida ? "on" : ""}" onclick="gdRev('${id}', ${idx})" aria-label="Revisado">${it.verificado_salida ? "✓" : ""}</button>`}<div class="gd-nt"><span class="gd-n">${pos}.</span> ${it.producto_nombre}${it.area_nombre ? ' <span class="ar-tag">' + it.area_nombre + '</span>' : ''}${frio ? ` <span class="frio-tag ${cs}">${CONS_TXT[cs]}</span>` : ""}
+    return arHd + `<div class="gd-row ${off ? "off" : ""} ${falta ? "falta" : ""} ${it.verificado_salida && !off ? "rev" : ""}">
+      <div class="gd-nm">${off ? "" : `<button class="gd-chk ${it.verificado_salida ? "on" : ""}" onclick="gdRev('${id}', ${idx})" aria-label="Revisado">${it.verificado_salida ? "✓" : ""}</button>`}<div class="gd-nt"><span class="gd-n">${pos}.</span> ${it.producto_nombre}${frio ? ` <span class="frio-tag ${cs}">${CONS_TXT[cs]}</span>` : ""}
         <div class="gd-sub">${gdSaca(it) ? "En bodega hay " + gdFmt(hay) : "Compra directa: no baja del inventario"}${falta ? ` · <b class="gd-falta">faltan ${gdFmt(q - hay)}</b>` : ""}${it.cantidad_pedida != null && it.cantidad_pedida !== q && !off ? " · pidieron " + gdFmt(it.cantidad_pedida) : ""}</div></div></div>
       <button class="lcb gd-q" onclick="gdCant('${id}', ${idx})">${off ? "Quitado" : gdFmt(q) + " " + (it.unidad_medida || "")}</button>
       <div class="gd-or"><button class="lcb ${gdSaca(it) ? "on" : ""}" onclick="gdOrigen('${id}', ${idx}, 'stock')">De stock</button><button class="lcb ${gdSaca(it) ? "" : "on"}" onclick="gdOrigen('${id}', ${idx}, 'compra_directa')">Compra directa</button></div>
@@ -3788,7 +3792,7 @@ async function cargarCompraAGuias(lista) {
     const { meta, items } = grupos[pid];
     const nuevos = items.map(it => ({ producto_id: it.producto_id, producto_nombre: it.producto_nombre, categoria: it.categoria || null, subcategoria: it.subcategoria || null,
       unidad_medida: it.unidad_medida || "", cantidad_pedida: it.cantidad_solicitada, cantidad_despachada: it.cantidad_solicitada, origen: "compra_directa",
-      cantidad_recibida: null, diferencia: null, nota_diferencia: "", desde_compra: lista.id }));
+      area_item: "mercado", area_nombre: "Mercado", cantidad_recibida: null, diferencia: null, nota_diferencia: "", desde_compra: lista.id }));
     const areaN = t => String(t || "").trim().toLowerCase();
     const mismos = guiasCache.filter(x => x.pedido_local_id === pid && x.estado === "por_despachar");
     const g = mismos.filter(x => meta.origen_area && x.origen_area === meta.origen_area)[0] || mismos[0]
