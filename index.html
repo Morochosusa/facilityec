@@ -8865,7 +8865,7 @@ function escuchar(){
   db.collection('movimientos_estacion').orderBy('fecha', 'desc').limit(250).onSnapshot(snap => { F.movs = []; snap.forEach(d => F.movs.push(Object.assign({}, d.data({serverTimestamps:'estimate'}), {id:d.id}))); refrescar(); if(F.ing && F.ing.h >= igIso(new Date())) igCargar(); }, e => console.error(e));
   db.collection('config_facility').doc('categorias_inventario').onSnapshot(s => { const x = s.exists ? s.data() : {}; F.cats = x.lista || []; F.asig = x.asignadas || {}; refrescar(); }, e => console.error(e));
   db.collection('config_facility').doc('inventario_producir').onSnapshot(s => { F.prod = s.exists ? (s.data().items || {}) : {}; refrescar(); }, e => console.error(e));
-  db.collection('config_facility').doc('inventario_datos').onSnapshot(s => { F.dat = s.exists ? (s.data().items || {}) : {}; refrescar(); }, e => console.error(e));
+  db.collection('config_facility').doc('inventario_datos').onSnapshot(s => { F.dat = s.exists ? (s.data().items || {}) : {}; migrarPres(); refrescar(); }, e => console.error(e));
   db.collection('config_facility').doc('estaciones').onSnapshot(s => { F.extra = s.exists ? (s.data().lista || []) : []; refrescar(); }, e => console.error(e));
 }
 let rt = null;
@@ -9445,6 +9445,14 @@ async function enviarPedido(){
   } catch(e){ console.error(e); toast(errTxt(e)); }
   F.busy = false;
 }
+/* Presentaciones de procesados que se editaron en Inventario antes de que se guardaran en Producción: se pasan a la ficha de Producción y se limpian aquí */
+function migrarPres(){
+  try {
+    const P = prodIds(), items = Object.assign({}, F.dat); let n = 0;
+    Object.keys(items).forEach(id => { const d = items[id]; if(P[id] && d && d.pres != null && String(d.pres).trim() !== '' && window.PR && window.PR.setPres){ window.PR.setPres(id, d.pres); const c = Object.assign({}, d); delete c.pres; items[id] = c; n++; } });
+    if(n){ F.dat = items; db.collection('config_facility').doc('inventario_datos').set({items:items, actualizado:SV()}).catch(er => console.error(er)); }
+  } catch(er){ console.error(er); }
+}
 function guardarDato(pid, campo, val){
   const d = Object.assign({}, F.dat[pid] || {}); if(val == null || val === '') delete d[campo]; else d[campo] = val;
   const items = Object.assign({}, F.dat); items[pid] = d; F.dat = items;
@@ -9736,4 +9744,3 @@ setTimeout(() => { if(window.firebase && typeof db !== 'undefined') escuchar(); 
 
 </body>
 </html>
-  
