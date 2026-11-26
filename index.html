@@ -9741,7 +9741,7 @@ document.addEventListener('click', e => {
       if(v === 'min' || v === 'ini' || v === 'costo'){ num((v === 'min' ? 'Stock mínimo · ' : v === 'costo' ? 'Costo por ' + (r.uni || 'unidad') + ' · ' : 'Inventario inicial · ') + (r.nombre || ''), v === 'costo' ? '$' : r.uni, v === 'min' ? (r.min || '') : v === 'costo' ? (r.costo != null ? r.costo : '') : (r.ini != null ? r.ini : ''), x => { if(x != null) guardarDato(id, v, v === 'costo' ? Math.round(x * 10000) / 10000 : r3(x)); reabrirFicha(id, sec); }); }
       break; }
     case 'cfg-save': cfgGuardar(); break;
-    case 'foto-ok': { const ft = F.fotoTmp; if(!ft) break; window.PR.setFicha(ft.pid, {foto:ft.d}); F.fotoTmp = null; render(); reabrirFicha(ft.pid, ft.sec); toast('Foto guardada'); break; }
+    case 'foto-ok': { const ft = F.fotoTmp; if(!ft) break; window.PR.setFicha(ft.pid, {foto:ft.d}); F.fotoTmp = null; modal(null); render(); toast('Foto guardada'); break; }
     case 'foto-no': { const ft = F.fotoTmp; F.fotoTmp = null; if(ft){ render(); reabrirFicha(ft.pid, ft.sec); } break; }
     case 'ed-foto-del': window.PR.setFicha(id, {foto:null}); editarProd(id, t.getAttribute('data-sec')); break;
     case 'cat-set': { const asig = Object.assign({}, F.asig); if(v) asig[id] = v; else delete asig[id]; guardarCats(F.cats, asig); modal(null); break; }
