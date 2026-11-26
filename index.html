@@ -2063,6 +2063,11 @@
   .bv-reloj:active{transform:translateX(-50%) scale(.94)}
   .gd-ar{margin:14px 2px 6px;padding:0 0 4px;font-size:13px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#3c3489;border-bottom:2px solid #3c3489}
   .gd-ar:first-child{margin-top:4px}
+  .fx-cf label{display:block;font-size:13px;font-weight:600;margin:10px 0 4px}.fx-cf .rx-in{width:100%;box-sizing:border-box}.fx-e2{color:#a32d2d;font-size:12px;min-height:14px;margin-top:2px}.fx-prevw{background:#eef6f0;border-radius:12px;padding:10px 12px;margin:12px 0}.fx-prevw small{display:block;font-size:12px;color:#5a6b5f}.fx-prevw b{font-size:20px}
+  .fx-cf label{margin:6px 0 2px;font-size:12px}.fx-cf .rx-in{padding:8px 10px;font-size:15px}.fx-e2{min-height:0}.fx-g3{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}.fx-prevw{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 0 4px}.fx-prevw b{font-size:17px}.fx-prevw .rx-b{width:auto;min-width:110px}
+  .fx-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:10px 0}.fx-g .fx-er{flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;min-height:0;padding:8px 10px;border:1px solid #e6e3da;border-radius:10px;font-size:13px}.fx-g .fx-er span{color:#667085;font-size:12px}.fx-g .fx-er b{font-size:14px}
+  .fx-fl{font-size:13px;margin-top:2px}.fx-fl label,.fx-fl button{color:#2f5be0;background:none;border:0;padding:0;font:inherit;cursor:pointer}.fx-mas{margin-top:12px;border-top:1px solid #e6e3da;padding-top:8px}.fx-mas summary{cursor:pointer;font-size:14px;font-weight:600;color:#475467}
+  .fx-fl label{border:0!important;padding:0!important;margin:0!important;font-size:13px!important;font-weight:400!important;display:inline!important}
 </style>
 </head>
 <body>
@@ -9369,7 +9374,50 @@ const PILL = [['#1e6b45','#fff'], ['#fbe8a6','#6b4e00'], ['#cfe3fb','#1b4f8f'], 
 const pillDe = id => { const k = F.cats.findIndex(c => c.id === id); return PILL[(k < 0 ? 0 : k) % PILL.length]; };
 const conDatosS = sec => r => conDatos(Object.assign(r, {sec:sec}));
 const fichaU = id => { try { return (window.PR && PR.ficha(id)) || {}; } catch(e){ return {}; } };
-const conDatos = r => { const d = F.dat[r.id] || {}, fu = fichaU(r.id), fp = fu.presentacion != null && String(fu.presentacion).trim() !== ''; return Object.assign({}, r, {nombre:(fu.nombre_propio && fu.nombre) ? fu.nombre : r.nombre, pres:fp ? fu.presentacion : (d.pres != null ? d.pres : r.pres), uni:d.uni != null ? d.uni : r.uni, min:d.min != null ? d.min : r.min, ini:d.ini != null ? d.ini : null}); };
+/* Presentación estructurada: tipo + cantidad + unidad del contenido. El texto se arma solo, nadie lo escribe. */
+const PRES_T = [['unidad','unidades'],['paquete','paquetes'],['caja','cajas'],['botella','botellas'],['saco','sacos'],['funda','fundas'],['cubeta','cubetas'],['porción','porciones'],['bandeja','bandejas'],['rollo','rollos'],['bidón','bidones']];
+const CONT_U = ['unidades','g','kg','lb','ml','L','galón'], DEC_U = ['g','kg','lb','ml','L','galón'];
+const presPl = t => (PRES_T.filter(x => x[0] === t)[0] || [0, ''])[1];
+const conDatos = r => { const d = F.dat[r.id] || {}, fu = fichaU(r.id), fp = fu.presentacion != null && String(fu.presentacion).trim() !== '';
+  const est = !!(fu.pres_tipo && fu.pres_uni && (fu.pres_tipo === 'granel' || fu.pres_cant > 0)), granel = est && fu.pres_tipo === 'granel';
+  const o = {nombre:(fu.nombre_propio && fu.nombre) ? fu.nombre : r.nombre, pres:fp ? fu.presentacion : (d.pres != null ? d.pres : r.pres), uni:d.uni != null ? d.uni : r.uni, min:d.min != null ? d.min : r.min, ini:d.ini != null ? d.ini : null, costo:d.costo != null ? d.costo : null, est:est};
+  if(est){ o.granel = granel; o.uni = granel ? fu.pres_uni : presPl(fu.pres_tipo); o.uniS = granel ? fu.pres_uni : fu.pres_tipo; o.pcant = granel ? null : fu.pres_cant; o.puni = fu.pres_uni; o.ptipo = fu.pres_tipo; o.pres = granel ? '' : fu.presentacion || ''; }
+  return Object.assign({}, r, o); };
+const unTxt = r => (r.est && !r.granel) ? (r3(r.stock) === 1 ? r.uniS : r.uni) + ' × ' + fmt(r.pcant) + ' ' + r.puni : r.uni;
+const sinAc = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+const cfgDerivada = c => c.tipo === 'granel' ? '' : c.tipo.charAt(0).toUpperCase() + c.tipo.slice(1) + ' ' + c.cant + ' ' + c.uni;
+function cfgErrores(c){ const e = {}, nm = String(c.nombre || '').trim();
+  if(!nm) e.nom = 'Escribe el nombre del producto'; else if(!/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/.test(nm)) e.nom = 'El nombre debe tener letras, no solo números'; else if(nm.length > 100) e.nom = 'Máximo 100 caracteres';
+  else { const k = sinAc(nm); if(['terminado', 'mp', 'directo'].some(sc => filasInvTodo(sc).some(x => x.id !== c.pid && sinAc(conDatos(Object.assign({}, x, {sec:sc})).nombre) === k))) e.nom = 'Ya existe un producto con ese nombre'; }
+  if(!c.tipo) e.tipo = 'Elige la presentación';
+  if(!c.uni) e.uni = 'Elige la unidad del contenido';
+  if(c.tipo && c.tipo !== 'granel'){ const n = parseFloat(c.cant); if(!(n > 0)) e.cant = 'Escribe un número mayor que 0'; else if(c.uni === 'unidades' && n !== Math.floor(n)) e.cant = 'En unidades va un número entero'; else if(n > 100000) e.cant = 'Número demasiado grande'; }
+  return e; }
+function cfgPintar(){ const c = F.cfg; if(!c) return; const e = cfgErrores(c), set = (id, m) => { const el = document.getElementById(id); if(el) el.textContent = m || ''; };
+  set('fx-e-nom', c.t.nom ? e.nom : ''); set('fx-e-tipo', c.t.tipo ? e.tipo : ''); set('fx-e-cant', c.t.cant ? e.cant : ''); set('fx-e-uni', c.t.uni ? e.uni : '');
+  const cw = document.getElementById('fx-w-cant'); if(cw) cw.style.display = c.tipo === 'granel' ? 'none' : '';
+  const pv = document.getElementById('fx-prev'); if(pv){ const ok = !e.tipo && !e.uni && !e.cant, n = c.stock;
+    pv.textContent = ok ? fmt(n) + ' ' + (c.tipo === 'granel' ? c.uni : (n === 1 ? c.tipo : presPl(c.tipo)) + ' × ' + fmt(parseFloat(c.cant)) + ' ' + c.uni) : 'Completa los campos para ver el resultado'; }
+  const bt = document.getElementById('fx-cfg-save'); if(bt) bt.disabled = Object.keys(e).length > 0; }
+function cfgGuardar(){ const c = F.cfg; if(!c) return; if(Object.keys(cfgErrores(c)).length){ c.t = {nom:1, tipo:1, cant:1, uni:1}; cfgPintar(); return; }
+  const r0 = filasInvTodo(c.sec).filter(x => x.id === c.pid)[0], r = conDatos(Object.assign({}, r0, {sec:c.sec})), nuevaUni = c.tipo === 'granel' ? c.uni : presPl(c.tipo);
+  if(r.stock && (!r.est || r.uni !== nuevaUni || r.pcant !== (c.tipo === 'granel' ? null : parseFloat(c.cant)))){
+    const txt = c.tipo === 'granel' ? fmt(r3(r.stock)) + ' ' + c.uni : fmt(r3(r.stock)) + ' ' + (r3(r.stock) === 1 ? c.tipo : presPl(c.tipo)) + ' × ' + fmt(parseFloat(c.cant)) + ' ' + c.uni;
+    if(!confirm('Hoy hay ' + fmt(r3(r.stock)) + ' ' + r.uni + ' en inventario.\n\nAl guardar, el mismo número se leerá como:\n' + txt + '\n\n¿Es correcto? Si no, toca Cancelar y corrige antes de guardar.')) return; }
+  window.PR.setFicha(c.pid, {nombre:String(c.nombre).trim(), presentacion:cfgDerivada(c), pres_tipo:c.tipo, pres_cant:c.tipo === 'granel' ? null : parseFloat(c.cant), pres_uni:c.uni});
+  const dd = F.dat[c.pid] || {}; if(dd.pres != null) guardarDato(c.pid, 'pres', ''); if(dd.uni != null) guardarDato(c.pid, 'uni', '');
+  F.cfg = null; modal(null); render(); toast('Ficha guardada'); }
+function cfgHtml(r, pid, sec){
+  F.cfg = {pid:pid, sec:sec, nombre:r.nombre || '', tipo:r.est ? r.ptipo : '', cant:r.est && !r.granel ? String(r.pcant) : '', uni:r.est ? r.puni : '', stock:r3(r.stock), t:{}};
+  const c = F.cfg, op = (v, l, sel) => '<option value="' + esc(v) + '"' + (sel ? ' selected' : '') + '>' + esc(l) + '</option>';
+  return '<div class="fx-subh">Configuración de inventario' + (r.est ? '' : ' · <span class="fx-pd">pendiente</span>') + '</div>' +
+    '<div class="fx-cf"><label>Nombre del producto</label><input class="rx-in" id="fx-nom" maxlength="100" autocomplete="off" placeholder="Ej. Contenedor 5x5 ensaladas" value="' + esc(c.nombre) + '"><div class="fx-e2" id="fx-e-nom"></div>' +
+    '<div class="fx-g3"><div><label>Presentación</label><select class="rx-in" id="fx-ptipo">' + op('', 'Elegir…', !c.tipo) + op('granel', 'A granel', c.tipo === 'granel') + PRES_T.map(x => op(x[0], x[0].charAt(0).toUpperCase() + x[0].slice(1), c.tipo === x[0])).join('') + '</select></div>' +
+    '<div id="fx-w-cant"' + (c.tipo === 'granel' ? ' style="display:none"' : '') + '><label>Cantidad</label><input class="rx-in" id="fx-pcant" inputmode="decimal" autocomplete="off" placeholder="Ej. 25" value="' + esc(c.cant) + '"></div>' +
+    '<div><label>Unidad</label><select class="rx-in" id="fx-puni">' + op('', 'Elegir…', !c.uni) + CONT_U.map(u => op(u, u, c.uni === u)).join('') + '</select></div></div>' +
+    '<div class="fx-e2" id="fx-e-tipo"></div><div class="fx-e2" id="fx-e-cant"></div><div class="fx-e2" id="fx-e-uni"></div>' +
+    '<div class="fx-prevw"><div><small>Resultado en inventario</small><b id="fx-prev"></b></div><button class="rx-b ok" id="fx-cfg-save" data-fx="cfg-save">Guardar</button></div></div>';
+}
 const ICO_SEC = {terminado:'<path d="M20 7 12 3 4 7v10l8 4 8-4z"/><path d="m4 7 8 4 8-4M12 11v10"/>', mp:'<path d="M6 8h12l-1 12H7z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>', directo:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M3 11h18M9 7V4h6v3"/>'};
 function fotoDe(id){
   let f = ''; try { f = (window.PR && PR.foto(id)) || ''; } catch(e){}
@@ -9437,10 +9485,10 @@ function vInv(){
     return '<button class="fx-pk' + (F.sel[r.id] ? ' on' : '') + '" data-fx="sel-p" data-id="' + esc(r.id) + '" aria-label="' + (F.sel[r.id] ? 'Quitar del pedido' : 'Agregar al pedido') + '">' + (F.sel[r.id] ? '✓ Pedir' : '＋ Pedir') + '</button>'; };
   const aTag = r => '<span class="fx-ar ' + r.sec + '">' + esc((SECS.find(x => x[0] === r.sec) || [0,''])[1]) + '</span>';
   const fila = r => { const e = estadoInv(r);
-    return '<div class="fx-r' + (r.sec === 'terminado' ? ' sp' : '') + (F.sel[r.id] ? ' sel' : '') + '" role="button" tabindex="0" data-fx="ed" data-id="' + esc(r.id) + '" data-sec="' + r.sec + '">' + phInv(r) + '<div class="fx-rm"><div class="fx-rn">' + esc(r.nombre) + '</div>' + (r.pres ? '<div class="fx-pre">' + esc(r.pres) + '</div>' : '') + '<div class="fx-rs">' + (F.prod[r.id] && bajo(r) ? '<span class="fx-pd">Por producir</span>' : '') + (pend[r.id] ? '<span class="fx-pd">Pedido pendiente</span>' : '') + '</div></div>' +
-      '<div class="fx-rq">' + ingTag(r) + '<span class="fx-big">' + fmt(r3(r.stock)) + '<small>' + esc(r.uni) + '</small></span><div class="fx-rb2"><span class="fx-es ' + e[0] + '">' + e[1] + '</span>' + btnPedir(r) + '</div></div></div>'; };
+    return '<div class="fx-r' + (r.sec === 'terminado' ? ' sp' : '') + (F.sel[r.id] ? ' sel' : '') + '" role="button" tabindex="0" data-fx="ed" data-id="' + esc(r.id) + '" data-sec="' + r.sec + '">' + phInv(r) + '<div class="fx-rm"><div class="fx-rn">' + esc(r.nombre) + '</div>' + (r.pres && !r.est ? '<div class="fx-pre">' + esc(r.pres) + '</div>' : '') + '<div class="fx-rs">' + (r.est ? '' : '<span class="fx-pd">Configuración pendiente</span>') + (F.prod[r.id] && bajo(r) ? '<span class="fx-pd">Por producir</span>' : '') + (pend[r.id] ? '<span class="fx-pd">Pedido pendiente</span>' : '') + '</div></div>' +
+      '<div class="fx-rq">' + ingTag(r) + '<span class="fx-big">' + fmt(r3(r.stock)) + '<small>' + esc(unTxt(r)) + '</small></span><div class="fx-rb2"><span class="fx-es ' + e[0] + '">' + e[1] + '</span>' + btnPedir(r) + '</div></div></div>'; };
   const trow = r => { const e = estadoInv(r);
-    return '<tr' + (F.sel[r.id] ? ' class="sel"' : '') + ' data-fx="ed" data-id="' + esc(r.id) + '" data-sec="' + r.sec + '"><td class="fx-tp">' + phInv(r) + '</td><td class="fx-tn">' + esc(r.nombre) + ingTag(r) + (pend[r.id] ? ' <span class="fx-pd">Pedido pendiente</span>' : '') + (F.prod[r.id] && bajo(r) ? ' <span class="fx-pd">Por producir</span>' : '') + '</td><td class="fx-tpr">' + esc(r.pres || '') + '</td><td class="fx-tc"><span class="fx-big">' + fmt(r3(r.stock)) + '</span> <small>' + esc(r.uni) + '</small></td><td><span class="fx-es ' + e[0] + '">' + e[1] + '</span></td><td class="fx-tc">' + btnPedir(r) + '</td><td class="fx-tc">›</td></tr>'; };
+    return '<tr' + (F.sel[r.id] ? ' class="sel"' : '') + ' data-fx="ed" data-id="' + esc(r.id) + '" data-sec="' + r.sec + '"><td class="fx-tp">' + phInv(r) + '</td><td class="fx-tn">' + esc(r.nombre) + ingTag(r) + (r.est ? '' : ' <span class="fx-pd">Configuración pendiente</span>') + (r.est || !r.pres ? '' : '<div class="fx-pre">' + esc(r.pres) + '</div>') + (pend[r.id] ? ' <span class="fx-pd">Pedido pendiente</span>' : '') + (F.prod[r.id] && bajo(r) ? ' <span class="fx-pd">Por producir</span>' : '') + '</td><td class="fx-tc"><span class="fx-big">' + fmt(r3(r.stock)) + '</span> <small>' + esc(unTxt(r)) + '</small></td><td><span class="fx-es ' + e[0] + '">' + e[1] + '</span></td><td class="fx-tc">' + btnPedir(r) + '</td><td class="fx-tc">›</td></tr>'; };
   const pend = pendDe(), nSel = Object.keys(F.sel).length;
   const bajoN = idsParaPedir().length, prodN = idsParaProducir().length;
   igInit(); const dups = dupDirectos(), impN = impBodegaPend().nuevos.length, uniN = uniCand().reduce((a, x) => a + x.unir.length, 0), uniY = uniDocs().length;
@@ -9463,7 +9511,7 @@ function vInv(){
   l.sort((a, b) => ordAr(a) - ordAr(b) || ordCat(a) - ordCat(b) || String(a.nombre).localeCompare(String(b.nombre)));
   h += '<div class="fx-cnt rx-mu">' + l.length + ' producto' + (l.length === 1 ? '' : 's') + '</div>';
   if(!l.length) h += '<div class="rx-mu" style="padding:4px 4px 10px">' + (F.rap === 'ing' ? (F.ing.cargando ? 'Cargando…' : 'No entró nada en estas fechas.') : q ? 'Sin resultados' : 'Aquí aparecen los productos de Producción y lo que entra por Recepción.') + '</div>';
-  else h += '<div class="fx-lista">' + l.map(fila).join('') + '</div><div class="fx-tw"><table class="fx-tb"><thead><tr><th></th><th>Producto</th><th>Presentación</th><th>Stock actual</th><th>Estado</th><th>Pedir / Producir</th><th></th></tr></thead><tbody>' + l.map(trow).join('') + '</tbody></table></div>';
+  else h += '<div class="fx-lista">' + l.map(fila).join('') + '</div><div class="fx-tw"><table class="fx-tb"><thead><tr><th></th><th>Producto</th><th>Stock actual</th><th>Estado</th><th>Pedir / Producir</th><th></th></tr></thead><tbody>' + l.map(trow).join('') + '</tbody></table></div>';
   if(nSel) h += '<div class="fx-pie"><button class="rx-b" data-fx="ped-limpiar">Cancelar</button><button class="rx-b ac" data-fx="ped-abrir">Pedir a proveedor (' + nSel + ')</button></div>';
   else if(bajoN && F.rap === 'pedir') h += '<div class="fx-pie fx-pe"><button class="rx-b ac big" data-fx="ped-bajos">Pedir (' + bajoN + ')</button></div>';
   h += '<div style="height:84px"></div>';
@@ -9555,14 +9603,13 @@ const CONS = [['ambiente', 'Ambiente'], ['refrigerado', '🧊 Refrigerado'], ['c
 function editarProd(pid, sec){
   const r0 = filasInvTodo(sec).filter(x => x.id === pid)[0]; if(!r0) return; const r = conDatos(Object.assign(r0, {sec:sec})), e = estadoInv(r);
   const cid = catDe(pid), b = (k, t, v) => '<button class="fx-er" data-fx="ed-f" data-v="' + k + '" data-id="' + esc(pid) + '" data-sec="' + sec + '"><span>' + t + '</span><b>' + esc(v === '' || v == null ? 'Agregar ›' : v + ' ›') + '</b></button>';
-  modal('<div class="fx-dh">' + phInv(r, true) + '<div style="min-width:0"><h3 style="margin:0">' + esc(r.nombre) + '</h3><div class="rx-mu">Código: ' + esc(pid) + '</div></div></div>' +
-    '<label class="fx-er" for="fx-foto-in" style="cursor:pointer"><span>Foto</span><b>' + (fotoDe(pid) ? 'Cambiar ›' : 'Agregar ›') + '</b></label><input type="file" id="fx-foto-in" accept="image/*" data-id="' + esc(pid) + '" data-sec="' + sec + '" style="position:absolute;opacity:0;width:1px;height:1px">' +
-    (fotoDe(pid) ? '<button class="fx-er" data-fx="ed-foto-del" data-id="' + esc(pid) + '" data-sec="' + sec + '"><span>Quitar foto</span><b>›</b></button>' : '') + b('nombre', 'Nombre', r.nombre) +
-    '<div class="fx-dq"><span class="fx-big lg">' + fmt(r3(r.stock)) + '<small>' + esc(r.uni) + '</small></span><span class="fx-es ' + e[0] + '">' + e[1] + '</span></div>' +
-    '<div class="rx-mu">El stock lo mueven Producción, Recepción y Despacho. Aquí no se edita.</div>' +
-    '<div class="fx-er" style="cursor:default"><span>Área</span><b>' + esc((SECS.filter(x => x[0] === sec)[0] || [0, ''])[1]) + '</b></div>' +
+  modal('<div class="fx-dh">' + phInv(r, true) + '<div style="min-width:0"><h3 style="margin:0">' + esc(r.nombre) + '</h3><div class="rx-mu">Código: ' + esc(pid) + '</div><div class="fx-fl"><label for="fx-foto-in">' + (fotoDe(pid) ? 'Cambiar foto' : 'Agregar foto') + '</label>' + (fotoDe(pid) ? ' · <button data-fx="ed-foto-del" data-id="' + esc(pid) + '" data-sec="' + sec + '">Quitar</button>' : '') + '</div></div></div><input type="file" id="fx-foto-in" accept="image/*" data-id="' + esc(pid) + '" data-sec="' + sec + '" style="position:absolute;opacity:0;width:1px;height:1px">' +
+    '<div class="fx-dq"><span class="fx-big lg">' + fmt(r3(r.stock)) + '<small>' + esc(unTxt(r)) + '</small></span><span class="fx-es ' + e[0] + '">' + e[1] + '</span></div>' +
+    '<div class="rx-mu">El stock lo mueven Producción, Recepción y Despacho. Aquí no se edita.</div>' + cfgHtml(r, pid, sec) +
+    '<div class="fx-g"><div class="fx-er" style="cursor:default"><span>Área</span><b>' + esc((SECS.filter(x => x[0] === sec)[0] || [0, ''])[1]) + '</b></div>' +
     '<button class="fx-er" data-fx="cat-prod" data-id="' + esc(pid) + '" data-sec="' + sec + '"><span>Categoría</span><b>' + esc(cid ? catNom(cid) : 'Elegir ›') + '</b></button>' +
-    b('uni', 'Unidad de medida', r.uni) + b('pres', 'Presentación', r.pres) + b('min', 'Stock mínimo', r.min ? fmt(r.min) : '') + b('ini', 'Inventario inicial', r.ini != null ? fmt(r.ini) : '') +
+    b('costo', 'Costo unitario', r.costo != null ? '$' + fmt(r.costo) + ' por ' + r.uni : '') + b('min', 'Stock mínimo', r.min ? fmt(r.min) : '') + b('ini', 'Inventario inicial', r.ini != null ? fmt(r.ini) : '') + '</div>' +
+    '<details class="fx-mas"><summary>Más datos (conservación, ubicación, compras, visibilidad, movimientos)</summary>' +
     (sec === 'terminado' ? (() => { const rc = (window.PR && window.PR.receta) ? window.PR.receta(pid) : []; if(!rc.length) return '<div class="fx-subh">Para producir más</div><div class="rx-mu">Este producto todavía no tiene receta.</div>';
       const mps = filasInv('mp').map(conDatosS('mp')); const falta = [];
       const filas = rc.map(l => { const m = mps.filter(x => x.id === l.mp_id)[0], tiene = m ? m.stock : null, ok = tiene != null && tiene + 1e-9 >= (l.cantidad || 0); if(!ok && m) falta.push(m.id);
@@ -9571,7 +9618,8 @@ function editarProd(pid, sec){
     (catPor(pid) ? fichaBloque(pid, sec) : '') +
     (() => { const est = estProd(pid); return '<div class="fx-subh">Visibilidad</div>' + (est ? '<div class="rx-mu">Este producto está ' + (est === 'oculto' ? 'oculto (de temporada)' : 'archivado') + '. No sale en Inventario ni en el conteo.</div><button class="rx-b ac big" data-fx="ed-est" data-id="' + esc(pid) + '" data-v="">↩ ' + (est === 'oculto' ? 'Mostrar de nuevo' : 'Restaurar') + '</button>' : '<div class="rx-mu">Oculta los de temporada y archiva los que ya no usas. Su historial se conserva.</div><div class="fx-vis"><button class="rx-b" data-fx="ed-est" data-id="' + esc(pid) + '" data-v="oculto">🙈 Ocultar (de temporada)</button><button class="rx-b er" data-fx="ed-est" data-id="' + esc(pid) + '" data-v="archivado">🗄 Archivar</button></div>') + (sec === 'terminado' ? '' : '<button class="rx-b er" style="margin-top:8px;width:100%" data-fx="ed-del" data-id="' + esc(pid) + '" data-sec="' + sec + '">🗑 Eliminar completamente</button>'); })() +
     (() => { const mv = F.movs.filter(x => x.producto_id === pid && ms(x.fecha)).sort((a, b) => ms(b.fecha) - ms(a.fecha)).slice(0, 5); if(!mv.length) return '<div class="fx-subh">Últimos movimientos</div><div class="rx-mu">Todavía no hay movimientos.</div>'; return '<div class="fx-subh">Últimos movimientos</div>' + mv.map(x => '<div class="fx-er" style="cursor:default"><span>' + esc(x.tipo || '') + ' · ' + new Date(ms(x.fecha)).toLocaleDateString() + '</span><b>' + fmt(r3(x.cantidad || 0)) + ' ' + esc(unidadDe({producto_id:pid, unidad:x.unidad})) + '</b></div>').join(''); })() +
-    '');
+    '</details>');
+  cfgPintar();
 }
 function elimProd(pid, sec){
   const r = filasInvTodo(sec).filter(x => x.id === pid)[0]; if(!r || sec === 'terminado') return;
@@ -9683,14 +9731,9 @@ document.addEventListener('click', e => {
     case 'cat-prod': F.catEd = false; catProducto(id, t.getAttribute('data-sec')); break;
     case 'ed': editarProd(id, t.getAttribute('data-sec')); break;
     case 'ed-f': { const sec = t.getAttribute('data-sec'), r = conDatos(Object.assign(filasInvTodo(sec).filter(x => x.id === id)[0] || {id:id}, {sec:sec}));
-      if(v === 'min' || v === 'ini'){ modal(null); num((v === 'min' ? 'Stock mínimo · ' : 'Inventario inicial · ') + (r.nombre || ''), r.uni, v === 'min' ? (r.min || '') : (r.ini != null ? r.ini : ''), x => { if(x == null) return; guardarDato(id, v, r3(x)); }); }
-      else { const n = prompt(v === 'uni' ? 'Unidad de medida (ej: Cajas, Litros, Kilos)' : v === 'nombre' ? 'Nombre del producto' : 'Presentación (ej: 12 litros, 500g)', v === 'uni' ? (r.uni || '') : v === 'nombre' ? (r.nombre || '') : (r.pres || ''));
-        if(n != null){ const t2 = n.trim();
-          if(v === 'nombre'){ if(t2) window.PR.setFicha(id, {nombre:t2}); }
-          else if(v === 'pres'){ window.PR.setFicha(id, {presentacion:t2}); if((F.dat[id] || {}).pres != null) guardarDato(id, 'pres', ''); }
-          else guardarDato(id, v, t2);
-          modal(null); render(); } }
+      if(v === 'min' || v === 'ini' || v === 'costo'){ modal(null); num((v === 'min' ? 'Stock mínimo · ' : v === 'costo' ? 'Costo por ' + (r.uni || 'unidad') + ' · ' : 'Inventario inicial · ') + (r.nombre || ''), v === 'costo' ? '$' : r.uni, v === 'min' ? (r.min || '') : v === 'costo' ? (r.costo != null ? r.costo : '') : (r.ini != null ? r.ini : ''), x => { if(x == null) return; guardarDato(id, v, v === 'costo' ? Math.round(x * 10000) / 10000 : r3(x)); }); }
       break; }
+    case 'cfg-save': cfgGuardar(); break;
     case 'ed-foto-del': window.PR.setFicha(id, {foto:null}); editarProd(id, t.getAttribute('data-sec')); break;
     case 'cat-set': { const asig = Object.assign({}, F.asig); if(v) asig[id] = v; else delete asig[id]; guardarCats(F.cats, asig); modal(null); break; }
     case 'cat-gest': catGestion(); break;
@@ -9763,6 +9806,8 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('input', e => {
   const t = e.target; if(!t || !t.id) return;
+  if(t.id === 'fx-nom' && F.cfg){ F.cfg.nombre = t.value; F.cfg.t.nom = 1; cfgPintar(); return; }
+  if(t.id === 'fx-pcant' && F.cfg){ const dec = DEC_U.indexOf(F.cfg.uni) >= 0; let v = t.value.replace(',', '.'); v = dec ? v.replace(/[^0-9.]/g, '').replace(/^(\d*\.\d*)\./, '$1') : v.split('.')[0].replace(/[^0-9]/g, ''); if(v !== t.value) t.value = v; F.cfg.cant = v; F.cfg.t.cant = 1; cfgPintar(); return; }
   if(t.id === 'fx-q'){ F.q = t.value; F.focus = true; render(); }
   else if(t.id === 'fx-fecha' && F.ped){ F.ped.fecha = t.value || hoyMasF(2); }
   else if(t.id === 'fx-cfq' && F.cf){ F.cf.q = t.value; F.focus = true; render(); }
@@ -9770,7 +9815,7 @@ document.addEventListener('input', e => {
   else if(t.id === 'fx-mq'){ F.mq = t.value; F.focus = true; render(); }
   else if(t.id === 'fx-pq' && F.m){ F.m.q = t.value; F.focusM = true; pickDoc(); }
 });
-document.addEventListener('change', e => { const t = e.target; if(!t || !t.id) return; if(t.id === 'fx-fcat'){ F.cat = t.value === '__sin' ? '' : t.value; render(); } else if(t.id === 'fx-cfcat' && F.cf){ F.cf.cat = t.value === 'todas' ? undefined : t.value; render(); } else if(t.id === 'fx-foto-in' && t.files && t.files[0]){ const pid = t.getAttribute('data-id'), sec = t.getAttribute('data-sec'); window.PR.fotoSet(pid, t.files[0], () => editarProd(pid, sec)); } });
+document.addEventListener('change', e => { const t = e.target; if(!t || !t.id) return; if(t.id === 'fx-fcat'){ F.cat = t.value === '__sin' ? '' : t.value; render(); } else if(t.id === 'fx-cfcat' && F.cf){ F.cf.cat = t.value === 'todas' ? undefined : t.value; render(); } else if(t.id === 'fx-ptipo' && F.cfg){ F.cfg.tipo = t.value; F.cfg.t.tipo = 1; cfgPintar(); } else if(t.id === 'fx-puni' && F.cfg){ F.cfg.uni = t.value; F.cfg.t.uni = 1; if(DEC_U.indexOf(t.value) < 0){ F.cfg.cant = String(F.cfg.cant).split('.')[0].replace(/[^0-9]/g, ''); const pc = document.getElementById('fx-pcant'); if(pc) pc.value = F.cfg.cant; } cfgPintar(); } else if(t.id === 'fx-foto-in' && t.files && t.files[0]){ const pid = t.getAttribute('data-id'), sec = t.getAttribute('data-sec'); window.PR.fotoSet(pid, t.files[0], () => editarProd(pid, sec)); } });
 window.fxRefresh = () => { try { if(document.getElementById('fx-root') && document.getElementById('vista-fx') && document.getElementById('vista-fx').classList.contains('activa')) render(); } catch(e){} };
 window.fxView = function(n){ if(n === 'fx'){ escuchar(); render(); } };
 window.FXS = F;
