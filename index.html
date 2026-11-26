@@ -9400,6 +9400,8 @@ function cfgPintar(){ const c = F.cfg; if(!c) return; const e = cfgErrores(c), s
   const pv = document.getElementById('fx-prev'); if(pv){ const ok = !e.tipo && !e.uni && !e.cant, n = c.stock;
     pv.textContent = ok ? fmt(n) + ' ' + (c.tipo === 'granel' ? c.uni : (n === 1 ? c.tipo : presPl(c.tipo)) + ' × ' + fmt(parseFloat(c.cant)) + ' ' + c.uni) : 'Completa los campos para ver el resultado'; }
   const bt = document.getElementById('fx-cfg-save'); if(bt) bt.disabled = Object.keys(e).length > 0; }
+/* Vuelve a abrir la ficha en el mismo lugar, para seguir configurando */
+function reabrirFicha(pid, sec){ const bx = document.querySelector('#fx-modal .rx-box'), y = bx ? bx.scrollTop : 0; editarProd(pid, sec); const nb = document.querySelector('#fx-modal .rx-box'); if(nb) nb.scrollTop = y; }
 function cfgGuardar(){ const c = F.cfg; if(!c) return; if(Object.keys(cfgErrores(c)).length){ c.t = {nom:1, tipo:1, cant:1, uni:1}; cfgPintar(); return; }
   const r0 = filasInvTodo(c.sec).filter(x => x.id === c.pid)[0], r = conDatos(Object.assign({}, r0, {sec:c.sec})), nuevaUni = c.tipo === 'granel' ? c.uni : presPl(c.tipo);
   if(r.stock && (!r.est || r.uni !== nuevaUni || r.pcant !== (c.tipo === 'granel' ? null : parseFloat(c.cant)))){
@@ -9407,7 +9409,7 @@ function cfgGuardar(){ const c = F.cfg; if(!c) return; if(Object.keys(cfgErrores
     if(!confirm('Hoy hay ' + fmt(r3(r.stock)) + ' ' + r.uni + ' en inventario.\n\nAl guardar, el mismo número se leerá como:\n' + txt + '\n\n¿Es correcto? Si no, toca Cancelar y corrige antes de guardar.')) return; }
   window.PR.setFicha(c.pid, {nombre:String(c.nombre).trim(), presentacion:cfgDerivada(c), pres_tipo:c.tipo, pres_cant:c.tipo === 'granel' ? null : parseFloat(c.cant), pres_uni:c.uni});
   const dd = F.dat[c.pid] || {}; if(dd.pres != null) guardarDato(c.pid, 'pres', ''); if(dd.uni != null) guardarDato(c.pid, 'uni', '');
-  F.cfg = null; modal(null); render(); toast('Ficha guardada'); }
+  render(); reabrirFicha(c.pid, c.sec); toast('Ficha guardada'); }
 function cfgHtml(r, pid, sec){
   F.cfg = {pid:pid, sec:sec, nombre:r.nombre || '', tipo:r.est ? r.ptipo : '', cant:r.est && !r.granel ? String(r.pcant) : '', uni:r.est ? r.puni : '', stock:r3(r.stock), t:{}};
   const c = F.cfg, op = (v, l, sel) => '<option value="' + esc(v) + '"' + (sel ? ' selected' : '') + '>' + esc(l) + '</option>';
@@ -9609,7 +9611,7 @@ function editarProd(pid, sec){
     '<div class="rx-mu">El stock lo mueven Producción, Recepción y Despacho. Aquí no se edita.</div>' + cfgHtml(r, pid, sec) +
     '<div class="fx-g"><div class="fx-er" style="cursor:default"><span>Área</span><b>' + esc((SECS.filter(x => x[0] === sec)[0] || [0, ''])[1]) + '</b></div>' +
     '<button class="fx-er" data-fx="cat-prod" data-id="' + esc(pid) + '" data-sec="' + sec + '"><span>Categoría</span><b>' + esc(cid ? catNom(cid) : 'Elegir ›') + '</b></button>' +
-    b('costo', 'Costo unitario', r.costo != null ? '$' + fmt(r.costo) + ' por ' + r.uni : '') + b('min', 'Stock mínimo', r.min ? fmt(r.min) : '') + b('ini', 'Inventario inicial', r.ini != null ? fmt(r.ini) : '') + '</div>' +
+    b('costo', 'Costo unitario', r.costo != null ? '$' + fmt(r.costo) + ' por ' + (r.uniS || r.uni) : '') + b('min', 'Stock mínimo', r.min ? fmt(r.min) : '') + b('ini', 'Inventario inicial', r.ini != null ? fmt(r.ini) : '') + '</div>' +
     '<details class="fx-mas"><summary>Más datos (conservación, ubicación, compras, visibilidad, movimientos)</summary>' +
     (sec === 'terminado' ? (() => { const rc = (window.PR && window.PR.receta) ? window.PR.receta(pid) : []; if(!rc.length) return '<div class="fx-subh">Para producir más</div><div class="rx-mu">Este producto todavía no tiene receta.</div>';
       const mps = filasInv('mp').map(conDatosS('mp')); const falta = [];
@@ -9732,7 +9734,7 @@ document.addEventListener('click', e => {
     case 'cat-prod': F.catEd = false; catProducto(id, t.getAttribute('data-sec')); break;
     case 'ed': editarProd(id, t.getAttribute('data-sec')); break;
     case 'ed-f': { const sec = t.getAttribute('data-sec'), r = conDatos(Object.assign(filasInvTodo(sec).filter(x => x.id === id)[0] || {id:id}, {sec:sec}));
-      if(v === 'min' || v === 'ini' || v === 'costo'){ modal(null); num((v === 'min' ? 'Stock mínimo · ' : v === 'costo' ? 'Costo por ' + (r.uni || 'unidad') + ' · ' : 'Inventario inicial · ') + (r.nombre || ''), v === 'costo' ? '$' : r.uni, v === 'min' ? (r.min || '') : v === 'costo' ? (r.costo != null ? r.costo : '') : (r.ini != null ? r.ini : ''), x => { if(x == null) return; guardarDato(id, v, v === 'costo' ? Math.round(x * 10000) / 10000 : r3(x)); }); }
+      if(v === 'min' || v === 'ini' || v === 'costo'){ num((v === 'min' ? 'Stock mínimo · ' : v === 'costo' ? 'Costo por ' + (r.uni || 'unidad') + ' · ' : 'Inventario inicial · ') + (r.nombre || ''), v === 'costo' ? '$' : r.uni, v === 'min' ? (r.min || '') : v === 'costo' ? (r.costo != null ? r.costo : '') : (r.ini != null ? r.ini : ''), x => { if(x != null) guardarDato(id, v, v === 'costo' ? Math.round(x * 10000) / 10000 : r3(x)); reabrirFicha(id, sec); }); }
       break; }
     case 'cfg-save': cfgGuardar(); break;
     case 'ed-foto-del': window.PR.setFicha(id, {foto:null}); editarProd(id, t.getAttribute('data-sec')); break;
