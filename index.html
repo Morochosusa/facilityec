@@ -2069,6 +2069,7 @@
   .fx-fl{font-size:13px;margin-top:2px}.fx-fl label,.fx-fl button{color:#2f5be0;background:none;border:0;padding:0;font:inherit;cursor:pointer}.fx-mas{margin-top:12px;border-top:1px solid #e6e3da;padding-top:8px}.fx-mas summary{cursor:pointer;font-size:14px;font-weight:600;color:#475467}
   .fx-fl label{border:0!important;padding:0!important;margin:0!important;font-size:13px!important;font-weight:400!important;display:inline!important}
   #fx-root .fx-tb td.fx-tn{width:34%}#fx-root .fx-tb th.fx-tst,#fx-root .fx-tb td.fx-tst{text-align:left;padding-left:6px}#fx-root .fx-tb td.fx-tcat{color:#475467;white-space:nowrap}
+  #fx-modal .fx-dh .fx-ph{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:manipulation}.fx-fl span{color:#667085}.fx-fl .fx-fok{background:#2f5be0;color:#fff;border-radius:8px;padding:5px 12px;font-weight:600}.fx-fl .fx-fok+button{color:#b42318}
 </style>
 </head>
 <body>
@@ -5705,7 +5706,7 @@ usbIniciar();
 window.PR = {receta:id => { try { const f = fichaDe(id); return (f && f.receta) || []; } catch(e){ return []; } }, foto:id => { try { const f = S.fichas[id]; return (f && f.foto) || ''; } catch(e){ return ''; } }, productos:() => PROD_ALL.map(p => { let pr = p.unidad; try { const f = fichaDe(p.id); if(f && f.presentacion != null) pr = f.presentacion; } catch(er){} return {id:p.id, nombre:p.nombre, presentacion:pr, unidad:p.uni || unidadPalabra(p.unidad)}; }),
   ficha:pid => S.fichas[pid] || {},
   setFicha:(pid, patch) => { const up = Object.assign({producto_id:pid}, patch); if(patch.nombre != null) up.nombre_propio = 1; S.fichas[pid] = Object.assign({}, S.fichas[pid] || {}, up); db.collection('fichas_produccion').doc(pid).set(Object.assign({}, up, {actualizado:SV()}), {merge:true}).catch(er => { console.error(er); toast('No se pudo guardar'); }); try { if(S.screen === 'main') renderGrid(); else if(S.screen === 'fichas') render(); if(S.pid) renderPanel(); } catch(er){} try { if(window.fxRefresh) window.fxRefresh(); } catch(er){} },
-  fotoSet:(pid, file, cb) => fotoComprimir(file, d => { window.PR.setFicha(pid, {foto:d}); if(cb) cb(); }), refresh:() => { try { render(); renderTop(); } catch(er){} }, presDe:pid => { const f = pid ? fichaDe(pid) : null; return f ? String(f.presentacion || '').trim() : ''; }, S:S, fichaDe:fichaDe, PROD_ALL:PROD_ALL, go:go, U:U, lbConstruir:lbConstruir};
+  fotoLeer:(file, cb) => fotoComprimir(file, cb), refresh:() => { try { render(); renderTop(); } catch(er){} }, presDe:pid => { const f = pid ? fichaDe(pid) : null; return f ? String(f.presentacion || '').trim() : ''; }, S:S, fichaDe:fichaDe, PROD_ALL:PROD_ALL, go:go, U:U, lbConstruir:lbConstruir};
 })();
 
 /* ============================================================
@@ -9423,6 +9424,7 @@ function cfgHtml(r, pid, sec){
 }
 const ICO_SEC = {terminado:'<path d="M20 7 12 3 4 7v10l8 4 8-4z"/><path d="m4 7 8 4 8-4M12 11v10"/>', mp:'<path d="M6 8h12l-1 12H7z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>', directo:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M3 11h18M9 7V4h6v3"/>'};
 function fotoDe(id){
+  if(F.fotoTmp && F.fotoTmp.pid === id) return F.fotoTmp.d;
   let f = ''; try { f = (window.PR && PR.foto(id)) || ''; } catch(e){}
   if(!f){ try { const x = (window.LCS && window.LCS.fichas || {})[id]; f = (x && x.foto) || ''; } catch(e){} }
   return f;
@@ -9604,9 +9606,10 @@ const fichaRaw = id => { try { return (window.ivFicha && window.ivFicha(id)) || 
 function fichaSet(pid, obj){ if(!catPor(pid)) return false; db.collection('inventario_fichas').doc(pid).set(Object.assign({}, obj, {actualizado:SV(), actualizado_por:mail()}), {merge:true}).catch(er => { console.error(er); toast(errTxt(er)); }); return true; }
 const CONS = [['ambiente', 'Ambiente'], ['refrigerado', '🧊 Refrigerado'], ['congelado', '❄️ Congelado']];
 function editarProd(pid, sec){
+  if(F.fotoTmp && F.fotoTmp.pid !== pid) F.fotoTmp = null;
   const r0 = filasInvTodo(sec).filter(x => x.id === pid)[0]; if(!r0) return; const r = conDatos(Object.assign(r0, {sec:sec})), e = estadoInv(r);
   const cid = catDe(pid), b = (k, t, v) => '<button class="fx-er" data-fx="ed-f" data-v="' + k + '" data-id="' + esc(pid) + '" data-sec="' + sec + '"><span>' + t + '</span><b>' + esc(v === '' || v == null ? 'Agregar ›' : v + ' ›') + '</b></button>';
-  modal('<div class="fx-dh">' + phInv(r, true) + '<div style="min-width:0"><h3 style="margin:0">' + esc(r.nombre) + '</h3><div class="rx-mu">Código: ' + esc(pid) + '</div><div class="fx-fl"><label for="fx-foto-in">' + (fotoDe(pid) ? 'Cambiar foto' : 'Agregar foto') + '</label>' + (fotoDe(pid) ? ' · <button data-fx="ed-foto-del" data-id="' + esc(pid) + '" data-sec="' + sec + '">Quitar</button>' : '') + '</div></div></div><input type="file" id="fx-foto-in" accept="image/*" data-id="' + esc(pid) + '" data-sec="' + sec + '" style="position:absolute;opacity:0;width:1px;height:1px">' +
+  modal('<div class="fx-dh">' + phInv(r, true) + '<div style="min-width:0"><h3 style="margin:0">' + esc(r.nombre) + '</h3><div class="rx-mu">Código: ' + esc(pid) + '</div>' + (F.fotoTmp && F.fotoTmp.pid === pid ? '<div class="fx-fl"><button class="fx-fok" data-fx="foto-ok">Guardar foto</button> <button data-fx="foto-no">Quitar</button></div>' : (fotoDe(pid) ? '<div class="fx-fl"><button data-fx="ed-foto-del" data-id="' + esc(pid) + '" data-sec="' + sec + '">Quitar foto</button></div>' : '')) + '</div></div><input type="file" id="fx-foto-in" accept="image/*" data-id="' + esc(pid) + '" data-sec="' + sec + '" style="position:absolute;opacity:0;width:1px;height:1px">' +
     '<div class="fx-dq"><span class="fx-big lg">' + fmt(r3(r.stock)) + '<small>' + esc(unTxt(r)) + '</small></span><span class="fx-es ' + e[0] + '">' + e[1] + '</span></div>' +
     '<div class="rx-mu">El stock lo mueven Producción, Recepción y Despacho. Aquí no se edita.</div>' + cfgHtml(r, pid, sec) +
     '<div class="fx-g"><div class="fx-er" style="cursor:default"><span>Área</span><b>' + esc((SECS.filter(x => x[0] === sec)[0] || [0, ''])[1]) + '</b></div>' +
@@ -9737,6 +9740,8 @@ document.addEventListener('click', e => {
       if(v === 'min' || v === 'ini' || v === 'costo'){ num((v === 'min' ? 'Stock mínimo · ' : v === 'costo' ? 'Costo por ' + (r.uni || 'unidad') + ' · ' : 'Inventario inicial · ') + (r.nombre || ''), v === 'costo' ? '$' : r.uni, v === 'min' ? (r.min || '') : v === 'costo' ? (r.costo != null ? r.costo : '') : (r.ini != null ? r.ini : ''), x => { if(x != null) guardarDato(id, v, v === 'costo' ? Math.round(x * 10000) / 10000 : r3(x)); reabrirFicha(id, sec); }); }
       break; }
     case 'cfg-save': cfgGuardar(); break;
+    case 'foto-ok': { const ft = F.fotoTmp; if(!ft) break; window.PR.setFicha(ft.pid, {foto:ft.d}); F.fotoTmp = null; render(); reabrirFicha(ft.pid, ft.sec); toast('Foto guardada'); break; }
+    case 'foto-no': { const ft = F.fotoTmp; F.fotoTmp = null; if(ft){ render(); reabrirFicha(ft.pid, ft.sec); } break; }
     case 'ed-foto-del': window.PR.setFicha(id, {foto:null}); editarProd(id, t.getAttribute('data-sec')); break;
     case 'cat-set': { const asig = Object.assign({}, F.asig); if(v) asig[id] = v; else delete asig[id]; guardarCats(F.cats, asig); modal(null); break; }
     case 'cat-gest': catGestion(); break;
@@ -9797,7 +9802,7 @@ document.addEventListener('click', e => {
     case 'resp': respSet(v); if(F.m) formAccion(); break;
     case 'resp-otro': { const n = prompt('Nombre de quien lo hace'); if(n && n.trim()){ respSet(n.trim()); if(F.m) formAccion(); } break; }
     case 'go': ejecutar(); break;
-    case 'm-x': modal(null); break;
+    case 'm-x': modal(null); if(F.fotoTmp){ F.fotoTmp = null; render(); } break;
     case 'nc': verNoCuadran(); break;
     case 'viejo': cambiarVista('bodega'); setTimeout(() => { if(window.bgIr) bgIr('inventario'); }, 120); break;
     case 'est-nueva': { if(!window.lcPedirCodigo) break; window.lcPedirCodigo(() => { const n = prompt('Nombre de la estación'); if(!n || !n.trim()) return; const idn = norm(n).replace(/ /g, '_'); if(!idn || estaciones().some(x => x.id === idn)){ toast('Esa estación ya existe'); return; }
@@ -9818,7 +9823,12 @@ document.addEventListener('input', e => {
   else if(t.id === 'fx-mq'){ F.mq = t.value; F.focus = true; render(); }
   else if(t.id === 'fx-pq' && F.m){ F.m.q = t.value; F.focusM = true; pickDoc(); }
 });
-document.addEventListener('change', e => { const t = e.target; if(!t || !t.id) return; if(t.id === 'fx-fcat'){ F.cat = t.value === '__sin' ? '' : t.value; render(); } else if(t.id === 'fx-cfcat' && F.cf){ F.cf.cat = t.value === 'todas' ? undefined : t.value; render(); } else if(t.id === 'fx-ptipo' && F.cfg){ F.cfg.tipo = t.value; F.cfg.t.tipo = 1; cfgPintar(); } else if(t.id === 'fx-puni' && F.cfg){ F.cfg.uni = t.value; F.cfg.t.uni = 1; if(DEC_U.indexOf(t.value) < 0){ F.cfg.cant = String(F.cfg.cant).split('.')[0].replace(/[^0-9]/g, ''); const pc = document.getElementById('fx-pcant'); if(pc) pc.value = F.cfg.cant; } cfgPintar(); } else if(t.id === 'fx-foto-in' && t.files && t.files[0]){ const pid = t.getAttribute('data-id'), sec = t.getAttribute('data-sec'); window.PR.fotoSet(pid, t.files[0], () => editarProd(pid, sec)); } });
+/* Mantener presionada la foto de la ficha abre la galería / cámara */
+(function(){ let tm = null; const stop = () => { if(tm){ clearTimeout(tm); tm = null; } };
+  document.addEventListener('pointerdown', e => { const ph = e.target && e.target.closest ? e.target.closest('#fx-modal .fx-dh .fx-ph') : null; if(!ph) return; stop(); tm = setTimeout(() => { tm = null; const f = document.getElementById('fx-foto-in'); if(f) f.click(); }, 450); });
+  ['pointerup', 'pointercancel', 'pointermove', 'pointerleave'].forEach(n => document.addEventListener(n, stop)); })();
+document.addEventListener('contextmenu', e => { if(e.target && e.target.closest && e.target.closest('#fx-modal .fx-dh .fx-ph')) e.preventDefault(); });
+document.addEventListener('change', e => { const t = e.target; if(!t || !t.id) return; if(t.id === 'fx-fcat'){ F.cat = t.value === '__sin' ? '' : t.value; render(); } else if(t.id === 'fx-cfcat' && F.cf){ F.cf.cat = t.value === 'todas' ? undefined : t.value; render(); } else if(t.id === 'fx-ptipo' && F.cfg){ F.cfg.tipo = t.value; F.cfg.t.tipo = 1; cfgPintar(); } else if(t.id === 'fx-puni' && F.cfg){ F.cfg.uni = t.value; F.cfg.t.uni = 1; if(DEC_U.indexOf(t.value) < 0){ F.cfg.cant = String(F.cfg.cant).split('.')[0].replace(/[^0-9]/g, ''); const pc = document.getElementById('fx-pcant'); if(pc) pc.value = F.cfg.cant; } cfgPintar(); } else if(t.id === 'fx-foto-in' && t.files && t.files[0]){ const pid = t.getAttribute('data-id'), sec = t.getAttribute('data-sec'); window.PR.fotoLeer(t.files[0], d => { F.fotoTmp = {pid:pid, sec:sec, d:d}; t.value = ''; reabrirFicha(pid, sec); }); } });
 window.fxRefresh = () => { try { if(document.getElementById('fx-root') && document.getElementById('vista-fx') && document.getElementById('vista-fx').classList.contains('activa')) render(); } catch(e){} };
 window.fxView = function(n){ if(n === 'fx'){ escuchar(); render(); } };
 window.FXS = F;
